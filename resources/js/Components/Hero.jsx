@@ -3,8 +3,9 @@ export default function Hero({
   subtitle,
   children,
   showContent = true,
-  heroSrc = '/images/Hero.png',
+  heroSrc = '/images/Hero.jpg',
   fallback = '/images/Fallback.png',
+  imageClass = 'w-full h-64 object-cover', 
 }) {
   return (
     <section className="grid lg:grid-cols-2 gap-10 items-center">
@@ -20,7 +21,7 @@ export default function Hero({
         <img
           src={heroSrc}
           alt={title ?? 'Imagen principal'}
-          className="w-full h-64 object-cover"
+          className={imageClass}
           width={1920}
           height={1080}
           loading="eager"

@@ -1,4 +1,3 @@
-// resources/js/Layouts/GuestLayout.jsx
 import Header from '@/Components/Header';
 import Footer from '@/Components/Footer';
 
