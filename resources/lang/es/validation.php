@@ -166,36 +166,52 @@ return [
     'ulid' => 'El campo :attribute debe ser un ULID válido.',
     'uuid' => 'El campo :attribute debe ser un UUID válido.',
 
-    /*
-    |--------------------------------------------------------------------------
-    | Líneas de validación personalizadas
-    |--------------------------------------------------------------------------
-    |
-    | Aquí podés especificar mensajes de validación personalizados para atributos
-    | usando la convención "attribute.rule". Esto facilita definir un mensaje
-    | específico para una regla y atributo dado.
-    |
-    */
-
-    'custom' => [
-        'attribute-name' => [
-            'rule-name' => 'mensaje-personalizado',
-        ],
+/*
+|--------------------------------------------------------------------------
+| Líneas de validación personalizadas
+|--------------------------------------------------------------------------
+*/
+'custom' => [
+    'current_password' => [
+        'required' => 'La contraseña actual es obligatoria.',
+        'current_password' => 'La contraseña actual es incorrecta.',
     ],
-
-    /*
-    |--------------------------------------------------------------------------
-    | Atributos personalizados
-    |--------------------------------------------------------------------------
-    |
-    | Las siguientes líneas se usan para reemplazar los placeholders de los atributos
-    | por algo más amigable, como "Correo electrónico" en lugar de "email".
-    |
-    */
-
-    'attributes' => [
-        'email' => 'correo electrónico',
-        'password' => 'contraseña',
+    'password' => [
+        'required' => 'La contraseña es obligatoria.',
+        'min' => 'La contraseña debe tener al menos :min caracteres.',
+        'confirmed' => 'La confirmación de la contraseña no coincide.',
     ],
+    'password_confirmation' => [
+        'required' => 'La confirmación de la contraseña es obligatoria.',
+    ],
+    'email' => [
+        'required' => 'El correo electrónico es obligatorio.',
+        'email' => 'El correo electrónico debe ser una dirección válida.',
+        'unique' => 'El correo electrónico ya está en uso.',
+    ],
+    'name' => [
+        'required' => 'El nombre es obligatorio.',
+        'string' => 'El nombre debe ser una cadena de texto válida.',
+    ],
+], 
+
+/*
+|--------------------------------------------------------------------------
+| Atributos personalizados (nombres amigables)
+|--------------------------------------------------------------------------
+*/
+'attributes' => [
+    'current_password' => 'contraseña actual',
+    'password' => 'contraseña',
+    'password_confirmation' => 'confirmación de contraseña',
+    'name' => 'nombre',
+    'email' => 'correo electrónico',
+    'phone' => 'teléfono',
+    'address' => 'dirección',
+    'profile.photo' => 'foto de perfil',
+    'profile.description' => 'descripción de perfil',
+
+],
+
 
 ];
