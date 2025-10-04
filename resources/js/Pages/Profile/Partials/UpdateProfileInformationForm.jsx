@@ -1,9 +1,12 @@
+import React, { useState, useEffect } from 'react';
+import { Inertia } from '@inertiajs/inertia';
+import { Link, useForm, usePage } from '@inertiajs/react';
+import { Transition } from '@headlessui/react';
+
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
-import { Transition } from '@headlessui/react';
-import { Link, useForm, usePage } from '@inertiajs/react';
 
 export default function UpdateProfileInformation({
     mustVerifyEmail,
@@ -16,12 +19,58 @@ export default function UpdateProfileInformation({
         useForm({
             name: user.name,
             email: user.email,
+            photo: null, 
         });
+
+    const [preview, setPreview] = useState(
+        user.profile_photo_url ?? '/images/DefaultPerfil.jpg'
+    );
+
+    
+    useEffect(() => {
+        return () => {
+            if (preview && preview.startsWith('blob:')) {
+                URL.revokeObjectURL(preview);
+            }
+        };
+    }, [preview]);
+
+    // Si cambia el profile_photo_url (tras reload) actualizamo
+    useEffect(() => {
+        setPreview(user.profile_photo_url ?? '/images/DefaultPerfil.jpg');
+    }, [user.profile_photo_url]);
+
+    const onFileChange = (e) => {
+        const file = e.target.files?.[0] ?? null;
+        setData('photo', file);
+        if (file) {
+            const objectUrl = URL.createObjectURL(file);
+            setPreview(objectUrl);
+        } else {
+            setPreview(user.profile_photo_url ?? '/images/DefaultPerfil.jpg');
+        }
+    };
 
     const submit = (e) => {
         e.preventDefault();
 
-        patch(route('profile.update'));
+        const formData = new FormData();
+        formData.append('_method', 'PATCH');
+        formData.append('name', data.name ?? '');
+        formData.append('email', data.email ?? '');
+        if (data.photo) {
+            formData.append('photo', data.photo);
+        }
+
+        Inertia.post(route('profile.update'), formData, {
+            onSuccess: () => {
+                
+                Inertia.reload({ only: ['auth'] });
+            },
+            onError: (errors) => {
+                console.error('Errores del servidor:', errors);
+            },
+        });
     };
 
     return (
@@ -37,6 +86,32 @@ export default function UpdateProfileInformation({
             </header>
 
             <form onSubmit={submit} className="mt-6 space-y-6">
+                <div className="flex items-start gap-4">
+                    <div className="w-24 h-24 rounded-full overflow-hidden border">
+                        <img
+                            src={preview}
+                            alt="Foto de perfil"
+                            className="object-cover w-full h-full"
+                        />
+                    </div>
+
+                    <div className="flex-1">
+                        <InputLabel htmlFor="photo" value="Foto de perfil" />
+                        <input
+                            id="photo"
+                            name="photo"
+                            type="file"
+                            accept="image/*"
+                            onChange={onFileChange}
+                            className="mt-1 block w-full"
+                        />
+                        <InputError className="mt-2" message={errors.photo} />
+                        <p className="mt-2 text-sm text-gray-600">
+                            Si no subes nada, se usará la imagen por defecto.
+                        </p>
+                    </div>
+                </div>
+
                 <div>
                     <InputLabel htmlFor="name" value="Nombre" />
 
@@ -101,9 +176,7 @@ export default function UpdateProfileInformation({
                         leave="transition ease-in-out"
                         leaveTo="opacity-0"
                     >
-                        <p className="text-sm text-gray-600">
-                            Guardado.
-                        </p>
+                        <p className="text-sm text-gray-600">Guardado.</p>
                     </Transition>
                 </div>
             </form>
