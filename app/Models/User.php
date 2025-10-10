@@ -89,4 +89,13 @@ class User extends Authenticatable implements MustVerifyEmail
 
         return asset('images/DefaultPerfil.jpg');
     }
+
+
+    public function casos(){
+
+        return $this -> hasMany(Caso::class, 'idUsuario');
+    } 
+
+
+
 }
