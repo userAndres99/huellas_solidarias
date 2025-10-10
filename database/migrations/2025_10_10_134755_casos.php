@@ -12,23 +12,24 @@ return new class extends Migration
     public function up(): void
     {
         //
-        Schema::create('casos', function(Blueprint $table){
-          $table -> id();
-           $table -> unsignedBigInteger('idUsuario'); // relacioncion con el usuario
-           $table -> string('fotoAnimal')->nullable();
-           $table -> string('tipoAnimal')->nullable();
-           $table -> text('descripcion')->nullable();
-           $table -> string('situacion') ->nullable();
-           $table -> string('ciudad')-> nullable();
-           $table -> decimal('latitud', 10, 7)->nullable();
-           $table -> decimal('longitud', 10, 7)->nullable();
-           $table -> string('telefonoContacto',20)->nullable();
-           $table -> dateTime('fechaPublicacion')->default(now());
-           $table ->enum('estado', ['activo', 'cerrado', 'resuelto'])->default('activo');
-           $table -> timestamps();
-           // clave foranea
-           $table ->foreign('idUsuario')->references('id')->on('users')->onDelete('cascade');
-        });
+       Schema::create('casos', function (Blueprint $table) {
+    $table->id();
+    $table->unsignedBigInteger('idUsuario');
+    $table->string('fotoAnimal')->nullable();
+    $table->string('tipoAnimal')->nullable();
+    $table->text('descripcion')->nullable();
+    $table->string('situacion')->nullable();
+    $table->string('ciudad')->nullable();
+    $table->decimal('latitud', 10, 7)->nullable();
+    $table->decimal('longitud', 10, 7)->nullable();
+    $table->string('telefonoContacto', 20)->nullable();
+    $table->dateTime('fechaPublicacion')->default(now());
+    $table->enum('estado', ['activo', 'cerrado', 'resuelto'])->default('activo');
+    $table->timestamps();
+
+    $table->foreign('idUsuario')->references('id')->on('users')->onDelete('cascade');
+});
+
     }
 
     /**
