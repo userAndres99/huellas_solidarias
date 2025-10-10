@@ -3,6 +3,7 @@
 use App\Http\Controllers\ProfileController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\CasoController;
 use Inertia\Inertia;
 
 Route::get('/', function () {
@@ -23,5 +24,16 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
+
+
+Route::middleware(['auth'])->group(function (){
+    Route::get('/casos', [CasoController::class, 'index']);
+    Route::post('/casos', [CasoController::class, 'store']);
+});
+
+
+Route::get('/mapa', function () {
+    return Inertia::render('MapaPage'); // nombre del componente React
+})->middleware(['auth'])->name('mapa');
 
 require __DIR__.'/auth.php';

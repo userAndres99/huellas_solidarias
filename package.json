@@ -17,13 +17,15 @@
     "concurrently": "^9.0.1",
     "laravel-vite-plugin": "^2.0.0",
     "postcss": "^8.4.31",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
     "tailwindcss": "^3.2.1",
     "vite": "^7.1.9"
   },
   "dependencies": {
-    "@inertiajs/inertia": "^0.11.1"
+    "@inertiajs/inertia": "^0.11.1",
+    "leaflet": "^1.9.4",
+    "react-leaflet": "^5.0.0"
   },
   "overrides": {
     "axios": "^1.12.2"
