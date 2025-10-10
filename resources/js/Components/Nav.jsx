@@ -1,6 +1,7 @@
 import { Link } from '@inertiajs/react';
 import Dropdown from '@/Components/Dropdown';
 import NavLink from '@/Components/NavLink';
+import React from 'react';
 
 export default function Nav({ auth, canLogin, canRegister }) {
   return (
@@ -10,7 +11,13 @@ export default function Nav({ auth, canLogin, canRegister }) {
       {auth?.user ? (
         <>
           <NavLink href={route('dashboard')} active={route().current('dashboard')}>Panel</NavLink>
-          <form method="POST" action={route('logout')} className="inline">
+
+          <form method="POST" action={route('logout')} className="inline" id="logout-form">
+            <input
+              type="hidden"
+              name="_token"
+              defaultValue={typeof document !== 'undefined' && document.querySelector('meta[name="csrf-token"]') ? document.querySelector('meta[name="csrf-token"]').getAttribute('content') : ''}
+            />
             <button type="submit" className="text-sm hover:text-gray-700">Cerrar sesión</button>
           </form>
         </>
