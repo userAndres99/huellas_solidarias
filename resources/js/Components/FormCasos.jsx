@@ -70,7 +70,11 @@ export default function FormCasos() {
       <input type="text" name="telefonoContacto" value={data.telefonoContacto} onChange={handleChange} />
 
       <label>Ubicación en el mapa:</label>
-      <MapaInteractivo onLocationSelect={handleLocationSelect} />
+      <MapaInteractivo
+  onLocationSelect={handleLocationSelect}
+  tipoAnimal={data.tipoAnimal} // pasa la opción actual
+/>
+
 
       <p>Latitud: {data.latitud} | Longitud: {data.longitud}</p>
 

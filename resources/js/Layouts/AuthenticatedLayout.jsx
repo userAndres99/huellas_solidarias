@@ -37,6 +37,13 @@ export default function AuthenticatedLayout({ header, children }) {
                                 >
                                     Publicar Caso
                                 </NavLink>
+                                <NavLink
+                                href={route('mapa')}
+                                active={route().current('mapa')}
+                                >
+                                    Mapa
+
+                                </NavLink>
                             </div>
                         </div>
 
