@@ -1,19 +1,37 @@
 <?php
 
 namespace App\Http\Controllers;
+
 use Inertia\Inertia;
 use Illuminate\Http\Request;
 use App\Models\Caso;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 
 class CasoController extends Controller
 {
-    public function index()
+    // Devuelve JSON (para el mapa-listado por fetch)
+    public function index(Request $request)
     {
-        $casos = Caso::where('estado', 'activo')->get();
-        return response()->json($casos);
+        //devolvemos los casos como JSON (para fetch-mapa)
+        if ($request->wantsJson()) {
+            $casos = Caso::where('estado', 'activo')
+                ->select(['id','idUsuario','tipoAnimal','descripcion','situacion','ciudad','latitud','longitud','telefonoContacto','fechaPublicacion','fotoAnimal'])
+                ->orderBy('fechaPublicacion', 'desc')
+                ->get()
+                ->map(function ($caso) {
+                    $caso->fotoAnimal = $caso->fotoAnimal ? Storage::url($caso->fotoAnimal) : null;
+                    return $caso;
+                });
+
+            return response()->json($casos);
+        }
+
+        // Si no es peticion JSON, renderiza la pagina Inertia
+        return Inertia::render('Casos/Index');
     }
-    
+
+    // usamos la vista Inertia para publicar
     public function create()
     {
         return Inertia::render('PublicarCaso');
@@ -37,7 +55,7 @@ class CasoController extends Controller
             $path = $request->file('fotoAnimal')->store('foto_animales', 'public');
         }
 
-        Caso::create([
+        $caso = Caso::create([
             'idUsuario' => Auth::id(),
             'fotoAnimal' => $path,
             'tipoAnimal' => $request->tipoAnimal,
@@ -52,5 +70,17 @@ class CasoController extends Controller
         ]);
 
         return redirect()->route('casos.create')->with('success', 'Caso creado exitosamente');
+    }
+
+    // Devuelve JSON de un solo caso (para detalle para fetch)
+    public function show(Caso $caso)
+    {
+        if ($caso->estado !== 'activo') {
+            return response()->json(['message' => 'Not found'], 404);
+        }
+
+        $caso->fotoAnimal = $caso->fotoAnimal ? Storage::url($caso->fotoAnimal) : null;
+
+        return response()->json($caso);
     }
 }

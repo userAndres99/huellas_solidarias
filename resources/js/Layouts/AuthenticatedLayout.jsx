@@ -31,18 +31,26 @@ export default function AuthenticatedLayout({ header, children }) {
                                 >
                                     Dashboard
                                 </NavLink>
+
                                 <NavLink
-                                href={route('casos.create')}
-                                active={route().current('casos.create')}
+                                    href={route('casos.index')}
+                                    active={route().current('casos.index')}
+                                >
+                                    Publicaciones
+                                </NavLink>
+
+                                <NavLink
+                                    href={route('casos.create')}
+                                    active={route().current('casos.create')}
                                 >
                                     Publicar Caso
                                 </NavLink>
+
                                 <NavLink
-                                href={route('mapa')}
-                                active={route().current('mapa')}
+                                    href={route('mapa')}
+                                    active={route().current('mapa')}
                                 >
                                     Mapa
-
                                 </NavLink>
                             </div>
                         </div>
@@ -148,9 +156,17 @@ export default function AuthenticatedLayout({ header, children }) {
                         >
                             Dashboard
                         </ResponsiveNavLink>
+
                         <ResponsiveNavLink
-                        href={route('casos.create')}
-                        active={route().current('casos.create')}
+                            href={route('casos.index')}
+                            active={route().current('casos.index')}
+                        >
+                            Publicaciones
+                        </ResponsiveNavLink>
+
+                        <ResponsiveNavLink
+                            href={route('casos.create')}
+                            active={route().current('casos.create')}
                         >
                             Publicar Caso
                         </ResponsiveNavLink>

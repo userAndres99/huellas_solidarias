@@ -72,7 +72,8 @@ export default function FormCasos() {
       <label>Ubicación en el mapa:</label>
       <MapaInteractivo
   onLocationSelect={handleLocationSelect}
-  tipoAnimal={data.tipoAnimal} // pasa la opción actual
+  tipoAnimal={data.tipoAnimal}
+  showMarkers={false} // NO mostrar los demás marcadores
 />
 
 

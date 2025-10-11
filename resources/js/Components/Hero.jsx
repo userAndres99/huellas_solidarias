@@ -5,7 +5,7 @@ export default function Hero({
   showContent = true,
   heroSrc = '/images/Hero.jpg',
   fallback = '/images/Fallback.png',
-  imageClass = 'w-full h-64 object-cover', 
+  imageClass = 'w-full h-64 object-cover',
 }) {
   return (
     <section className="grid lg:grid-cols-2 gap-10 items-center">
@@ -25,7 +25,7 @@ export default function Hero({
           width={1920}
           height={1080}
           loading="eager"
-          fetchpriority="high"
+          fetchPriority="high"
           decoding="async"
           onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = fallback; }}
         />

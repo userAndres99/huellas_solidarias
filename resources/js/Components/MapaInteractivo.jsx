@@ -19,13 +19,9 @@ function getAnimalIcon(tipoAnimal) {
     default:
       iconUrl = 'https://cdn-icons-png.flaticon.com/512/616/616408.png';
   }
-  return new L.icon({
-    iconUrl,
-    iconSize: [32, 32],
-  });
+  return new L.icon({ iconUrl, iconSize: [32, 32] });
 }
 
-// Componente para cambiar la vista del mapa
 function ChangeView({ center }) {
   const map = useMap();
   useEffect(() => {
@@ -34,7 +30,6 @@ function ChangeView({ center }) {
   return null;
 }
 
-// Marcador que coloca el usuario haciendo clic
 function LocationMarker({ onLocationSelect, getTipoAnimal }) {
   const [position, setPosition] = useState(null);
   const [tipo, setTipo] = useState('default');
@@ -42,10 +37,8 @@ function LocationMarker({ onLocationSelect, getTipoAnimal }) {
   useMapEvents({
     click(e) {
       const { lat, lng } = e.latlng;
-
       const tipoActual = getTipoAnimal ? getTipoAnimal() : 'default';
       setTipo(tipoActual); // actualiza el icono según la opción seleccionada
-
       setPosition([lat, lng]);
       onLocationSelect([lat, lng]);
     },
@@ -54,48 +47,66 @@ function LocationMarker({ onLocationSelect, getTipoAnimal }) {
   return position ? <Marker position={position} icon={getAnimalIcon(tipo)} /> : null;
 }
 
-// Componente principal del mapa
-export default function MapaInteractivo({ onLocationSelect, center, tipoAnimal }) {
+export default function MapaInteractivo({
+  onLocationSelect,
+  center,
+  tipoAnimal,
+  readOnly = false,
+  initialPosition = null,
+  marker = false,
+  showMarkers = true,
+}) {
   const [markers, setMarkers] = useState([]);
 
   useEffect(() => {
-    fetch('/casos')
-      .then(res => res.json())
-      .then(data => setMarkers(data));
-  }, []);
+    if (!showMarkers) return; 
+    fetch('/casos/json', { headers: { Accept: 'application/json' } })
+      .then(res => {
+        if (!res.ok) throw new Error('Network response was not ok');
+        return res.json();
+      })
+      .then(data => setMarkers(data))
+      .catch(() => setMarkers([]));
+  }, [showMarkers]);
+
+  const mapCenter = center || (initialPosition ? initialPosition : [-38.9339, -67.9900]);
 
   return (
     <div style={{ height: '500px', width: '100%' }}>
-      <MapContainer
-        center={center || [-38.9339, -67.9900]}
-        zoom={13}
-        style={{ height: '100%', width: '100%' }}
-      >
+      <MapContainer center={mapCenter} zoom={13} style={{ height: '100%', width: '100%' }}>
         <TileLayer
           attribution="Tiles &copy; Esri"
           url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}"
         />
 
-        <ChangeView center={center} />
+        <ChangeView center={center || initialPosition} />
 
-        {onLocationSelect && (
-          <LocationMarker
-            onLocationSelect={onLocationSelect}
-            getTipoAnimal={() => tipoAnimal} // función para tomar el tipo actual
-          />
+        {!readOnly && onLocationSelect && (
+          <LocationMarker onLocationSelect={onLocationSelect} getTipoAnimal={() => tipoAnimal} />
         )}
 
-        {markers
-          .filter(m => m.latitud && m.longitud)
-          .map((m, i) => (
-            <Marker
-              key={i}
-              position={[m.latitud, m.longitud]}
-              icon={getAnimalIcon(m.tipoAnimal)}
-            >
-              <Popup>{m.tipoAnimal} reportado aquí</Popup>
-            </Marker>
-          ))}
+        {/* marcador para modo lectura/detalle*/}
+        {readOnly && initialPosition && marker && (
+          <Marker position={initialPosition} icon={getAnimalIcon(tipoAnimal)} />
+        )}
+
+        {/* marcadores globales (solo si showMarkers = true) */}
+        {showMarkers &&
+          markers
+            .filter(m => m.latitud && m.longitud)
+            .map((m) => (
+              <Marker
+                key={m.id}
+                position={[Number(m.latitud), Number(m.longitud)]}
+                icon={getAnimalIcon(m.tipoAnimal)}
+              >
+                <Popup>
+                  <div style={{ fontWeight: 600 }}>{m.tipoAnimal}</div>
+                  <div style={{ fontSize: 12, color: '#444' }}>{m.ciudad}</div>
+                  <div style={{ fontSize: 12 }}>{m.descripcion}</div>
+                </Popup>
+              </Marker>
+            ))}
       </MapContainer>
     </div>
   );
