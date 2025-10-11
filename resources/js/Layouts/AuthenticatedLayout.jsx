@@ -31,6 +31,12 @@ export default function AuthenticatedLayout({ header, children }) {
                                 >
                                     Dashboard
                                 </NavLink>
+                                <NavLink
+                                href={route('casos.create')}
+                                active={route().current('casos.create')}
+                                >
+                                    Publicar Caso
+                                </NavLink>
                             </div>
                         </div>
 
@@ -134,6 +140,12 @@ export default function AuthenticatedLayout({ header, children }) {
                             active={route().current('dashboard')}
                         >
                             Dashboard
+                        </ResponsiveNavLink>
+                        <ResponsiveNavLink
+                        href={route('casos.create')}
+                        active={route().current('casos.create')}
+                        >
+                            Publicar Caso
                         </ResponsiveNavLink>
                     </div>
 

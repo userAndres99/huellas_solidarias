@@ -1,7 +1,7 @@
 <?php
 
 namespace App\Http\Controllers;
-
+use Inertia\Inertia;
 use Illuminate\Http\Request;
 use App\Models\Caso;
 use Illuminate\Support\Facades\Auth;
@@ -12,6 +12,11 @@ class CasoController extends Controller
     {
         $casos = Caso::where('estado', 'activo')->get();
         return response()->json($casos);
+    }
+    
+    public function create()
+    {
+        return Inertia::render('PublicarCaso');
     }
 
     public function store(Request $request)
@@ -46,6 +51,6 @@ class CasoController extends Controller
             'estado' => 'activo',
         ]);
 
-        return response()->json(['message' => 'Caso creado exitosamente'], 201);
+        return redirect()->route('casos.create')->with('success', 'Caso creado exitosamente');
     }
 }

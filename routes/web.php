@@ -29,6 +29,7 @@ Route::middleware('auth')->group(function () {
 Route::middleware(['auth'])->group(function (){
     Route::get('/casos', [CasoController::class, 'index']);
     Route::post('/casos', [CasoController::class, 'store']);
+    Route::get('/publicar-caso', [CasoController::class, 'create'])->name('casos.create');
 });
 
 

@@ -43,12 +43,6 @@ export default function Dashboard() {
         Ver mapa
       </Link>
     </div>
-
-            
-
-
-
-
         </AuthenticatedLayout>
     );
 }
