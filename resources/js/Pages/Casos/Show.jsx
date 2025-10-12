@@ -7,19 +7,58 @@ export default function Show(props) {
   const { initialId } = props;
   const id = initialId || window.location.pathname.split('/').pop();
   const [caso, setCaso] = useState(undefined);
+  const [loading, setLoading] = useState(true); 
 
   useEffect(() => {
-    fetch(`/casos/json/${id}`, { headers: { Accept: 'application/json' } })
-      .then(res => {
-        if (!res.ok) throw new Error('Not found');
-        return res.json();
-      })
-      .then(setCaso)
-      .catch(() => setCaso(null));
-  }, [id]);
+    const controller = new AbortController();
+    const signal = controller.signal;
 
-  if (caso === undefined) return <div className="p-4">Cargando...</div>;
-  if (caso === null) return <div className="p-4">No encontrado</div>;
+    const fetchCaso = async() => {
+      try {
+        const res = await fetch(`/casos/json/${id}`,{
+          headers: { Accept: 'application/json' },
+          signal,
+        });
+        if (!res.ok) throw new Error('Not found');
+
+        const data = await res.json();
+        setCaso(data);
+      }catch (error){
+        if(error.name !== 'AbortError'){
+          console.error('Error al obtener el caso:', error);
+          setCaso(null);
+        }
+      }finally{
+        setLoading(false);
+      }
+    };
+
+    fetchCaso();
+
+    return () => controller.abort();
+
+
+  },[id]);
+
+
+  if (loading){
+    return (
+      <div className='flex flex-col items-center justify-center h-64'>
+        <div className='w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin-low'></div>
+        <p className='mt-2 text-gray-600'>Cargando caso...</p>
+      </div>
+    )
+  }
+
+
+
+ if (caso === null){
+  return (
+    <div className='flex items-center justify-center h-64 text-red-600'>
+      No se pudo cargar el caso o no existe
+    </div>
+  )
+ }
 
   return (
     <AuthenticatedLayout
