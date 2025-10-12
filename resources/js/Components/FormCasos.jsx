@@ -52,7 +52,6 @@ export default function FormCasos() {
         <option value="">Seleccionar</option>
         <option value="Perro">Perro</option>
         <option value="Gato">Gato</option>
-        <option value="Ave">Ave</option>
         <option value="Otro">Otro</option>
       </select>
       {errors.tipoAnimal && <div className="text-red-600">{errors.tipoAnimal}</div>}

@@ -13,11 +13,9 @@ function getAnimalIcon(tipoAnimal) {
     case 'Gato':
       iconUrl = 'https://cdn-icons-png.flaticon.com/512/616/616430.png';
       break;
-    case 'Ave':
-      iconUrl = 'https://cdn-icons-png.flaticon.com/512/616/616440.png';
-      break;
     default:
-      iconUrl = 'https://cdn-icons-png.flaticon.com/512/616/616408.png';
+      // icono por defecto 
+      iconUrl = '/images/interrogante.jpeg';
   }
   return new L.icon({ iconUrl, iconSize: [32, 32] });
 }
@@ -59,7 +57,7 @@ export default function MapaInteractivo({
   const [markers, setMarkers] = useState([]);
 
   useEffect(() => {
-    if (!showMarkers) return; 
+    if (!showMarkers) return;
     fetch('/casos/json', { headers: { Accept: 'application/json' } })
       .then(res => {
         if (!res.ok) throw new Error('Network response was not ok');
