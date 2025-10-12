@@ -5,18 +5,51 @@ export default function Index() {
   const [casos, setCasos] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetch('/casos/json', { headers: { Accept: 'application/json' } })
-      .then(res => {
-        if (!res.ok) throw new Error('Network response was not ok');
-        return res.json();
-      })
-      .then(data => setCasos(data))
-      .catch(() => setCasos([]))
-      .finally(() => setLoading(false));
-  }, []);
+  useEffect (() =>{
+    // 1. Crear un controlador para poder abordar la solicitud
+    const controller = new AbortController();
+    const { signal } = controller;
 
-  if (loading) return <div className="p-4">Cargando...</div>;
+    // 2. Definir la función asincróica
+    const obtenerCasos = async () => {
+      try{
+        const res = await fetch('/casos/json', {
+          headers: { Accept: 'application/json'},
+          signal, // 3. Asociamos el signal del controlador
+        });
+        if (!res.ok) throw new Error('Error en la respuesta del servidor');
+        
+        const data = await res.json();
+        setCasos(data);
+      }catch (error){
+        // 4. Si el error fue por aborto, lo ignoramos
+        if(error.name === 'AbortError'){
+          console.log('Petición cancelada por el usuario');
+        }else{
+          console.error('Error al obtener los casos:', error);
+          setCasos([]);
+        }
+      }finally{
+        setLoading(false);
+      }
+    };
+
+    // 5. Ejecutamos la función
+    obtenerCasos(); 
+
+    // 6. Funcion de limpieza (cleanup)
+    return () =>{
+      controller.abort(); // Cancela la solicitud si el componente se desmonta
+    };
+  },[]);
+
+  if (loading) {
+  return (
+    <div className="flex items-center justify-center h-64">
+      <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin-slow"></div>
+    </div>
+  );
+}
 
   return (
     <div className="container mx-auto p-4">
