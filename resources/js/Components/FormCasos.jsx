@@ -9,6 +9,7 @@ export default function FormCasos() {
     descripcion: '',
     situacion: '',
     ciudad: '',
+    ciudad_id: '',
     latitud: '',
     longitud: '',
     telefonoContacto: '',
@@ -23,9 +24,45 @@ export default function FormCasos() {
     }
   };
 
-  const handleLocationSelect = ([lat, lng]) => {
+  const reverseGeocodeAndSetCity = async (lat, lon) => {
+    try {
+      const georefUrl = `https://apis.datos.gob.ar/georef/api/localidades?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}&max=5`;
+      const r1 = await fetch(georefUrl);
+      if (r1.ok) {
+        const j1 = await r1.json();
+        const locs = j1.localidades || [];
+        if (locs.length > 0) {
+          const first = locs[0];
+          const label = `${first.nombre}${first.provincia ? ' - ' + first.provincia.nombre : ''}`;
+          const id = first.id || `${first.nombre}|${first.provincia?.nombre || ''}`;
+          setData('ciudad', label);
+          setData('ciudad_id', id);
+          return;
+        }
+      }
+      const nominatimUrl = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}&accept-language=es`;
+      const r2 = await fetch(nominatimUrl, {
+        headers: { 'User-Agent': 'HuellasSolidarias/1.0 (contacto@example.com)' },
+      });
+      if (r2.ok) {
+        const j2 = await r2.json();
+        const addr = j2.address || {};
+        const cityName = addr.city || addr.town || addr.village || addr.municipality || addr.county || '';
+        if (cityName) {
+          setData('ciudad', cityName);
+          setData('ciudad_id', '');
+          return;
+        }
+      }
+    } catch (err) {
+    }
+  };
+
+  //recibe lat/lng desde MapaInteractivo
+  const handleLocationSelect = async ([lat, lng]) => {
     setData('latitud', lat);
     setData('longitud', lng);
+    await reverseGeocodeAndSetCity(lat, lng);
   };
 
   const handleSubmit = (e) => {
@@ -63,18 +100,26 @@ export default function FormCasos() {
       <input type="text" name="situacion" value={data.situacion} onChange={handleChange} required />
 
       <label>Ciudad:</label>
-      <input type="text" name="ciudad" value={data.ciudad} onChange={handleChange} required />
+      <input
+        type="text"
+        name="ciudad"
+        value={data.ciudad}
+        onChange={() => {}}
+        readOnly
+        aria-readonly="true"
+        className="border px-2 py-1 rounded bg-gray-100 cursor-not-allowed"
+        required
+      />
 
       <label>Teléfono de Contacto:</label>
       <input type="text" name="telefonoContacto" value={data.telefonoContacto} onChange={handleChange} />
 
       <label>Ubicación en el mapa:</label>
       <MapaInteractivo
-  onLocationSelect={handleLocationSelect}
-  tipoAnimal={data.tipoAnimal}
-  showMarkers={false} // NO mostrar los demás marcadores
-/>
-
+        onLocationSelect={handleLocationSelect}
+        tipoAnimal={data.tipoAnimal}
+        showMarkers={false}
+      />
 
       <p>Latitud: {data.latitud} | Longitud: {data.longitud}</p>
 
@@ -83,4 +128,4 @@ export default function FormCasos() {
       </button>
     </form>
   );
-} 
+}
