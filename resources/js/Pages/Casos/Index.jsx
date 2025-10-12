@@ -1,56 +1,131 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Link, Head } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import Select from 'react-select';
+import debounce from 'lodash.debounce';
+
+const opcionesTipo = [
+  { value: '', label: 'Todos los tipos' },
+  { value: 'Perro', label: 'Perro' },
+  { value: 'Gato', label: 'Gato' },
+  { value: 'Otro', label: 'Otro' },
+];
+
+const opcionesSituacion = [
+  { value: '', label: 'Todas las situaciones' },
+  { value: 'Perdido', label: 'Perdido' },
+  { value: 'Encontrado', label: 'Encontrado' },
+  { value: 'Adopcion', label: 'Adopcion' },
+];
+
+const opcionesOrden = [
+  { value: 'reciente', label: 'Más reciente'},
+  { value: 'antigua', label: 'Fecha más antigua'}
+];
+
+function Filtros({ filtros, setFiltros }) {
+  const handleCiudadChange = useMemo(
+    () =>
+      debounce(value => {
+        setFiltros(prev => ({ ...prev, ciudad: value }));
+      }, 300),
+    [setFiltros]
+  );
+
+  return (
+    <div className="flex flex-wrap gap-2 mb-4">
+      <div className="w-48">
+        <Select
+          options={opcionesTipo}
+          value={opcionesTipo.find(o => o.value === filtros.tipo)}
+          onChange={option => setFiltros(prev => ({ ...prev, tipo: option.value }))}
+        />
+      </div>
+
+      <div className="w-48">
+        <Select
+          options={opcionesSituacion} // ✅ corregido
+          value={opcionesSituacion.find(o => o.value === filtros.situacion)}
+          onChange={option => setFiltros(prev => ({ ...prev, situacion: option.value }))}
+        />
+      </div>
+      <div className='w-48'>
+        <Select
+          options={opcionesOrden}
+          value={opcionesOrden.find(o => o.value === filtros.ordenFecha)}
+          onChange={option => setFiltros(prev => ({...prev, ordenFecha: option.value}))}
+        />
+      </div>
+
+      <input
+        type="text"
+        placeholder="Ciudad"
+        defaultValue={filtros.ciudad}
+        onChange={e => handleCiudadChange(e.target.value)}
+        className="border p-2 rounded w-48" // ✅ corregido
+      />
+    </div>
+  );
+}
 
 export default function Index(props) {
   const [casos, setCasos] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [filtros, setFiltros] = useState({ tipo: '', ciudad: '', situacion: '', ordenFecha: 'reciente' });
 
-  useEffect (() =>{
-    // 1. Crear un controlador para poder abordar la solicitud
+  useEffect(() => {
     const controller = new AbortController();
     const { signal } = controller;
 
-    // 2. Definir la función asincróica
     const obtenerCasos = async () => {
-      try{
+      try {
         const res = await fetch('/casos/json', {
-          headers: { Accept: 'application/json'},
-          signal, // 3. Asociamos el signal del controlador
+          headers: { Accept: 'application/json' },
+          signal,
         });
         if (!res.ok) throw new Error('Error en la respuesta del servidor');
-        
+
         const data = await res.json();
         setCasos(data);
-      }catch (error){
-        // 4. Si el error fue por aborto, lo ignoramos
-        if(error.name === 'AbortError'){
-          console.log('Petición cancelada por el usuario');
-        }else{
+      } catch (error) {
+        if (error.name !== 'AbortError') {
           console.error('Error al obtener los casos:', error);
           setCasos([]);
         }
-      }finally{
+      } finally {
         setLoading(false);
       }
     };
 
-    // 5. Ejecutamos la función
-    obtenerCasos(); 
-
-    // 6. Funcion de limpieza (cleanup)
-    return () =>{
-      controller.abort(); // Cancela la solicitud si el componente se desmonta
-    };
-  },[]);
+    obtenerCasos();
+    return () => controller.abort();
+  }, []);
 
   if (loading) {
-  return (
-    <div className="flex items-center justify-center h-64">
-      <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin-slow"></div>
-    </div>
-  );
-}
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin-slow"></div>
+      </div>
+    );
+  }
+
+  // ✅ Filtrar casos según filtros
+  const casosFiltrados = casos.filter(c => {
+    return (
+      (filtros.tipo === '' || c.tipoAnimal === filtros.tipo) &&
+      (filtros.ciudad === '' || c.ciudad.toLowerCase().includes(filtros.ciudad.toLowerCase())) &&
+      (filtros.situacion === '' || c.situacion === filtros.situacion)
+    );
+  })
+  .sort((a,b) => {
+    const fechaA = new Date(a.fechaPublicacion);
+    const fechaB = new Date(b.fechaPublicacion);
+    if(filtros.ordenFecha === 'reciente'){
+      return fechaB - fechaA; // más reciente primero
+    }else{
+      return fechaA - fechaB; // mas antigua primero
+    }
+  });
 
   return (
     <AuthenticatedLayout
@@ -62,8 +137,10 @@ export default function Index(props) {
       <div className="container mx-auto p-4">
         <h1 className="text-2xl font-semibold mb-4">Publicaciones</h1>
 
+        <Filtros filtros={filtros} setFiltros={setFiltros} />
+
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-          {casos.map(c => (
+          {casosFiltrados.map(c => (
             <div key={c.id} className="bg-white shadow rounded overflow-hidden">
               <div className="h-48 w-full bg-gray-100 flex items-center justify-center overflow-hidden">
                 {c.fotoAnimal ? (
