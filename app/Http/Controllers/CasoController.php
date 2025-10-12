@@ -40,7 +40,7 @@ class CasoController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'fotoAnimal' => 'nullable|image|max:2048',
+            'fotoAnimal' => 'nullable|image|max:10240',
             'tipoAnimal' => 'nullable|string|max:100',
             'descripcion' => 'required|string',
             'situacion' => 'required|string|max:100',
