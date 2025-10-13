@@ -1,39 +1,90 @@
+import React, { useState, useCallback } from "react";
+import Select from "react-select";
+import debounce from "lodash.debounce";
+
 export default function FiltroCiudad({ onCiudadSelect }) {
-  const handleChange = (e) => {
-    const ciudad = e.target.value;
-    onCiudadSelect(ciudad);
+  const [options, setOptions] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  const fetchCiudades = async (inputValue) => {
+    if (!inputValue || inputValue.length < 3) {
+      setOptions([]);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await fetch(
+        `https://apis.datos.gob.ar/georef/api/localidades?nombre=${encodeURIComponent(
+          inputValue
+        )}&campos=nombre,provincia,centroide&max=10`
+      );
+      const data = await res.json();
+
+      if (data.localidades) {
+
+        const seen = new Set();
+        const unicas = data.localidades.filter((loc) => {
+          const key = `${loc.nombre}-${loc.provincia?.nombre || ""}`;
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+
+        const formatted = unicas.map((loc) => ({
+          label: `${loc.nombre} - ${loc.provincia?.nombre || ""}`,
+          value: [loc.centroide.lat, loc.centroide.lon],
+        }));
+
+        setOptions(formatted);
+      }
+    } catch (error) {
+      console.error("Error al buscar ciudades:", error);
+      setOptions([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const debouncedFetch = useCallback(debounce(fetchCiudades, 400), []);
+
+  const handleSelect = (selected) => {
+    if (selected) {
+      onCiudadSelect(selected.value);
+    }
   };
 
   return (
-    <div className="bg-gradient-to-br from-white to-gray-50 shadow-md border border-gray-200 sm:rounded-xl p-6 mb-6">
-      <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          className="h-5 w-5 text-indigo-600"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v3H3V4zM3 8h18v13a1 1 0 01-1 1H4a1 1 0 01-1-1V8z" />
-        </svg>
-        Filtrar por ciudad
-      </h2>
-
-      <div className="mt-5">
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Ciudad
-        </label>
-        <select
-          name="ciudad"
-          onChange={handleChange}
-          className="block w-full border border-gray-300 bg-white rounded-lg shadow-sm py-2 px-3 text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
-        >
-          <option value="">Todas las ciudades</option>
-          <option value="cipolleti">Cipolletti</option>
-          <option value="neuquen">Neuquén</option>
-          <option value="general roca">General Roca</option>
-        </select>
-      </div>
+    <div className="max-w-md mx-auto mb-4 z-[9999] relative">
+      <Select
+        isClearable
+        isLoading={loading}
+        placeholder="Buscar ciudad (ej: Buenos Aires)"
+        onInputChange={(value) => {
+          debouncedFetch(value);
+          return value;
+        }}
+        options={options}
+        onChange={handleSelect}
+        noOptionsMessage={() => "Escribí al menos 3 letras..."}
+        menuPortalTarget={document.body} 
+        styles={{
+          control: (base) => ({
+            ...base,
+            borderColor: "#ccc",
+            boxShadow: "none",
+            borderRadius: "0.5rem",
+            zIndex: 9999,
+          }),
+          menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+          option: (base, state) => ({
+            ...base,
+            backgroundColor: state.isFocused ? "#e0f2fe" : "white",
+            color: "#333",
+            cursor: "pointer",
+          }),
+        }}
+      />
     </div>
   );
 }

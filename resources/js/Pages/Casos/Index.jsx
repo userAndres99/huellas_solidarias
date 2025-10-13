@@ -44,7 +44,7 @@ function Filtros({ filtros, setFiltros }) {
 
       <div className="w-48">
         <Select
-          options={opcionesSituacion} // ✅ corregido
+          options={opcionesSituacion} 
           value={opcionesSituacion.find(o => o.value === filtros.situacion)}
           onChange={option => setFiltros(prev => ({ ...prev, situacion: option.value }))}
         />
@@ -62,7 +62,7 @@ function Filtros({ filtros, setFiltros }) {
         placeholder="Ciudad"
         defaultValue={filtros.ciudad}
         onChange={e => handleCiudadChange(e.target.value)}
-        className="border p-2 rounded w-48" // ✅ corregido
+        className="border p-2 rounded w-48" 
       />
     </div>
   );
@@ -109,7 +109,7 @@ export default function Index(props) {
     );
   }
 
-  // ✅ Filtrar casos según filtros
+  // 
   const casosFiltrados = casos.filter(c => {
     return (
       (filtros.tipo === '' || c.tipoAnimal === filtros.tipo) &&
@@ -121,9 +121,9 @@ export default function Index(props) {
     const fechaA = new Date(a.fechaPublicacion);
     const fechaB = new Date(b.fechaPublicacion);
     if(filtros.ordenFecha === 'reciente'){
-      return fechaB - fechaA; // más reciente primero
+      return fechaB - fechaA; 
     }else{
-      return fechaA - fechaB; // mas antigua primero
+      return fechaA - fechaB; 
     }
   });
 
