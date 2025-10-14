@@ -14,7 +14,7 @@ const opcionesTipo = [
 const opcionesSituacion = [
   { value: '', label: 'Todas las situaciones' },
   { value: 'Perdido', label: 'Perdido' },
-  { value: 'Encontrado', label: 'Encontrado' },
+  { value: 'Abandonado', label: 'Abandonado' },
   { value: 'Adopcion', label: 'Adopcion' },
 ];
 
@@ -109,7 +109,6 @@ export default function Index(props) {
     );
   }
 
-  // 
   const casosFiltrados = casos.filter(c => {
     return (
       (filtros.tipo === '' || c.tipoAnimal === filtros.tipo) &&
