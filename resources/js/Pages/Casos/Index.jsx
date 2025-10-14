@@ -110,9 +110,13 @@ export default function Index(props) {
   }
 
   const casosFiltrados = casos.filter(c => {
+    const normalizar = (texto) => 
+      texto
+      ? texto.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+      : '';
     return (
       (filtros.tipo === '' || c.tipoAnimal === filtros.tipo) &&
-      (filtros.ciudad === '' || c.ciudad.toLowerCase().includes(filtros.ciudad.toLowerCase())) &&
+      (filtros.ciudad === '' || normalizar(c.ciudad).includes(normalizar(filtros.ciudad))) &&
       (filtros.situacion === '' || c.situacion === filtros.situacion)
     );
   })
