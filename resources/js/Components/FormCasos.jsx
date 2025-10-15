@@ -3,7 +3,7 @@ import MapaInteractivo from './MapaInteractivo';
 import { useForm } from '@inertiajs/react';
 
 export default function FormCasos() {
-  const { data, setData, post, reset, processing, errors } = useForm({
+  const { data, setData, post, processing, errors } = useForm({
     fotoAnimal: null,
     tipoAnimal: '',
     descripcion: '',
@@ -41,7 +41,7 @@ export default function FormCasos() {
           addr.city || addr.town || addr.village || addr.municipality || addr.county || '';
         if (cityName) {
           setData('ciudad', cityName);
-          setData('ciudad_id', ''); 
+          setData('ciudad_id', '');
         }
       } else {
         console.warn('Nominatim non-OK', response.status);
@@ -62,10 +62,6 @@ export default function FormCasos() {
     e.preventDefault();
     post('/casos', {
       forceFormData: true,
-      onSuccess: () => {
-        alert('Caso registrado exitosamente');
-        reset();
-      },
       onError: () => {
         alert('Error al registrar el caso. Revisa los datos.');
       },
@@ -73,7 +69,10 @@ export default function FormCasos() {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-2 max-w-md mx-auto p-4 bg-white shadow rounded">
+    <form
+      onSubmit={handleSubmit}
+      className="flex flex-col gap-2 max-w-md mx-auto p-4 bg-white shadow rounded"
+    >
       <label>Foto del Animal:</label>
       <input type="file" name="fotoAnimal" onChange={handleChange} />
 
@@ -120,9 +119,13 @@ export default function FormCasos() {
 
       <p>Latitud: {data.latitud} | Longitud: {data.longitud}</p>
 
-      <button type="submit" disabled={processing} className="bg-blue-500 text-white rounded p-2 mt-3">
-        Publicar caso
-      </button>
+      <button
+  type="submit"
+  disabled={processing}
+  className={`bg-blue-500 text-white rounded p-2 mt-3 ${processing ? 'opacity-50 cursor-not-allowed' : ''}`}
+>
+  {processing ? 'Publicando...' : 'Publicar caso'}
+</button>
     </form>
   );
 }
