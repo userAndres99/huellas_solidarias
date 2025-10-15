@@ -1,90 +1,86 @@
 <?php
 
-
 namespace App\Jobs;
 
-
 use App\Models\Caso;
+use App\Services\NyckelAuth;
 use GuzzleHttp\Client;
-use Exception;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use Log;
-
+use Illuminate\Support\Facades\Log;
 
 class UploadToNyckel implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-
-    protected $caso;
-
+    protected Caso $caso;
 
     public function __construct(Caso $caso)
     {
         $this->caso = $caso;
     }
 
-
-   public function handle(): void
+    public function handle(): void
     {
-        $url = asset(\Illuminate\Support\Facades\Storage::url($this->caso->fotoAnimal));
-        \Log::info("Intentando subir a Nyckel: caso_id={$this->caso->id}, url={$url}");
+        // ruta física del archivo guardado en storage/app/public/...
+        $filePath = storage_path('app/public/' . $this->caso->fotoAnimal);
 
-
-        $functionId = env('NYCKEL_FUNCTION_ID');
-        $token = env('NYCKEL_ACCESS_TOKEN');
-
-
-        if (!$functionId || !$token) {
-            \Log::error("Faltan credenciales NYCKEL_FUNCTION_ID o NYCKEL_ACCESS_TOKEN en el .env");
+        if (!$this->caso->fotoAnimal || !file_exists($filePath)) {
+            Log::error("❌ Archivo no encontrado para el caso {$this->caso->id}: {$filePath}");
             return;
         }
 
-
-        try {
-            $client = new \GuzzleHttp\Client(['base_uri' => 'https://www.nyckel.com/']);
-
-
-            $response = $client->post("v1/functions/".env('NYCKEL_FUNCTION_ID')."/samples", [
-        'headers' => [
-            'Authorization' => 'Bearer ' . env('NYCKEL_ACCESS_TOKEN'),
-            'Accept' => 'application/json',
-        ],
-        'multipart' => [
-            [
-                'name' => 'file', // nombre que Nyckel espera
-                'contents' => fopen(storage_path('app/public/' . $this->caso->fotoAnimal), 'r'),
-                'filename' => basename($this->caso->fotoAnimal)
-            ],
-            [
-                'name' => 'externalId',
-                'contents' => "caso_{$this->caso->id}"
-            ],
-        ],
-        'timeout' => 30
-    ]);
-
-
-        $body = json_decode((string) $response->getBody(), true);
-        \Log::info("Respuesta Nyckel: " . json_encode($body));
-
-
-        $sampleId = $body['id'] ?? $body['sampleId'] ?? null;
-        if ($sampleId) {
-            $this->caso->nyckel_sample_id = $sampleId;
-            $this->caso->save();
-            \Log::info("✅ Subida exitosa a Nyckel, sampleId={$sampleId}");
-        } else {
-            \Log::warning("⚠️ Nyckel respondió sin sampleId para caso {$this->caso->id}");
+        $functionId = env('NYCKEL_FUNCTION_ID');
+        if (!$functionId) {
+            Log::error("❌ NYCKEL_FUNCTION_ID no configurado en .env");
+            return;
         }
 
+        try {
+            /** @var NyckelAuth $auth */
+            $auth = app(NyckelAuth::class);
+            $token = $auth->getAccessToken();
 
-    } catch (\Exception $e) {
-        \Log::error("❌ Error subiendo a Nyckel caso {$this->caso->id}: " . $e->getMessage());
+            $client = new Client(['base_uri' => 'https://www.nyckel.com/']);
+
+            Log::info("🔄 Intentando subir a Nyckel: caso_id={$this->caso->id}, archivo={$filePath}");
+
+            $response = $client->post("v1/functions/{$functionId}/samples", [
+                'headers' => [
+                    'Authorization' => "Bearer {$token}",
+                    'Accept' => 'application/json',
+                ],
+                'multipart' => [
+                    [
+                        'name'     => 'file', // Nyckel espera archivo en multipart 
+                        'contents' => fopen($filePath, 'r'),
+                        'filename' => basename($filePath),
+                    ],
+                    [
+                        'name'     => 'externalId',
+                        'contents' => "caso_{$this->caso->id}",
+                    ],
+                ],
+                'timeout' => 30,
+                'connect_timeout' => 10,
+            ]);
+
+            $body = json_decode((string)$response->getBody(), true);
+            Log::info("✅ Respuesta Nyckel para caso {$this->caso->id}: " . json_encode($body));
+
+            $sampleId = $body['id'] ?? $body['sampleId'] ?? null;
+            if ($sampleId) {
+                $this->caso->nyckel_sample_id = $sampleId;
+                $this->caso->save();
+                Log::info("✅ Sample guardado: caso_id={$this->caso->id} sampleId={$sampleId}");
+            } else {
+                Log::warning("⚠️ Nyckel subió pero no devolvió sampleId para caso {$this->caso->id}");
+            }
+        } catch (\Throwable $e) {
+            Log::error("❌ Error subiendo a Nyckel caso {$this->caso->id}: " . $e->getMessage());
+        }
     }
-}
 }

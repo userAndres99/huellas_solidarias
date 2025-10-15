@@ -80,58 +80,41 @@ class CasoController extends Controller
             return redirect()->route('casos.create')->with('success', 'Caso creado exitosamente');
         }
 
-    if ($situ === 'perdido' && $caso->fotoAnimal) {
+   if ($situ === 'perdido' && $caso->fotoAnimal) {
     try {
-        $client = new \GuzzleHttp\Client(['base_uri' => 'https://www.nyckel.com/']);
+        // Obtener instancia de NyckelClient que usará NyckelAuth internamente
+        $ny = app(\App\Services\NyckelClient::class);
 
-        
-        $response = $client->post("v1/functions/" . env('NYCKEL_FUNCTION_ID') . "/invoke", [
-            'headers' => [
-                'Authorization' => 'Bearer ' . env('NYCKEL_ACCESS_TOKEN'),
-            ],
-            'multipart' => [
-                [
-                    'name' => 'data', 
-                    'contents' => fopen(storage_path('app/public/' . $caso->fotoAnimal), 'r'),
-                    'filename' => basename($caso->fotoAnimal),
-                ],
-            ],
-            'query' => [
-                'sampleCount' => 100,   
-                'includeData' => 'true',
-            ],
-            'timeout' => 60,
-            'connect_timeout' => 10,
-        ]);
+        // ruta física del archivo en storage
+        $filePath = storage_path('app/public/' . $caso->fotoAnimal);
 
-        $body = json_decode((string) $response->getBody(), true);
-        \Log::info('Nyckel search raw response for caso ' . $caso->id . ': ' . json_encode($body));
+        // pedimos hasta 100 matches y pedimos includeData para recibir la imagen si la API lo devuelve
+        $raw = $ny->searchByImageBytes($filePath, 100, true);
 
-        $rawMatches = $body;
-        if (isset($body['results'])) $rawMatches = $body['results'];
-        if (isset($body['matches'])) $rawMatches = $body['matches'];
+        \Log::info('Nyckel search raw response for caso ' . $caso->id . ': ' . json_encode($raw));
+
+        // raw podría ser un array de resultados directamente (según tus pruebas)
+        $rawMatches = $raw;
+        if (isset($raw['results'])) $rawMatches = $raw['results'];
+        if (isset($raw['matches'])) $rawMatches = $raw['matches'];
 
         $matches = [];
-
         foreach ($rawMatches as $r) {
             $sampleId = $r['sampleId'] ?? $r['id'] ?? null;
             $external = $r['externalId'] ?? $r['external_id'] ?? null;
             $distance = isset($r['distance']) ? (float)$r['distance'] : (isset($r['score']) ? (float)$r['score'] : null);
-            $data = $r['data'] ?? null; 
+            $data = $r['data'] ?? null;
 
+            // convertimos distancia -> % similitud (distance 0 -> 100%)
             $similarity = null;
             if ($distance !== null) {
-                // distance 0 me da como que es identico asi que lo ponemos de 0-1 para hacer de que me 
-                // traiga los que son mas o menos parecidos
                 if ($distance <= 1.0) {
                     $similarity = max(0, min(100, (1 - $distance) * 100));
                 } else {
-                    // fallback si Nyckel devuelve distancias >1
-                    $similarity = max(0, min(100, 100 - ($distance * 100 / 4))); 
+                    $similarity = max(0, min(100, 100 - ($distance * 100 / 4)));
                 }
             }
 
-            // intentar mapear a un caso local
             $localCaso = null;
             if ($external && preg_match('/caso_(\d+)/', $external, $m)) {
                 $localCaso = Caso::find((int)$m[1]);
@@ -147,12 +130,13 @@ class CasoController extends Controller
             ];
         }
 
-        // filtramso por (>= 80%) 
-        $threshold = 80; 
+        // filtrar por threshold >= 80%
+        $threshold = 80;
         $filtered = array_filter($matches, function ($m) use ($threshold) {
             return isset($m['similarity']) && $m['similarity'] >= $threshold;
         });
 
+        // ordenar descendente por similitud
         usort($filtered, function ($a, $b) {
             return ($b['similarity'] ?? 0) <=> ($a['similarity'] ?? 0);
         });
@@ -163,8 +147,6 @@ class CasoController extends Controller
         ]);
     } catch (\Exception $e) {
         \Log::error("Error buscando similares en Nyckel para caso {$caso->id}: " . $e->getMessage());
-
-        // si falla, devolvemos la vista con matches y mensaje de error opcional
         return Inertia::render('Casos/PerdidoResults', [
             'caso' => $caso,
             'matches' => [],
