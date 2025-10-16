@@ -16,12 +16,14 @@ return new class extends Migration
             $table->foreignId('idUsuario')->constrained('users')->onDelete('cascade');
             $table->string('fotoAnimal')->nullable();
             $table->string('tipoAnimal')->nullable();
-            $table->text('descripcion'); 
+            $table->text('descripcion');
             $table->string('situacion')->nullable();
+            $table->enum('sexo', ['Macho', 'Hembra'])->nullable();
+            $table->enum('tamano', ['Chico', 'Mediano', 'Grande'])->nullable();
             $table->string('ciudad')->nullable();
             $table->decimal('latitud', 10, 7)->nullable();
             $table->decimal('longitud', 10, 7)->nullable();
-            $table->string('telefonoContacto', 20)->nullable();
+            $table->string('telefonoContacto', 30)->nullable();
             $table->dateTime('fechaPublicacion')->default(now());
             $table->enum('estado', ['activo', 'cerrado', 'resuelto'])->default('activo');
             $table->timestamps();

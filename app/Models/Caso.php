@@ -7,8 +7,6 @@ use Illuminate\Database\Eloquent\Model;
 
 class Caso extends Model
 {
-    //
-
     use HasFactory;
 
     protected $table = 'casos';
@@ -19,6 +17,8 @@ class Caso extends Model
         'tipoAnimal',
         'descripcion',
         'situacion',
+        'sexo',
+        'tamano',
         'ciudad',
         'latitud',
         'longitud',
@@ -33,10 +33,8 @@ class Caso extends Model
         'longitud' => 'decimal:7',
     ];
 
-
-
     public function usuario()
     {
-        return $this -> belongsTo(User::class, 'idUsuario');
+        return $this->belongsTo(User::class, 'idUsuario');
     }
 }

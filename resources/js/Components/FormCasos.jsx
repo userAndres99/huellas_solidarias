@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import MapaInteractivo from './MapaInteractivo';
+import FiltroCiudad from './FiltroCiudad';
 import { useForm } from '@inertiajs/react';
 
 export default function FormCasos() {
@@ -8,6 +9,8 @@ export default function FormCasos() {
     tipoAnimal: '',
     descripcion: '',
     situacion: '',
+    sexo: '',          
+    tamano: '',         
     ciudad: '',
     ciudad_id: '',
     latitud: '',
@@ -15,16 +18,29 @@ export default function FormCasos() {
     telefonoContacto: '',
   });
 
+  const [mapCenter, setMapCenter] = useState(null);
+  const [initialPosition, setInitialPosition] = useState(null);
+  const [showMarkerOnSelect, setShowMarkerOnSelect] = useState(false);
+
   const handleChange = (e) => {
     const { name, value, files } = e.target;
-    if (name === 'fotoAnimal') {
-      setData(name, files[0] || null);
-    } else {
-      setData(name, value);
-    }
+    if (name === 'fotoAnimal') setData(name, files[0] || null);
+    else setData(name, value);
   };
 
-  // Función de reverse geocoding usando solo Nominatim
+  const handleCiudadSelect = (value) => {
+    if (!value || !Array.isArray(value)) return;
+    const [lat, lon] = value.map(Number);
+    setData('ciudad', '');
+    setData('ciudad_id', '');
+    setData('latitud', lat);
+    setData('longitud', lon);
+
+    setMapCenter([lat, lon]);
+    setInitialPosition([lat, lon]);
+    setShowMarkerOnSelect(true);
+  };
+
   const reverseGeocodeAndSetCity = async (lat, lon) => {
     try {
       const nominatimUrl = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${encodeURIComponent(
@@ -51,11 +67,13 @@ export default function FormCasos() {
     }
   };
 
-  // Recibe lat/lng desde MapaInteractivo
   const handleLocationSelect = async ([lat, lng]) => {
     setData('latitud', lat);
     setData('longitud', lng);
     await reverseGeocodeAndSetCity(lat, lng);
+    setMapCenter([lat, lng]);
+    setInitialPosition([lat, lng]);
+    setShowMarkerOnSelect(true);
   };
 
   const handleSubmit = (e) => {
@@ -85,9 +103,6 @@ export default function FormCasos() {
       </select>
       {errors.tipoAnimal && <div className="text-red-600">{errors.tipoAnimal}</div>}
 
-      <label>Descripción:</label>
-      <textarea name="descripcion" value={data.descripcion} onChange={handleChange} required />
-
       <label>Situación:</label>
       <select name="situacion" value={data.situacion} onChange={handleChange} required>
         <option value="" disabled>Seleccioná situación</option>
@@ -97,7 +112,38 @@ export default function FormCasos() {
       </select>
       {errors.situacion && <div className="text-red-600">{errors.situacion}</div>}
 
-      <label>Ciudad:</label>
+      <label>Sexo:</label>
+      <select name="sexo" value={data.sexo} onChange={handleChange} required>
+        <option value="" disabled>Seleccioná sexo</option>
+        <option value="Macho">Macho</option>
+        <option value="Hembra">Hembra</option>
+      </select>
+      {errors.sexo && <div className="text-red-600">{errors.sexo}</div>}
+
+      <label>Tamaño:</label>
+      <select name="tamano" value={data.tamano} onChange={handleChange} required>
+        <option value="" disabled>Seleccioná tamaño</option>
+        <option value="Chico">Chico</option>
+        <option value="Mediano">Mediano</option>
+        <option value="Grande">Grande</option>
+      </select>
+      {errors.tamano && <div className="text-red-600">{errors.tamano}</div>}
+
+      <label>Descripción:</label>
+      <textarea name="descripcion" value={data.descripcion} onChange={handleChange} required />
+
+      <label>Teléfono de Contacto (Opcional):</label>
+      <input
+        type="text"
+        name="telefonoContacto"
+        value={data.telefonoContacto}
+        onChange={handleChange}
+      />
+
+      <label>Buscar Ciudad:</label>
+      <FiltroCiudad onCiudadSelect={handleCiudadSelect} />
+
+      <label>Ciudad Seleccionada:</label>
       <input
         type="text"
         name="ciudad"
@@ -107,25 +153,25 @@ export default function FormCasos() {
         required
       />
 
-      <label>Teléfono de Contacto:</label>
-      <input type="text" name="telefonoContacto" value={data.telefonoContacto} onChange={handleChange} />
-
       <label>Ubicación en el mapa:</label>
       <MapaInteractivo
         onLocationSelect={handleLocationSelect}
         tipoAnimal={data.tipoAnimal}
         showMarkers={false}
+        center={mapCenter}
+        initialPosition={initialPosition}
+        marker={showMarkerOnSelect}
       />
 
       <p>Latitud: {data.latitud} | Longitud: {data.longitud}</p>
 
       <button
-  type="submit"
-  disabled={processing}
-  className={`bg-blue-500 text-white rounded p-2 mt-3 ${processing ? 'opacity-50 cursor-not-allowed' : ''}`}
->
-  {processing ? 'Publicando...' : 'Publicar caso'}
-</button>
+        type="submit"
+        disabled={processing}
+        className={`bg-blue-500 text-white rounded p-2 mt-3 ${processing ? 'opacity-50 cursor-not-allowed' : ''}`}
+      >
+        {processing ? 'Publicando...' : 'Publicar caso'}
+      </button>
     </form>
   );
 }
