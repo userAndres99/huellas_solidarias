@@ -85,6 +85,8 @@ export default function Show(props) {
               <div><strong>Situación:</strong> {caso.situacion}</div>
               <div><strong>Ciudad:</strong> {caso.ciudad}</div>
               <div><strong>Teléfono:</strong> {caso.telefonoContacto || 'No disponible'}</div>
+              <div><strong>Sexo:</strong> { caso.sexo }</div>
+              <div><strong>Tamaño:</strong> { caso.tamano }</div>
               <div><strong>Publicado:</strong> {new Date(caso.fechaPublicacion).toLocaleString()}</div>
             </div>
 

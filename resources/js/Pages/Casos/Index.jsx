@@ -23,6 +23,19 @@ const opcionesOrden = [
   { value: 'antigua', label: 'Fecha más antigua'}
 ];
 
+const opcionesSexo  = [
+  { value: '', label: 'Cualquier sexo'},
+  { value: 'Macho', label: 'Macho'},
+  { value: 'Hembra', label: 'Hembra'}
+];
+
+const opcionesTamanio = [
+  { value: '', label: 'Cualquier tamaño'},
+  { value: 'Chico', label: 'Chico'},
+  { value: 'Mediano', label: 'Mediano'},
+  { value: 'Grande', label: 'Grande'}
+];
+
 function Filtros({ filtros, setFiltros }) {
   const handleCiudadChange = useMemo(
     () =>
@@ -57,6 +70,21 @@ function Filtros({ filtros, setFiltros }) {
         />
       </div>
 
+      <div className='w-48'>
+        <Select
+        options={opcionesSexo}
+        value={opcionesSexo.find(o => o.value === filtros.sexo)}
+        onChange={option => setFiltros(prev => ({ ...prev, sexo: option.value}))}
+        />
+      </div>
+      <div className='w-48'>
+        <Select
+        options={opcionesTamanio}
+        value={opcionesTamanio.find(o => o.value === filtros.tamanio)}
+        onChange={option => setFiltros(prev => ({ ...prev, tamanio: option.value}))}
+        />
+      </div>
+
       <input
         type="text"
         placeholder="Ciudad"
@@ -71,7 +99,7 @@ function Filtros({ filtros, setFiltros }) {
 export default function Index(props) {
   const [casos, setCasos] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filtros, setFiltros] = useState({ tipo: '', ciudad: '', situacion: '', ordenFecha: 'reciente' });
+  const [filtros, setFiltros] = useState({ tipo: '', ciudad: '', situacion: '', ordenFecha: 'reciente', sexo: '', tamanio: '' });
 
   useEffect(() => {
     const controller = new AbortController();
@@ -117,7 +145,9 @@ export default function Index(props) {
     return (
       (filtros.tipo === '' || c.tipoAnimal === filtros.tipo) &&
       (filtros.ciudad === '' || normalizar(c.ciudad).includes(normalizar(filtros.ciudad))) &&
-      (filtros.situacion === '' || c.situacion === filtros.situacion)
+      (filtros.situacion === '' || c.situacion === filtros.situacion) &&
+      (filtros.sexo === '' || c.sexo === filtros.sexo) &&
+      (filtros.tamanio === '' || c.tamano === filtros.tamanio)
     );
   })
   .sort((a,b) => {
