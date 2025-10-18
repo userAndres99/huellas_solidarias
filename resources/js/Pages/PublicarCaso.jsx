@@ -9,9 +9,10 @@ export default function PublicarCaso() {
       header={<h2 className="text-xl font-semibold leading-tight text-gray-800">Publicar Caso</h2>}
     >
       <Head title="Publicar Caso" />
-      <div className="py-6">
-        <div className="mx-auto max-w-3xl sm:px-6 lg:px-8">
-          <div className="bg-white shadow-sm sm:rounded-lg p-6">
+
+      <div className="py-10 bg-gray-50 min-h-screen">
+        <div className="mx-auto max-w-4xl sm:px-6 lg:px-8">
+          <div className="bg-white shadow-md sm:rounded-lg p-8">
             <FormCasos />
           </div>
         </div>

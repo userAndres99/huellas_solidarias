@@ -1,80 +1,122 @@
 import React from 'react';
+import { Link, Head } from '@inertiajs/react';
+import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 
-export default function PerdidoResults({ caso, matches, error }) {
-  if ((!matches || matches.length === 0) && !error) {
-    return (
-      <div className="p-4 mt-4 bg-yellow-100 rounded">
-        <h2 className="text-lg font-semibold">No se encontraron coincidencias similares</h2>
-      </div>
-    );
-  }
+function makeImageUrl(path) {
+  if (!path) return null;
+  if (typeof path !== 'string') return null;
+  if (path.startsWith('http') || path.startsWith('data:')) return path;
+  if (path.startsWith('/storage/')) return window.location.origin + path;
+  return window.location.origin + '/storage/' + path.replace(/^\/?storage\/?/, '');
+}
+
+export default function PerdidoResults(props) {
+  const { caso, matches, error } = props;
+  const safeMatches = Array.isArray(matches) ? matches : [];
 
   return (
-    <div className="p-4 mt-4 bg-gray-100 rounded">
-      <h2 className="text-xl font-bold mb-4">Resultados similares a tu mascota</h2>
+    <AuthenticatedLayout
+      {...props}
+      header={<h2 className="text-xl font-semibold leading-tight text-gray-800">Resultados similares</h2>}
+    >
+      <Head title="Resultados similares" />
 
-      {error && (
-        <div className="mb-4 p-2 bg-red-100 text-red-800 rounded">
-          {error}
-        </div>
-      )}
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-        {matches.map((m, index) => {
-          //URL de la imagen 
-          const imgSrc =
-            m.data ||
-            (m.localCaso &&
-              (m.localCaso.fotoAnimal
-                ? m.localCaso.fotoAnimal.startsWith('http')
-                  ? m.localCaso.fotoAnimal
-                  : window.location.origin + '/storage/' + m.localCaso.fotoAnimal.replace(/^\/?storage\/?/, '')
-                : null)) ||
-            null;
-
-          // calcular porcentaje de similitud (similarity lo trae como 0..100)
-          let similarityPct = null;
-          if (typeof m.similarity === 'number') {
-            similarityPct = m.similarity;
-          } else if (typeof m.score === 'number') {
-            similarityPct = m.score * 100;
-          }
-
-          return (
-            <div key={index} className="border p-2 rounded shadow flex flex-col items-center">
-              {imgSrc ? (
-                <img
-                  src={imgSrc}
-                  alt={`match-${index}`}
-                  className="w-32 h-32 object-cover rounded mb-2"
-                />
-              ) : (
-                <div className="w-32 h-32 bg-gray-300 flex items-center justify-center mb-2">
-                  Sin imagen
-                </div>
-              )}
-
-              <div className="text-center">
-                {m.localCaso ? (
-                  <>
-                    <p className="font-semibold text-sm">Descripción:</p>
-                    <p className="text-sm">{m.localCaso.descripcion}</p>
-                    <p className="text-xs text-gray-500">Ciudad: {m.localCaso.ciudad}</p>
-                  </>
-                ) : (
-                  <p className="text-sm text-gray-600">Coincidencia externa</p>
-                )}
-
-                {similarityPct !== null && (
-                  <p className="text-xs text-gray-700 mt-1">
-                    Similitud: {Number(similarityPct).toFixed(2)}%
-                  </p>
-                )}
+      <div className="container mx-auto p-4 max-w-5xl">
+        {/* Si no hay matches y no hay error */}
+        {safeMatches.length === 0 && !error ? (
+          <div className="p-4 mt-4 bg-yellow-100 rounded">
+            <h2 className="text-lg font-semibold">No se encontraron coincidencias similares</h2>
+            {caso && (
+              <div className="mt-3">
+                <Link href={`/casos/${caso.id}`} className="text-blue-600 underline text-sm">
+                  Ver detalle del caso enviado
+                </Link>
               </div>
+            )}
+          </div>
+        ) : (
+          <div className="p-4 mt-4 bg-gray-100 rounded">
+            <h2 className="text-xl font-bold mb-4">Resultados similares a tu mascota</h2>
+
+            {error && <div className="mb-4 p-2 bg-red-100 text-red-800 rounded">{error}</div>}
+
+            {/* Resumen del caso buscado */}
+            {caso && (
+              <div className="mb-4 flex items-center gap-4 bg-white p-3 rounded shadow">
+                <div className="w-20 h-20 bg-gray-100 overflow-hidden rounded">
+                  {caso.fotoAnimal ? (
+                    <img src={makeImageUrl(caso.fotoAnimal)} alt="Caso buscado" className="object-cover w-full h-full" />
+                  ) : (
+                    <div className="flex items-center justify-center h-full text-gray-500">Sin imagen</div>
+                  )}
+                </div>
+                <div>
+                  <div className="font-semibold">{caso.tipoAnimal || 'Animal'}</div>
+                  <div className="text-sm text-gray-700 line-clamp-2">{caso.descripcion}</div>
+                  <div className="text-xs text-gray-500 mt-1">{caso.ciudad} · {caso.situacion}</div>
+                  <div className="mt-2">
+                    <Link href={`/casos/${caso.id}`} className="text-blue-600 text-sm underline">Ver detalle del caso</Link>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+              {safeMatches.map((m, index) => {
+                // prioridad: 1) foto del caso local (si existe y ya viene como URL) o sino 2) imagen traida por Nyckel 
+                const imgSrcLocal = m.localCaso ? makeImageUrl(m.localCaso.fotoAnimal) : null;
+                const imgSrcNyckel = m.data ? makeImageUrl(m.data) : null;
+                const imgSrc = imgSrcLocal || imgSrcNyckel || null;
+
+                // calcular porcentaje de similitud
+                let similarityPct = null;
+                if (typeof m.similarity === 'number') similarityPct = m.similarity;
+                else if (typeof m.rawSimilarity === 'number') similarityPct = m.rawSimilarity;
+                else if (typeof m.score === 'number') similarityPct = m.score * 100;
+
+                return (
+                  <div key={index} className="bg-white border rounded shadow overflow-hidden flex flex-col">
+                    <div className="h-40 w-full bg-gray-100 flex items-center justify-center overflow-hidden">
+                      {imgSrc ? (
+                        <img src={imgSrc} alt={`match-${index}`} className="object-cover w-full h-full" loading="lazy" />
+                      ) : (
+                        <div className="text-gray-500">Sin imagen</div>
+                      )}
+                    </div>
+
+                    <div className="p-3 flex-1 flex flex-col justify-between">
+                      <div>
+                        {m.localCaso ? (
+                          <>
+                            <div className="font-medium mb-1 line-clamp-2">{m.localCaso.descripcion || 'Sin descripción'}</div>
+                            <div className="text-sm text-gray-600 mb-2">{m.localCaso.ciudad || 'Ciudad desconocida'}</div>
+                          </>
+                        ) : (
+                          <div className="text-sm text-gray-600 mb-2">Coincidencia externa</div>
+                        )}
+                      </div>
+
+                      <div className="flex items-center justify-between mt-2">
+                        {m.localCaso ? (
+                          <Link href={`/casos/${m.localCaso.id}`} className="text-blue-600 text-sm">Ver detalle</Link>
+                        ) : (
+                          <span className="text-xs text-gray-500">Fuente externa</span>
+                        )}
+
+                        {similarityPct !== null ? (
+                          <div className="text-xs text-gray-700">Similitud: {Number(similarityPct).toFixed(2)}%</div>
+                        ) : (
+                          <div className="text-xs text-gray-400">Sin score</div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-          );
-        })}
+          </div>
+        )}
       </div>
-    </div>
+    </AuthenticatedLayout>
   );
 }

@@ -95,11 +95,9 @@ class CasoController extends Controller
                 // ruta física de la imagen original
                 $filePath = storage_path('app/public/' . $caso->fotoAnimal);
 
-                // $noBgFullPath = null;   (si queremos usar la imagen original podemos descomentar
-                // esto y comentar lo de abajo)
-                // Intentamos generar una versión sin fondo (temporal) usando remove.bg
+                // Intentamos generar una version sin fondo (temporal)
                 try {
-                   $noBgFullPath = $rm->removeBackgroundFromFile($filePath);   //esto comentar y descomentar lo de arriba
+                   $noBgFullPath = $rm->removeBackgroundFromFile($filePath);
                 } catch (\Throwable $e) {
                     Log::warning("RemoveBgClient threw: " . $e->getMessage());
                     $noBgFullPath = null;
@@ -107,10 +105,10 @@ class CasoController extends Controller
 
                 if ($noBgFullPath && file_exists($noBgFullPath)) {
                     $fileToSearch = $noBgFullPath;
-                    $noBgTempPath = $noBgFullPath; 
+                    $noBgTempPath = $noBgFullPath;
                     Log::info("Usando imagen sin fondo para búsqueda Nyckel: {$noBgFullPath}");
                 } else {
-                    // fallback: usar la original si remove.bg falla (como son 50 pruebas gratis por las dudas lo dejo)
+                    //usar la original si remove.bg falla
                     $fileToSearch = $filePath;
                     Log::warning("Remove.bg falló o devolvió null, usando imagen original para búsqueda: {$filePath}");
                 }
@@ -119,7 +117,7 @@ class CasoController extends Controller
                 $raw = $ny->searchByImageBytes($fileToSearch, 100, true);
                 Log::info('Nyckel search raw response for caso ' . $caso->id . ': ' . json_encode($raw));
 
-                //la respuesta
+                // normalizar respuesta
                 $rawMatches = $raw;
                 if (isset($raw['results'])) $rawMatches = $raw['results'];
                 if (isset($raw['matches'])) $rawMatches = $raw['matches'];
@@ -136,10 +134,8 @@ class CasoController extends Controller
                     // calcular score (0..1) a partir de diferente input
                     $score = null;
                     if ($rawSimilarity !== null) {
-                        // si viniera 0..100
                         $score = max(0.0, min(100.0, $rawSimilarity)) / 100.0;
                     } elseif ($rawScore !== null) {
-                        // si rawScore está en 0..1 o 0..100
                         if ($rawScore > 1.0) {
                             $score = max(0.0, min(100.0, $rawScore)) / 100.0;
                         } else {
@@ -149,16 +145,30 @@ class CasoController extends Controller
                         if ($distance <= 1.0) {
                             $score = max(0.0, min(1.0, 1.0 - $distance));
                         } else {
-                            //si Nyckel devuelve >1
+                            // si Nyckel devuelve >1
                             $score = max(0.0, min(1.0, 1.0 - ($distance / 4.0)));
                         }
                     }
 
                     $similarityPct = $score !== null ? ($score * 100.0) : ($rawSimilarity ?? null);
 
-                    $localCaso = null;
+                    // si la coincidencia apunta a un caso local, buscamos 
+                    $localCasoData = null;
                     if ($external && preg_match('/caso_(\d+)/', $external, $m)) {
-                        $localCaso = Caso::find((int)$m[1]);
+                        $found = Caso::find((int)$m[1]);
+                        if ($found) {
+                            $localCasoData = [
+                                'id' => $found->id,
+                                'descripcion' => $found->descripcion,
+                                'ciudad' => $found->ciudad,
+                                'situacion' => $found->situacion,
+                                'fotoAnimal' => $found->fotoAnimal ? Storage::url($found->fotoAnimal) : null,
+                                'latitud' => $found->latitud,
+                                'longitud' => $found->longitud,
+                                'fechaPublicacion' => $found->fechaPublicacion,
+                                'tipoAnimal' => $found->tipoAnimal,
+                            ];
+                        }
                     }
 
                     $matches[] = [
@@ -168,12 +178,11 @@ class CasoController extends Controller
                         'score'      => $score,          // 0..1
                         'similarity' => $similarityPct,  // 0..100
                         'data'       => $data,
-                        'localCaso'  => $localCaso,
+                        'localCaso'  => $localCasoData,
                     ];
                 }
 
-                // aplicar en porcentaje (94%) 
-                // el porcentaje que tiene que tener la imagen para mostrarla podemos cambiarla como veamos mejor
+                // aplicar en porcentaje 
                 $thresholdPct = 94;
                 $filtered = array_filter($matches, function ($m) use ($thresholdPct) {
                     return isset($m['similarity']) && $m['similarity'] >= $thresholdPct;
@@ -185,6 +194,9 @@ class CasoController extends Controller
                     $sb = $b['score'] ?? -1;
                     return ($sb <=> $sa);
                 });
+
+                // convertir foto del caso buscado a URL para el render
+                $caso->fotoAnimal = $caso->fotoAnimal ? Storage::url($caso->fotoAnimal) : null;
 
                 // limpiar archivo temporal no-bg (porque la usamos temp nada mas la foto sin fondo)
                 if ($noBgTempPath && file_exists($noBgTempPath)) {
@@ -207,7 +219,7 @@ class CasoController extends Controller
             } catch (\Exception $e) {
                 Log::error("Error buscando similares en Nyckel para caso {$caso->id}: " . $e->getMessage());
 
-                // intentar eliminar temp si algo quedó
+                // intentar eliminar temp si algo quedo
                 try {
                     if (!empty($noBgTempPath) && file_exists($noBgTempPath)) {
                         $rel = str_replace(storage_path('app/public/'), '', $noBgTempPath);
@@ -216,6 +228,9 @@ class CasoController extends Controller
                 } catch (\Throwable $ex) {
                     Log::warning("No se pudo eliminar temp no-bg: " . $ex->getMessage());
                 }
+
+                // aseguramos convertir foto del caso cuando mostramos el error tambien
+                $caso->fotoAnimal = $caso->fotoAnimal ? Storage::url($caso->fotoAnimal) : null;
 
                 return Inertia::render('Casos/PerdidoResults', [
                     'caso' => $caso,
