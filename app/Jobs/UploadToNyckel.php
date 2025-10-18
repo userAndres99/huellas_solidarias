@@ -25,7 +25,6 @@ class UploadToNyckel implements ShouldQueue
 
     public function handle(): void
     {
-        // ruta física del archivo guardado en storage/app/public/...
         $filePath = storage_path('app/public/' . $this->caso->fotoAnimal);
 
         if (!$this->caso->fotoAnimal || !file_exists($filePath)) {
@@ -39,14 +38,30 @@ class UploadToNyckel implements ShouldQueue
             return;
         }
 
+        // si la situación es 'abandonado' usamos ahora agregamos remove
+        $fileToUpload = $filePath;
+        if (strtolower($this->caso->situacion) === 'abandonado') {
+            try {
+                /** @var \App\Services\RemoveBgClient $rm */
+                $rm = app(\App\Services\RemoveBgClient::class);
+                $noBgPath = $rm->removeBackgroundFromFile($filePath);
+                if ($noBgPath && file_exists($noBgPath)) {
+                    $fileToUpload = $noBgPath;
+                    Log::info("UploadToNyckel: usando imagen sin fondo {$noBgPath} para el caso {$this->caso->id}");
+                } else {
+                    Log::warning("UploadToNyckel: remove.bg falló; se subirá la original para caso {$this->caso->id}");
+                }
+            } catch (\Throwable $e) {
+                Log::error("UploadToNyckel - error remove.bg: " . $e->getMessage());
+            }
+        }
+
         try {
-            /** @var NyckelAuth $auth */
-            $auth = app(NyckelAuth::class);
+            $auth = app(\App\Services\NyckelAuth::class);
             $token = $auth->getAccessToken();
 
-            $client = new Client(['base_uri' => 'https://www.nyckel.com/']);
-
-            Log::info("🔄 Intentando subir a Nyckel: caso_id={$this->caso->id}, archivo={$filePath}");
+            $client = new \GuzzleHttp\Client(['base_uri' => 'https://www.nyckel.com/']);
+            Log::info("🔄 Intentando subir a Nyckel: caso_id={$this->caso->id}, archivo={$fileToUpload}");
 
             $response = $client->post("v1/functions/{$functionId}/samples", [
                 'headers' => [
@@ -54,31 +69,43 @@ class UploadToNyckel implements ShouldQueue
                     'Accept' => 'application/json',
                 ],
                 'multipart' => [
-                    [
-                        'name'     => 'file', // Nyckel espera archivo en multipart 
-                        'contents' => fopen($filePath, 'r'),
-                        'filename' => basename($filePath),
-                    ],
-                    [
-                        'name'     => 'externalId',
-                        'contents' => "caso_{$this->caso->id}",
-                    ],
+                    ['name' => 'file', 'contents' => fopen($fileToUpload, 'r'), 'filename' => basename($fileToUpload)],
+                    ['name' => 'externalId', 'contents' => "caso_{$this->caso->id}"],
                 ],
                 'timeout' => 30,
                 'connect_timeout' => 10,
             ]);
 
-            $body = json_decode((string)$response->getBody(), true);
-            Log::info("✅ Respuesta Nyckel para caso {$this->caso->id}: " . json_encode($body));
+            $bodyRaw = (string) $response->getBody();
+            $body = json_decode($bodyRaw, true) ?? [];
+            Log::info("Nyckel response: " . $bodyRaw);
 
             $sampleId = $body['id'] ?? $body['sampleId'] ?? null;
+            if (!$sampleId && isset($body[0])) {
+                $sampleId = $body[0]['sampleId'] ?? $body[0]['id'] ?? null;
+            }
+
             if ($sampleId) {
                 $this->caso->nyckel_sample_id = $sampleId;
                 $this->caso->save();
                 Log::info("✅ Sample guardado: caso_id={$this->caso->id} sampleId={$sampleId}");
             } else {
-                Log::warning("⚠️ Nyckel subió pero no devolvió sampleId para caso {$this->caso->id}");
+                Log::warning("⚠️ Nyckel subió pero no devolvió sampleId para caso {$this->caso->id} - body: {$bodyRaw}");
             }
+
+            // borrar el no-bg si no queremos guardarlo
+            if ($fileToUpload !== $filePath) {
+                $keep = filter_var(env('REMOVEBG_KEEP_NO_BG', false), FILTER_VALIDATE_BOOLEAN);
+                if (!$keep) {
+                    // ruta relativa en storage/public
+                    $rel = str_replace(storage_path('app/public/'), '', $fileToUpload);
+                    if ($rel) {
+                        \Storage::disk('public')->delete($rel);
+                        Log::info("RemoveBg: archivo temporal eliminado: {$rel}");
+                    }
+                }
+            }
+
         } catch (\Throwable $e) {
             Log::error("❌ Error subiendo a Nyckel caso {$this->caso->id}: " . $e->getMessage());
         }

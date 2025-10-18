@@ -21,7 +21,24 @@ export default function PerdidoResults({ caso, matches, error }) {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
         {matches.map((m, index) => {
-          const imgSrc = m.data || (m.localCaso && (m.localCaso.fotoAnimal ? m.localCaso.fotoAnimal.startsWith('http') ? m.localCaso.fotoAnimal : (window.location.origin + '/storage/' + m.localCaso.fotoAnimal.replace(/^\/?storage\/?/, '')) : null)) || null;
+          //URL de la imagen 
+          const imgSrc =
+            m.data ||
+            (m.localCaso &&
+              (m.localCaso.fotoAnimal
+                ? m.localCaso.fotoAnimal.startsWith('http')
+                  ? m.localCaso.fotoAnimal
+                  : window.location.origin + '/storage/' + m.localCaso.fotoAnimal.replace(/^\/?storage\/?/, '')
+                : null)) ||
+            null;
+
+          // calcular porcentaje de similitud (similarity lo trae como 0..100)
+          let similarityPct = null;
+          if (typeof m.similarity === 'number') {
+            similarityPct = m.similarity;
+          } else if (typeof m.score === 'number') {
+            similarityPct = m.score * 100;
+          }
 
           return (
             <div key={index} className="border p-2 rounded shadow flex flex-col items-center">
@@ -47,8 +64,11 @@ export default function PerdidoResults({ caso, matches, error }) {
                 ) : (
                   <p className="text-sm text-gray-600">Coincidencia externa</p>
                 )}
-                {m.score !== undefined && m.score !== null && (
-                  <p className="text-xs text-gray-700 mt-1">Similitud: {Number(m.score).toFixed(2)}</p>
+
+                {similarityPct !== null && (
+                  <p className="text-xs text-gray-700 mt-1">
+                    Similitud: {Number(similarityPct).toFixed(2)}%
+                  </p>
                 )}
               </div>
             </div>
