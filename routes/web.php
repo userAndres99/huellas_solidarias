@@ -1,9 +1,10 @@
 <?php
 
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\CasoController;
+use App\Http\Controllers\DashboardController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\CasoController;
 use Inertia\Inertia;
 
 // Página principal
@@ -16,10 +17,12 @@ Route::get('/', function () {
     ]);
 })->name('home');
 
-// Dashboard (autenticado)
-Route::get('/dashboard', function () {
-    return Inertia::render('Dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+// Dashboard 
+// En vez de renderizar aca la vista directamente, delegamos en DashboardController
+// para que pueda proporcionar "misPublicaciones",etc.
+Route::get('/dashboard', [DashboardController::class, 'index'])
+    ->middleware(['auth', 'verified'])
+    ->name('dashboard');
 
 // Perfil de usuario
 Route::middleware('auth')->group(function () {
@@ -54,7 +57,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/casos', [CasoController::class, 'store'])->name('casos.store');
 });
 
-//Resultados de coincidencias de "Perdido"
+// Resultados de coincidencias de "Perdido" (si necesitás ruta pública para ver la vista)
 Route::get('/casos/perdido-results', function () {
     return Inertia::render('Casos/PerdidoResults');
 })->name('casos.perdido-results');

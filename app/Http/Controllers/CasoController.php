@@ -53,6 +53,7 @@ class CasoController extends Controller
             'latitud' => 'nullable|numeric',
             'longitud' => 'nullable|numeric',
             'telefonoContacto' => ['nullable','regex:/^\d+$/','min:6','max:30'],
+            'buscarCoincidencias' => 'sometimes|boolean',
         ]);
 
         $path = null;
@@ -79,14 +80,16 @@ class CasoController extends Controller
 
         $situ = strtolower($caso->situacion);
 
-        // si es "abandonado" -> subir a Nyckel (job)
+        // si es "abandonado" -> subir a Nyckel y llevar al dashboard
         if ($situ === 'abandonado' && $caso->fotoAnimal) {
             UploadToNyckel::dispatchSync($caso);
-            return redirect()->route('casos.create')->with('success', 'Caso creado exitosamente');
+            return redirect()->route('dashboard')->with('success', 'Caso creado exitosamente');
         }
 
-        // si es "perdido" -> quitar fondo (solo para la comparacion) y buscar similares
-        if ($situ === 'perdido' && $caso->fotoAnimal) {
+        //solo intentar buscar coincidencias si el usuario marca el check
+        $buscarCoincidencias = $request->boolean('buscarCoincidencias');
+
+        if ($situ === 'perdido' && $caso->fotoAnimal && $buscarCoincidencias) {
             $noBgTempPath = null;
             try {
                 $ny = app(NyckelClient::class);
@@ -97,7 +100,7 @@ class CasoController extends Controller
 
                 // Intentamos generar una version sin fondo (temporal)
                 try {
-                   $noBgFullPath = $rm->removeBackgroundFromFile($filePath);
+                    $noBgFullPath = $rm->removeBackgroundFromFile($filePath);
                 } catch (\Throwable $e) {
                     Log::warning("RemoveBgClient threw: " . $e->getMessage());
                     $noBgFullPath = null;
@@ -175,8 +178,8 @@ class CasoController extends Controller
                         'sampleId'   => $sampleId,
                         'externalId' => $external,
                         'distance'   => $distance,
-                        'score'      => $score,          // 0..1
-                        'similarity' => $similarityPct,  // 0..100
+                        'score'      => $score,
+                        'similarity' => $similarityPct,
                         'data'       => $data,
                         'localCaso'  => $localCasoData,
                     ];
@@ -198,23 +201,44 @@ class CasoController extends Controller
                 // convertir foto del caso buscado a URL para el render
                 $caso->fotoAnimal = $caso->fotoAnimal ? Storage::url($caso->fotoAnimal) : null;
 
-                // limpiar archivo temporal no-bg (porque la usamos temp nada mas la foto sin fondo)
-                if ($noBgTempPath && file_exists($noBgTempPath)) {
-                    $keep = filter_var(env('REMOVEBG_KEEP_NO_BG', false), FILTER_VALIDATE_BOOLEAN);
-                    if (!$keep) {
-                        $rel = str_replace(storage_path('app/public/'), '', $noBgTempPath);
-                        if ($rel) {
-                            Storage::disk('public')->delete($rel);
-                            Log::info("Archivo no-bg temporal eliminado: {$rel}");
+                // limpiar archivo temporal no-bg (porque la usamos temporalmente)
+                if (!empty($noBgTempPath) && file_exists($noBgTempPath)) {
+                    try {
+                        $keep = filter_var(env('REMOVEBG_KEEP_NO_BG', false), FILTER_VALIDATE_BOOLEAN);
+                        if (!$keep) {
+                            // normalizar separadores para evitar problemas en Windows
+                            $storagePublicPath = str_replace('\\', '/', storage_path('app/public/'));
+                            $noBgNormalized = str_replace('\\', '/', $noBgTempPath);
+
+                            // obtener ruta relativa dentro de disk('public')
+                            $rel = null;
+                            if (strpos($noBgNormalized, $storagePublicPath) === 0) {
+                                $rel = substr($noBgNormalized, strlen($storagePublicPath));
+                            } else {
+                                // fallback: intentar basename (si por alguna razón no está en storage/public)
+                                $rel = basename($noBgNormalized);
+                            }
+
+                            if ($rel) {
+                                // delete devuelve true/false
+                                if (Storage::disk('public')->delete($rel)) {
+                                    Log::info("Archivo no-bg temporal eliminado: {$rel}");
+                                } else {
+                                    Log::warning("No se pudo eliminar archivo no-bg (posible que ya no exista): {$rel}");
+                                }
+                            }
+                        } else {
+                            Log::info("Archivo no-bg temporal conservado por REMOVEBG_KEEP_NO_BG=true: {$noBgTempPath}");
                         }
-                    } else {
-                        Log::info("Archivo no-bg temporal conservado por REMOVEBG_KEEP_NO_BG=true: {$noBgTempPath}");
+                    } catch (\Throwable $ex) {
+                        Log::warning("Error al intentar eliminar temp no-bg: " . $ex->getMessage());
                     }
                 }
 
                 return Inertia::render('Casos/PerdidoResults', [
                     'caso' => $caso,
                     'matches' => array_values($filtered),
+                    'flash' => ['success' => 'Caso creado exitosamente'],
                 ]);
             } catch (\Exception $e) {
                 Log::error("Error buscando similares en Nyckel para caso {$caso->id}: " . $e->getMessage());
@@ -236,12 +260,13 @@ class CasoController extends Controller
                     'caso' => $caso,
                     'matches' => [],
                     'error' => 'No se pudieron obtener coincidencias (error externo).',
+                    'flash' => ['success' => 'Caso creado exitosamente'],
                 ]);
             }
         }
 
-        // fallback normal
-        return redirect()->route('casos.create')->with('success', 'Caso creado exitosamente');
+        // fallback normal (si no pidió buscar coincidencias o no era 'perdido')
+        return redirect()->route('dashboard')->with('success', 'Caso creado exitosamente');
     }
 
     // Devuelve JSON de un solo caso (para detalle para fetch)

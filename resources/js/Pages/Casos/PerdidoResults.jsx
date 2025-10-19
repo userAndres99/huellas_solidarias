@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link, Head } from '@inertiajs/react';
+import { Link, Head, usePage } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 
 function makeImageUrl(path) {
@@ -14,6 +14,9 @@ export default function PerdidoResults(props) {
   const { caso, matches, error } = props;
   const safeMatches = Array.isArray(matches) ? matches : [];
 
+  // flash 
+  const { flash } = usePage().props;
+
   return (
     <AuthenticatedLayout
       {...props}
@@ -22,6 +25,20 @@ export default function PerdidoResults(props) {
       <Head title="Resultados similares" />
 
       <div className="container mx-auto p-4 max-w-5xl">
+        {/* Mensajes flash (success / error) */}
+        {flash?.success && (
+          <div className="mb-4 p-3 rounded bg-green-50 border border-green-200 text-green-800 flex items-center justify-between">
+            <div>{flash.success}</div>
+            <Link href="/dashboard" className="text-sm underline ml-4">Ir a Mis publicaciones</Link>
+          </div>
+        )}
+
+        {flash?.error && (
+          <div className="mb-4 p-3 rounded bg-red-50 border border-red-200 text-red-800">
+            {flash.error}
+          </div>
+        )}
+
         {/* Si no hay matches y no hay error */}
         {safeMatches.length === 0 && !error ? (
           <div className="p-4 mt-4 bg-yellow-100 rounded">
@@ -38,6 +55,7 @@ export default function PerdidoResults(props) {
           <div className="p-4 mt-4 bg-gray-100 rounded">
             <h2 className="text-xl font-bold mb-4">Resultados similares a tu mascota</h2>
 
+            {/* Error de busqueda externa */}
             {error && <div className="mb-4 p-2 bg-red-100 text-red-800 rounded">{error}</div>}
 
             {/* Resumen del caso buscado */}
@@ -45,7 +63,13 @@ export default function PerdidoResults(props) {
               <div className="mb-4 flex items-center gap-4 bg-white p-3 rounded shadow">
                 <div className="w-20 h-20 bg-gray-100 overflow-hidden rounded">
                   {caso.fotoAnimal ? (
-                    <img src={makeImageUrl(caso.fotoAnimal)} alt="Caso buscado" className="object-cover w-full h-full" />
+                    <img
+                      src={makeImageUrl(caso.fotoAnimal)}
+                      alt="Caso buscado"
+                      className="object-cover w-full h-full"
+                      loading="eager"
+                      decoding="async"
+                    />
                   ) : (
                     <div className="flex items-center justify-center h-full text-gray-500">Sin imagen</div>
                   )}
@@ -78,7 +102,13 @@ export default function PerdidoResults(props) {
                   <div key={index} className="bg-white border rounded shadow overflow-hidden flex flex-col">
                     <div className="h-40 w-full bg-gray-100 flex items-center justify-center overflow-hidden">
                       {imgSrc ? (
-                        <img src={imgSrc} alt={`match-${index}`} className="object-cover w-full h-full" loading="lazy" />
+                        <img
+                          src={imgSrc}
+                          alt={`match-${index}`}
+                          className="object-cover w-full h-full"
+                          loading="lazy"
+                          decoding="async"
+                        />
                       ) : (
                         <div className="text-gray-500">Sin imagen</div>
                       )}

@@ -9,24 +9,28 @@ export default function FormCasos() {
     tipoAnimal: '',
     descripcion: '',
     situacion: '',
-    sexo: '',          
-    tamano: '',         
+    sexo: '',
+    tamano: '',
     ciudad: '',
     ciudad_id: '',
     latitud: '',
     longitud: '',
     telefonoContacto: '',
+    buscarCoincidencias: false,  //check
   });
 
-  const user = usePage().props.auth?.user ?? {};
+  const page = usePage();
+  const user = page.props.auth?.user ?? {};
 
   const [mapCenter, setMapCenter] = useState(null);
   const [initialPosition, setInitialPosition] = useState(null);
   const [showMarkerOnSelect, setShowMarkerOnSelect] = useState(false);
 
+  // preview para la imagen
   const [previewUrl, setPreviewUrl] = useState(null);
 
   useEffect(() => {
+    // limpiar objectURL al desmontar o cuando cambie previewUrl
     return () => {
       if (previewUrl && previewUrl.startsWith('blob:')) {
         URL.revokeObjectURL(previewUrl);
@@ -109,9 +113,6 @@ export default function FormCasos() {
     e.preventDefault();
     post('/casos', {
       forceFormData: true,
-      onError: () => {
-        alert('Error al registrar el caso. Revisa los datos.');
-      },
     });
   };
 
@@ -123,6 +124,7 @@ export default function FormCasos() {
       onSubmit={handleSubmit}
       className="relative max-w-2xl mx-auto p-6 bg-white border border-gray-100 shadow-lg rounded-2xl"
     >
+      {/*foto + nombre del usuario */}
       <div className="absolute top-4 right-4 flex items-center gap-2 bg-white/75 backdrop-blur-sm px-2 py-1 rounded-full shadow-sm">
         <img
           src={avatarUrl}
@@ -140,7 +142,7 @@ export default function FormCasos() {
       </header>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-
+        {/* Preview del mensaje y Foto */}
         <div className="col-span-1 md:col-span-2">
           <label className="block text-sm font-medium text-gray-700 mb-2">Foto del Animal</label>
 
@@ -311,6 +313,30 @@ export default function FormCasos() {
           </div>
         </div>
       </div>
+
+      {/* Checkbox específico para situación "Perdido"*/}
+      {data.situacion === 'Perdido' && (
+        <div className="mt-4 mb-2 flex items-start gap-3">
+          <div className="flex items-center h-5">
+            <input
+              id="buscarCoincidencias"
+              name="buscarCoincidencias"
+              type="checkbox"
+              checked={!!data.buscarCoincidencias}
+              onChange={(e) => setData('buscarCoincidencias', e.target.checked)}
+              className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            />
+          </div>
+          <div className="text-sm">
+            <label htmlFor="buscarCoincidencias" className="font-medium text-gray-700">
+              ¿Querés que busquemos si tu mascota fue reportada en nuestra web?
+            </label>
+            <p className="text-xs text-gray-500">
+              (Usamos IA para analizar la imagen y ver si alguien la ha reportado como abandonada.)
+            </p>
+          </div>
+        </div>
+      )}
 
       <div className="mt-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
         <div className="text-sm text-gray-600">
