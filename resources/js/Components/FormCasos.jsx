@@ -1,20 +1,16 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useForm, usePage } from '@inertiajs/react';
+import React, { useState, useEffect } from 'react';
 import MapaInteractivo from './MapaInteractivo';
 import FiltroCiudad from './FiltroCiudad';
+import { useForm, usePage } from '@inertiajs/react';
 
 export default function FormCasos() {
-  const { props } = usePage();
-  const user = props?.auth?.user ?? null;
-  const defaultAvatar = '/images/DefaultPerfil.jpg';
-
-  const { data, setData, post, processing, errors, reset } = useForm({
+  const { data, setData, post, processing, errors } = useForm({
     fotoAnimal: null,
     tipoAnimal: '',
     descripcion: '',
     situacion: '',
-    sexo: '',
-    tamano: '',
+    sexo: '',          
+    tamano: '',         
     ciudad: '',
     ciudad_id: '',
     latitud: '',
@@ -22,34 +18,40 @@ export default function FormCasos() {
     telefonoContacto: '',
   });
 
+  const user = usePage().props.auth?.user ?? {};
+
   const [mapCenter, setMapCenter] = useState(null);
   const [initialPosition, setInitialPosition] = useState(null);
   const [showMarkerOnSelect, setShowMarkerOnSelect] = useState(false);
-  const [preview, setPreview] = useState(null);
-  const fileInputRef = useRef(null);
+
+  const [previewUrl, setPreviewUrl] = useState(null);
 
   useEffect(() => {
     return () => {
-      if (preview && preview.startsWith('blob:')) URL.revokeObjectURL(preview);
+      if (previewUrl && previewUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(previewUrl);
+      }
     };
-  }, [preview]);
-
-  const handleFileChange = (file) => {
-    setData('fotoAnimal', file || null);
-    if (preview && preview.startsWith('blob:')) {
-      URL.revokeObjectURL(preview);
-    }
-    if (file) {
-      setPreview(URL.createObjectURL(file));
-    } else {
-      setPreview(null);
-    }
-  };
+  }, [previewUrl]);
 
   const handleChange = (e) => {
     const { name, value, files } = e.target;
     if (name === 'fotoAnimal') {
-      handleFileChange(files?.[0] ?? null);
+      const file = files[0] || null;
+      setData(name, file);
+
+      // generar preview y revocar el anterior si existe
+      if (file) {
+        setPreviewUrl((prev) => {
+          if (prev && prev.startsWith('blob:')) URL.revokeObjectURL(prev);
+          return URL.createObjectURL(file);
+        });
+      } else {
+        setPreviewUrl((prev) => {
+          if (prev && prev.startsWith('blob:')) URL.revokeObjectURL(prev);
+          return null;
+        });
+      }
     } else {
       setData(name, value);
     }
@@ -108,266 +110,225 @@ export default function FormCasos() {
     post('/casos', {
       forceFormData: true,
       onError: () => {
-        // opcional: dejar focus en primer error
-        const firstKey = Object.keys(errors || {})[0];
-        console.warn('Errores de validación', errors);
+        alert('Error al registrar el caso. Revisa los datos.');
       },
-      onSuccess: () => {
-        // limpiar preview y form si querés
-        if (preview && preview.startsWith('blob:')) URL.revokeObjectURL(preview);
-        setPreview(null);
-        reset('fotoAnimal', 'descripcion', 'telefonoContacto', 'ciudad', 'latitud', 'longitud', 'tipoAnimal', 'situacion', 'sexo', 'tamano', 'ciudad_id');
-      }
     });
   };
 
-  return (
-    <div className="max-w-5xl mx-auto p-6">
-      <div className="bg-white rounded-xl shadow-md overflow-hidden">
-        {/* titulo + user */}
-        <div className="px-6 py-4 flex items-center justify-between border-b">
-          <div>
-            <h1 className="text-2xl font-semibold text-gray-800">Publicar caso</h1>
-            <p className="text-sm text-gray-500">Completa los datos para publicar el caso del animal.</p>
-          </div>
+  const avatarUrl = user?.profile_photo_url ?? '/images/DefaultPerfil.jpg';
+  const userName = user?.name ?? '';
 
-          <div className="flex items-center gap-3">
-            <div className="text-right">
-              <div className="text-sm text-gray-600">Publica como</div>
-              <div className="font-medium text-gray-800">{user?.name ?? 'Usuario'}</div>
-            </div>
-            <div className="w-12 h-12 rounded-full overflow-hidden border">
+  return (
+    <form
+      onSubmit={handleSubmit}
+      className="relative max-w-2xl mx-auto p-6 bg-white border border-gray-100 shadow-lg rounded-2xl"
+    >
+      <div className="absolute top-4 right-4 flex items-center gap-2 bg-white/75 backdrop-blur-sm px-2 py-1 rounded-full shadow-sm">
+        <img
+          src={avatarUrl}
+          alt="avatar"
+          className="w-8 h-8 rounded-full object-cover border"
+        />
+        <span className="hidden sm:inline text-sm font-medium text-gray-700 truncate max-w-[6.5rem]">
+          {userName}
+        </span>
+      </div>
+
+      <header className="mb-4">
+        <h2 className="text-2xl font-semibold text-gray-800">Publicar caso</h2>
+        <p className="text-sm text-gray-500 mt-1">Completá los datos para publicar un animal.</p>
+      </header>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+        <div className="col-span-1 md:col-span-2">
+          <label className="block text-sm font-medium text-gray-700 mb-2">Foto del Animal</label>
+
+          {previewUrl ? (
+            <div className="mb-3 flex justify-center">
               <img
-                src={user?.profile_photo_url ?? defaultAvatar}
-                alt={user?.name ?? 'Avatar'}
-                className="object-cover w-full h-full"
+                src={previewUrl}
+                alt="preview"
+                className="w-40 h-40 md:w-48 md:h-48 object-cover rounded-lg border"
               />
             </div>
+          ) : (
+            <div className="mb-3">
+              <div className="text-xs text-gray-400">Aún no seleccionaste una imagen</div>
+            </div>
+          )}
+
+          <input
+            id="fotoAnimal"
+            type="file"
+            name="fotoAnimal"
+            onChange={handleChange}
+            className="hidden"
+          />
+          <label
+            htmlFor="fotoAnimal"
+            className="flex items-center justify-center p-4 border-2 border-dashed rounded-lg cursor-pointer text-sm text-gray-600 hover:border-blue-300 transition"
+          >
+            <div className="text-center">
+              <div className="text-xs text-gray-400">Hacé click o arrastrá una imagen</div>
+              {data.fotoAnimal ? (
+                <div className="mt-2 text-sm text-gray-700 truncate">{data.fotoAnimal.name}</div>
+              ) : (
+                <div className="mt-2 text-sm text-gray-500">Sin archivo seleccionado</div>
+              )}
+            </div>
+          </label>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Tipo de Animal</label>
+          <select
+            id="tipoAnimal"
+            name="tipoAnimal"
+            value={data.tipoAnimal}
+            onChange={handleChange}
+            required
+            className="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200"
+          >
+            <option value="" disabled>Seleccioná tipo de animal</option>
+            <option value="Perro">Perro</option>
+            <option value="Gato">Gato</option>
+            <option value="Otro">Otro</option>
+          </select>
+          {errors.tipoAnimal && <div className="text-red-600 text-sm mt-1">{errors.tipoAnimal}</div>}
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Situación</label>
+          <select
+            id="situacion"
+            name="situacion"
+            value={data.situacion}
+            onChange={handleChange}
+            required
+            className="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200"
+          >
+            <option value="" disabled>Seleccioná situación</option>
+            <option value="Adopcion">Adopcion</option>
+            <option value="Abandonado">Abandonado</option>
+            <option value="Perdido">Perdido</option>
+          </select>
+          {errors.situacion && <div className="text-red-600 text-sm mt-1">{errors.situacion}</div>}
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Sexo</label>
+          <select
+            id="sexo"
+            name="sexo"
+            value={data.sexo}
+            onChange={handleChange}
+            required
+            className="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200"
+          >
+            <option value="" disabled>Seleccioná sexo</option>
+            <option value="Macho">Macho</option>
+            <option value="Hembra">Hembra</option>
+          </select>
+          {errors.sexo && <div className="text-red-600 text-sm mt-1">{errors.sexo}</div>}
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Tamaño</label>
+          <select
+            id="tamano"
+            name="tamano"
+            value={data.tamano}
+            onChange={handleChange}
+            required
+            className="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200"
+          >
+            <option value="" disabled>Seleccioná tamaño</option>
+            <option value="Chico">Chico</option>
+            <option value="Mediano">Mediano</option>
+            <option value="Grande">Grande</option>
+          </select>
+          {errors.tamano && <div className="text-red-600 text-sm mt-1">{errors.tamano}</div>}
+        </div>
+
+        <div className="md:col-span-2">
+          <label className="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
+          <textarea
+            id="descripcion"
+            name="descripcion"
+            value={data.descripcion}
+            onChange={handleChange}
+            required
+            placeholder="Describa el motivo o situación de la publicación"
+            className="w-full rounded-md border border-gray-300 px-3 py-2 h-32 resize-y focus:outline-none focus:ring-2 focus:ring-blue-200"
+          />
+          {errors.descripcion && <div className="text-red-600 text-sm mt-1">{errors.descripcion}</div>}
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Teléfono de Contacto (Opcional)</label>
+          <input
+            id="telefonoContacto"
+            type="text"
+            name="telefonoContacto"
+            value={data.telefonoContacto}
+            onChange={handleChange}
+            className="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200"
+            placeholder="Ej: +54 9 11 1234-5678"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Buscar Ciudad</label>
+          <div className="w-full">
+            <FiltroCiudad onCiudadSelect={handleCiudadSelect} />
           </div>
         </div>
 
-        {/* grid form + mapa/preview */}
-        <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6 px-6 py-6">
-          {/*formulario */}
-          <div className="space-y-4">
-            {/* Foto */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Foto del animal</label>
-              <div
-                onClick={() => fileInputRef.current?.click()}
-                className="relative border-dashed border-2 border-gray-200 rounded-lg p-4 flex items-center gap-4 cursor-pointer hover:border-gray-300 transition"
-                aria-hidden
-              >
-                <div className="w-24 h-24 bg-gray-50 rounded overflow-hidden flex items-center justify-center">
-                  {preview ? (
-                    <img src={preview} alt="Preview" className="object-cover w-full h-full" />
-                  ) : (
-                    <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V7M16 3v4M8 3v4m-5 7l4-4 4 4 6-6 4 4" />
-                    </svg>
-                  )}
-                </div>
+        <div className="md:col-span-2">
+          <label className="block text-sm font-medium text-gray-700 mb-1">Ciudad Seleccionada</label>
+          <input
+            type="text"
+            name="ciudad"
+            value={data.ciudad}
+            readOnly
+            className="w-full rounded-md border border-gray-200 px-3 py-2 bg-gray-50 cursor-not-allowed"
+            required
+          />
+        </div>
 
-                <div className="flex-1">
-                  <div className="text-sm font-medium text-gray-700">{data.fotoAnimal ? data.fotoAnimal.name : 'Hacé click o arrastrá una imagen'}</div>
-                  <div className="text-xs text-gray-500 mt-1">Formato PNG/JPEG — Máx 10 MB. Usaremos la versión sin fondo internamente para comparación.</div>
-                </div>
-
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  name="fotoAnimal"
-                  accept="image/*"
-                  onChange={handleChange}
-                  className="hidden"
-                />
-              </div>
-              {errors.fotoAnimal && <p className="mt-2 text-sm text-red-600">{errors.fotoAnimal}</p>}
-            </div>
-
-            {/* Tipo / Situación*/}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Tipo de animal</label>
-                <select
-                  name="tipoAnimal"
-                  value={data.tipoAnimal}
-                  onChange={handleChange}
-                  className="mt-1 block w-full rounded-md border-gray-200 shadow-sm focus:border-blue-400 focus:ring focus:ring-blue-200"
-                  required
-                >
-                  <option value="">Seleccioná tipo</option>
-                  <option value="Perro">Perro</option>
-                  <option value="Gato">Gato</option>
-                  <option value="Otro">Otro</option>
-                </select>
-                {errors.tipoAnimal && <p className="mt-1 text-sm text-red-600">{errors.tipoAnimal}</p>}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Situación</label>
-                <select
-                  name="situacion"
-                  value={data.situacion}
-                  onChange={handleChange}
-                  className="mt-1 block w-full rounded-md border-gray-200 shadow-sm focus:border-blue-400 focus:ring focus:ring-blue-200"
-                  required
-                >
-                  <option value="">Seleccioná situación</option>
-                  <option value="Adopcion">Adopcion</option>
-                  <option value="Abandonado">Abandonado</option>
-                  <option value="Perdido">Perdido</option>
-                </select>
-                {errors.situacion && <p className="mt-1 text-sm text-red-600">{errors.situacion}</p>}
-              </div>
-            </div>
-
-            {/* Sexo / Tamaño */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Sexo</label>
-                <select
-                  name="sexo"
-                  value={data.sexo}
-                  onChange={handleChange}
-                  className="mt-1 block w-full rounded-md border-gray-200 shadow-sm focus:border-blue-400 focus:ring focus:ring-blue-200"
-                  required
-                >
-                  <option value="">Seleccioná sexo</option>
-                  <option value="Macho">Macho</option>
-                  <option value="Hembra">Hembra</option>
-                </select>
-                {errors.sexo && <p className="mt-1 text-sm text-red-600">{errors.sexo}</p>}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Tamaño</label>
-                <select
-                  name="tamano"
-                  value={data.tamano}
-                  onChange={handleChange}
-                  className="mt-1 block w-full rounded-md border-gray-200 shadow-sm focus:border-blue-400 focus:ring focus:ring-blue-200"
-                  required
-                >
-                  <option value="">Seleccioná tamaño</option>
-                  <option value="Chico">Chico</option>
-                  <option value="Mediano">Mediano</option>
-                  <option value="Grande">Grande</option>
-                </select>
-                {errors.tamano && <p className="mt-1 text-sm text-red-600">{errors.tamano}</p>}
-              </div>
-            </div>
-
-            {/* Descripción */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
-              <textarea
-                name="descripcion"
-                value={data.descripcion}
-                onChange={handleChange}
-                rows="4"
-                className="mt-1 block w-full rounded-md border-gray-200 shadow-sm focus:border-blue-400 focus:ring focus:ring-blue-200 resize-none p-2"
-                required
-              />
-              {errors.descripcion && <p className="mt-1 text-sm text-red-600">{errors.descripcion}</p>}
-            </div>
-
-            {/* Teléfono */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Teléfono (opcional)</label>
-              <input
-                type="text"
-                name="telefonoContacto"
-                value={data.telefonoContacto}
-                onChange={handleChange}
-                className="mt-1 block w-full rounded-md border-gray-200 shadow-sm focus:border-blue-400 focus:ring focus:ring-blue-200 p-2"
-                placeholder="Ej: 1123456789"
-              />
-              {errors.telefonoContacto && <p className="mt-1 text-sm text-red-600">{errors.telefonoContacto}</p>}
-            </div>
-
-            {/* Ciudad + Buscador */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Buscar ciudad</label>
-              <FiltroCiudad onCiudadSelect={handleCiudadSelect} />
-              <div className="mt-2">
-                <input
-                  type="text"
-                  name="ciudad"
-                  value={data.ciudad}
-                  readOnly
-                  className="w-full rounded-md border-gray-200 bg-gray-50 p-2 text-sm"
-                  placeholder="Ciudad seleccionada"
-                  required
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div>
-                <label className="block text-xs text-gray-500 mb-1">Latitud</label>
-                <div className="rounded-md border border-gray-200 bg-gray-50 p-2">{data.latitud ?? '-'}</div>
-              </div>
-              <div>
-                <label className="block text-xs text-gray-500 mb-1">Longitud</label>
-                <div className="rounded-md border border-gray-200 bg-gray-50 p-2">{data.longitud ?? '-'}</div>
-              </div>
-            </div>
-
-            {/* Submit */}
-            <div className="pt-2">
-              <button
-                type="submit"
-                disabled={processing}
-                className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded shadow focus:outline-none focus:ring-2 focus:ring-blue-300 disabled:opacity-50"
-              >
-                {processing ? (
-                  <>
-                    <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path></svg>
-                    Publicando...
-                  </>
-                ) : (
-                  'Publicar caso'
-                )}
-              </button>
-            </div>
+        <div className="md:col-span-2">
+          <label className="block text-sm font-medium text-gray-700 mb-1">Ubicación en el mapa</label>
+          <div className="h-64 w-full rounded-md overflow-hidden border border-gray-200">
+            <MapaInteractivo
+              onLocationSelect={handleLocationSelect}
+              tipoAnimal={data.tipoAnimal}
+              showMarkers={false}
+              center={mapCenter}
+              initialPosition={initialPosition}
+              marker={showMarkerOnSelect}
+            />
           </div>
-
-          {/*mapa + preview */}
-          <div className="space-y-4">
-            <div className="bg-gray-50 rounded-md border border-gray-100 p-3">
-              <h3 className="text-sm font-medium text-gray-700 mb-2">Vista previa</h3>
-              <div className="w-full h-56 bg-white rounded overflow-hidden flex items-center justify-center border">
-                {preview ? (
-                  <img src={preview} alt="Preview" className="object-contain w-full h-full" />
-                ) : (
-                  <div className="text-sm text-gray-400">Aquí se mostrará la foto que subas</div>
-                )}
-              </div>
-
-              {data.tipoAnimal || data.descripcion ? (
-                <div className="mt-3">
-                  <div className="text-sm font-medium text-gray-700">{data.tipoAnimal || 'Animal'}</div>
-                  <div className="text-sm text-gray-500 line-clamp-3">{data.descripcion || 'Sin descripción aún'}</div>
-                  <div className="text-xs text-gray-400 mt-2">{data.ciudad || 'Ciudad'}</div>
-                </div>
-              ) : null}
-            </div>
-
-            <div className="bg-white rounded-md border border-gray-100 p-2 h-80">
-              <h3 className="text-sm font-medium text-gray-700 mb-2">Ubicación en el mapa</h3>
-              <MapaInteractivo
-                onLocationSelect={handleLocationSelect}
-                tipoAnimal={data.tipoAnimal}
-                showMarkers={false}
-                center={mapCenter}
-                initialPosition={initialPosition}
-                marker={showMarkerOnSelect}
-              />
-            </div>
-          </div>
-        </form>
+        </div>
       </div>
-    </div>
+
+      <div className="mt-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+        <div className="text-sm text-gray-600">
+          <span className="font-medium">Latitud:</span> {data.latitud || '-'}{' '}
+          <span className="mx-2">|</span>
+          <span className="font-medium">Longitud:</span> {data.longitud || '-'}
+        </div>
+
+        <button
+          type="submit"
+          disabled={processing}
+          className={`inline-flex items-center justify-center rounded-xl px-5 py-2 text-white font-medium transition ${
+            processing ? 'opacity-50 cursor-not-allowed bg-blue-400' : 'bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700'
+          }`}
+        >
+          {processing ? 'Publicando...' : 'Publicar caso'}
+        </button>
+      </div>
+    </form>
   );
 }
