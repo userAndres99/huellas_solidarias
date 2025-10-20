@@ -34,7 +34,8 @@ Route::middleware('auth')->group(function () {
 /* -----------------------------------------------------------------
 | JSON endpoints para API interna
 ----------------------------------------------------------------- */
-Route::get('/casos/json', [CasoController::class, 'index'])->name('casos.json');
+// Cambié 'index' por 'json' para que devuelva la colección con la relación usuario
+Route::get('/casos/json', [CasoController::class, 'json'])->name('casos.json');
 Route::get('/casos/json/{caso}', [CasoController::class, 'show'])->name('casos.json.show');
 
 /* -----------------------------------------------------------------

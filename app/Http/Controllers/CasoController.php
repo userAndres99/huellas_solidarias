@@ -280,4 +280,75 @@ class CasoController extends Controller
 
         return response()->json($caso);
     }
+
+    public function json(Request $request)
+    {
+        // parametros de filtro / paginación
+        $perPage = (int) $request->input('per_page', 9); // por defecto 9 por pagina (lo podemos cambiar)
+        $tipo = $request->input('tipo', null);
+        $ciudad = $request->input('ciudad', null);
+        $situacion = $request->input('situacion', null);
+        $sexo = $request->input('sexo', null);
+        $tamano = $request->input('tamano', null);
+        $ordenFecha = $request->input('ordenFecha', 'reciente'); // 'reciente' o 'antigua'
+
+        $query = Caso::with('usuario')
+            ->where('estado', 'activo');
+
+        // aplicar filtros si vienen
+        if ($tipo) {
+            $query->where('tipoAnimal', $tipo);
+        }
+
+        if ($ciudad) {
+            $query->where('ciudad', 'LIKE', '%' . $ciudad . '%');
+        }
+
+        if ($situacion) {
+            $query->where('situacion', $situacion);
+        }
+
+        if ($sexo) {
+            $query->where('sexo', $sexo);
+        }
+
+        if ($tamano) {
+            $query->where('tamano', $tamano);
+        }
+
+        // orden
+        if ($ordenFecha === 'antigua') {
+            $query->orderBy('fechaPublicacion', 'asc');
+        } else {
+            $query->orderBy('fechaPublicacion', 'desc');
+        }
+
+        // select 
+        $query->select(['id','idUsuario','tipoAnimal','descripcion','situacion','sexo','tamano','ciudad','latitud','longitud','telefonoContacto','fechaPublicacion','fotoAnimal']);
+
+        // paginar
+        $casos = $query->paginate($perPage);
+
+        // transformar la coleccion interna 
+        $casos->getCollection()->transform(function ($c) {
+            return [
+                'id' => $c->id,
+                'tipoAnimal' => $c->tipoAnimal ?? $c->tipo_animal ?? null,
+                'descripcion' => $c->descripcion,
+                'ciudad' => $c->ciudad,
+                'situacion' => $c->situacion,
+                'fechaPublicacion' => $c->fechaPublicacion ?? $c->created_at,
+                'fotoAnimal' => $c->fotoAnimal ? Storage::url($c->fotoAnimal) : null,
+                'latitud' => $c->latitud,
+                'longitud' => $c->longitud,
+                'usuario' => $c->usuario ? [
+                    'id' => $c->usuario->id,
+                    'name' => $c->usuario->name,
+                    'profile_photo_url' => $c->usuario->profile_photo_url ?? ($c->usuario->profile_photo_path ? Storage::url($c->usuario->profile_photo_path) : null),
+                ] : null,
+            ];
+        });
+
+        return response()->json($casos);
+    }
 }
