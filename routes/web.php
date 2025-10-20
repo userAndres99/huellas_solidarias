@@ -6,6 +6,7 @@ use App\Http\Controllers\DashboardController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
+use App\Http\Controllers\HistoriaController;
 
 // Página principal
 Route::get('/', function () {
@@ -67,6 +68,22 @@ Route::get('/casos/perdido-results', function () {
 Route::get('/mapa', function () {
     return Inertia::render('MapaPage');
 })->middleware(['auth'])->name('mapa');
+
+
+Route::get('/historias/json', [HistoriaController::class, 'jsonIndex'])->name('historias.json');
+
+
+Route::get('/historias', function(){
+    return Inertia::render('HistoriaExito/Index');
+});
+
+//Publicar una Historia (solo usuarios autenticado)
+Route::middleware(['auth'])->group(function (){
+    Route::get('/publicar-historia', [HistoriaController::class, 'create'])->name('historias.create');
+    Route::post('/historias', [HistoriaController::class, 'store'])->name('historias.store');
+    
+});
+
 
 // Rutas de autenticación (login, register, etc.)
 require __DIR__.'/auth.php';
