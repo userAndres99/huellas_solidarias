@@ -15,6 +15,11 @@ class User extends Authenticatable implements MustVerifyEmail
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable;
 
+    // roles como constantes 
+    public const ROLE_USER = 'Usuario';
+    public const ROLE_ADMIN = 'Admin';
+    public const ROLE_ORG = 'Organizacion';
+
     /**
      * The attributes that are mass assignable.
      *
@@ -24,8 +29,9 @@ class User extends Authenticatable implements MustVerifyEmail
         'name',
         'email',
         'password',
-        'profile_photo_path', // opcional: incluir si vas a asignarlo por mass-assignment
-        'apellido', // si agregaste apellido en la migración
+        'profile_photo_path', 
+        'apellido', 
+        'role', 
     ];
 
     /**
@@ -90,9 +96,24 @@ class User extends Authenticatable implements MustVerifyEmail
         return asset('images/DefaultPerfil.jpg');
     }
 
+    // helpers de rol
+    public function isAdmin(): bool
+    {
+        return $this->role === self::ROLE_ADMIN;
+    }
 
-    public function casos(){
+    public function isOrganization(): bool
+    {
+        return $this->role === self::ROLE_ORG;
+    }
 
+    public function isUser(): bool
+    {
+        return $this->role === self::ROLE_USER;
+    }
+
+    public function casos()
+    {
         return $this -> hasMany(Caso::class, 'idUsuario');
     } 
 
@@ -100,7 +121,5 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return $this->hasMany(Historia::class);
     }
-
-
 
 }

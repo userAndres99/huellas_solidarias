@@ -6,7 +6,8 @@ import { Link, usePage } from '@inertiajs/react';
 import { useState } from 'react';
 
 export default function AuthenticatedLayout({ header, children }) {
-    const user = usePage().props.auth.user;
+    // obtener user 
+    const user = usePage().props.auth?.user;
     const logoHref = user ? route('dashboard') : '/';
 
     const [showingNavigationDropdown, setShowingNavigationDropdown] =
@@ -52,6 +53,15 @@ export default function AuthenticatedLayout({ header, children }) {
                                 >
                                     Mapa
                                 </NavLink>
+                                {/* Link solo visible para Admin probando nada mas(faltan detalles) */}
+                                {user?.role === 'Admin' && (
+                                    <NavLink
+                                        href={route('admin.solicitudes')}
+                                        active={route().current('admin.solicitudes')}
+                                    >
+                                        Solicitudes
+                                    </NavLink>
+                                )}
                             </div>
                         </div>
 

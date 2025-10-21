@@ -3,10 +3,12 @@
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\CasoController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\HistoriaController;
+use App\Http\Controllers\AdminController;
+use App\Http\Controllers\OrganizationController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
-use App\Http\Controllers\HistoriaController;
 
 // Página principal
 Route::get('/', function () {
@@ -84,6 +86,20 @@ Route::middleware(['auth'])->group(function (){
     
 });
 
+// Rutas para administradores 
+Route::middleware(['auth', 'role:Admin'])->group(function () {
+    Route::get('/admin', [AdminController::class, 'index'])->name('admin.index');
+    Route::get('/admin/solicitudes', function () {
+        return Inertia::render('Admin/Solicitudes');
+    })->name('admin.solicitudes');
+    // aca rutas para los admins
+});
+
+// Rutas para organizaciones 
+Route::middleware(['auth', 'role:Organizacion'])->group(function () {
+    Route::get('/organizacion', [OrganizationController::class, 'index'])->name('organizacion.index');
+    // aca rutas para organizaciones
+});
 
 // Rutas de autenticación (login, register, etc.)
 require __DIR__.'/auth.php';

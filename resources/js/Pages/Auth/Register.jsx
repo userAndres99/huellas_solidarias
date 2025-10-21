@@ -11,6 +11,7 @@ export default function Register({ auth, canLogin, canRegister }) {
     email: '',
     password: '',
     password_confirmation: '',
+    role: 'Usuario', 
   });
 
   const submit = (e) => {
@@ -93,6 +94,26 @@ export default function Register({ auth, canLogin, canRegister }) {
           />
 
           <InputError message={errors.password_confirmation} className="mt-2" />
+        </div>
+
+        {/* Select de rol agregado (por ahora solo esta para probar) */}
+        <div className="mt-4">
+          <InputLabel htmlFor="role" value="Rol" />
+
+          <select
+            id="role"
+            name="role"
+            value={data.role}
+            onChange={(e) => setData('role', e.target.value)}
+            className="mt-1 block w-full rounded border-gray-300"
+            required
+          >
+            <option value="Usuario">Usuario</option>
+            <option value="Admin">Admin</option>
+            <option value="Organizacion">Organizacion</option>
+          </select>
+
+          <InputError message={errors.role} className="mt-2" />
         </div>
 
         <div className="mt-4 flex items-center justify-end">
