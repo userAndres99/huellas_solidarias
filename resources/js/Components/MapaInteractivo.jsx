@@ -64,10 +64,8 @@ export default function MapaInteractivo({
         return res.json();
       })
       .then(data => {
-       const lista = Array.isArray(data) ? data : data.data || [];
-       console.log("Marcadores cargados:", lista);
-       setMarkers(lista)
-
+        const lista = Array.isArray(data) ? data : data.data || [];
+        setMarkers(lista);
       })
       .catch(() => setMarkers([]));
   }, [showMarkers]);
