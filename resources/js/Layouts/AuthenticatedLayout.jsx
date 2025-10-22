@@ -53,6 +53,10 @@ export default function AuthenticatedLayout({ header, children }) {
                                 >
                                     Mapa
                                 </NavLink>
+                                <NavLink href="/historias" >
+                                    Historias de Éxtio
+                                </NavLink>
+
                                 {/* Link solo visible para Admin probando nada mas(faltan detalles) */}
                                 {user?.role === 'Admin' && (
                                     <NavLink

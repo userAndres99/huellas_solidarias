@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "@inertiajs/react";
 
 export default function Historias() {
     const [historias, setHistorias] = useState([]);
@@ -64,6 +65,12 @@ export default function Historias() {
             <p className="text-gray-600 mb-2 line-clamp-3">{h.descripcion}</p>
             <blockquote className="italic text-blue-700">"{h.testimonio}"</blockquote>
           </div>
+
+
+            <div className="flex items-center justify-between">
+              <Link href={`/historias/${h.id}`}>Ver</Link>
+            </div>
+
         </div>
       ))}
     </div>

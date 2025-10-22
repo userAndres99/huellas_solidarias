@@ -73,11 +73,16 @@ Route::get('/mapa', function () {
 
 
 Route::get('/historias/json', [HistoriaController::class, 'jsonIndex'])->name('historias.json');
-
+Route::get('/historias/json/{historia}',[HistoriaController::class, 'show'])->name('historia.json.show');
 
 Route::get('/historias', function(){
     return Inertia::render('HistoriaExito/Index');
 });
+
+
+Route::get('/historias/{id}', function($id){
+    return Inertia::render('HistoriaExito/Show', ['initialId' => $id]);
+})->name('historias.show');
 
 //Publicar una Historia (solo usuarios autenticado)
 Route::middleware(['auth'])->group(function (){
