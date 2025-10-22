@@ -63,7 +63,12 @@ export default function MapaInteractivo({
         if (!res.ok) throw new Error('Network response was not ok');
         return res.json();
       })
-      .then(data => setMarkers(data))
+      .then(data => {
+       const lista = Array.isArray(data) ? data : data.data || [];
+       console.log("Marcadores cargados:", lista);
+       setMarkers(lista)
+
+      })
       .catch(() => setMarkers([]));
   }, [showMarkers]);
 
