@@ -26,7 +26,11 @@ export default function UpdateProfileInformation({
         user.profile_photo_url ?? '/images/DefaultPerfil.jpg'
     );
 
-    
+    // estados para la solicitud de verificación (solo para role 'Usuario')
+    const [reqProcessing, setReqProcessing] = useState(false);
+    const [reqSuccess, setReqSuccess] = useState(false);
+    const [reqError, setReqError] = useState(null);
+
     useEffect(() => {
         return () => {
             if (preview && preview.startsWith('blob:')) {
@@ -64,11 +68,33 @@ export default function UpdateProfileInformation({
 
         Inertia.post(route('profile.update'), formData, {
             onSuccess: () => {
-                
                 Inertia.reload({ only: ['auth'] });
             },
             onError: (errors) => {
                 console.error('Errores del servidor:', errors);
+            },
+        });
+    };
+
+    // handler para solicitar verificación — solo visible a users (rol 'Usuario')
+    const handleRequestVerification = (e) => {
+        e && e.preventDefault();
+        setReqProcessing(true);
+        setReqError(null);
+        setReqSuccess(false);
+
+        // POST a la ruta que manejará la solicitud en el backend
+        Inertia.post(route('profile.request_verification'), {}, {
+            onSuccess: (page) => {
+                setReqProcessing(false);
+                setReqSuccess(true);
+                // recargar auth para reflejar cambios si es necesario
+                Inertia.reload({ only: ['auth'] });
+            },
+            onError: (errors) => {
+                setReqProcessing(false);
+                setReqError(errors?.message || 'Error al solicitar verificación');
+                console.error('Errores al solicitar verificación:', errors);
             },
         });
     };
@@ -143,6 +169,57 @@ export default function UpdateProfileInformation({
 
                     <InputError className="mt-2" message={errors.email} />
                 </div>
+
+                {/*sugerencia / boton de Solicitar verificacion solo para usuarios (rol 'Usuario') */}
+                {user?.role === 'Usuario' && (
+                    <div className="rounded-md border border-gray-200 bg-gray-50 p-4">
+                        <h3 className="text-sm font-semibold text-gray-900">
+                            Solicitar verificación como representante de una organización
+                        </h3>
+                        <p className="mt-2 text-sm text-gray-700">
+                            Si pertenecés a una organización y querés representarla en la plataforma,
+                            podés solicitar la verificación de tu cuenta. Al hacerlo, nos enviás la
+                            documentación correspondiente y nuestro equipo revisará tu solicitud.
+                            Si todo está en orden, marcaremos tu cuenta como representante de esa
+                            organización y recibirás las herramientas y permisos asociados.
+                        </p>
+
+                        {reqSuccess ? (
+                            <div className="mt-3 text-sm font-medium text-green-600">
+                                Solicitud enviada correctamente. Nuestro equipo la revisará y te
+                                notificaremos por correo.
+                            </div>
+                        ) : (
+                            <>
+                                {reqError && (
+                                    <div className="mt-3 text-sm font-medium text-red-600">
+                                        {reqError}
+                                    </div>
+                                )}
+
+                                <div className="mt-3 flex items-center gap-3">
+                                    <PrimaryButton
+                                        onClick={handleRequestVerification}
+                                        disabled={reqProcessing}
+                                    >
+                                        {reqProcessing ? 'Enviando...' : 'Solicitar verificación'}
+                                    </PrimaryButton>
+
+                                    <button
+                                        type="button"
+                                        className="text-sm underline text-gray-600 hover:text-gray-800"
+                                        onClick={() => {
+                                            // por ahora redirigimosa una ruta informativa (todavia no la creo xd)
+                                            Inertia.get(route('profile.verification_requirements'));
+                                        }}
+                                    >
+                                        Requisitos y documentación
+                                    </button>
+                                </div>
+                            </>
+                        )}
+                    </div>
+                )}
 
                 {mustVerifyEmail && user.email_verified_at === null && (
                     <div>

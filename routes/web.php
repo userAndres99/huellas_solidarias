@@ -86,6 +86,11 @@ Route::middleware(['auth'])->group(function (){
     
 });
 
+// Guardar solicitud de verificación (solo usuarios autenticados con rol Usuario)
+Route::post('/profile/request-verification', [\App\Http\Controllers\ProfileController::class, 'requestVerification'])
+    ->name('profile.request_verification')
+    ->middleware(['auth', 'role:Usuario']);
+
 // Rutas para administradores 
 Route::middleware(['auth', 'role:Admin'])->group(function () {
     Route::get('/admin', [AdminController::class, 'index'])->name('admin.index');
