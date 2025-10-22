@@ -55,6 +55,14 @@ class HistoriaController extends Controller
     }
 
 
+    public function show(Historia $historia){
+
+        $historia->imagen_antes = $historia->imagen_antes ? Storage::url($historia->imagen_antes) : null;
+        $historia->imagen_despues = $historia->imagen_despues ? Storage::url($historia->imagen_despues) : null;
+        return response()->json($historia);
+    }
+
+
     public function jsonIndex() {
     $historias = Historia::with('user:id,name')
         ->orderBy('created_at', 'desc')

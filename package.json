@@ -27,6 +27,7 @@
     "leaflet": "^1.9.4",
     "lodash.debounce": "^4.0.8",
     "react-leaflet": "^5.0.0",
+    "react-scan": "^0.4.3",
     "react-select": "^5.10.2"
   },
   "overrides": {
