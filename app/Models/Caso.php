@@ -37,4 +37,11 @@ class Caso extends Model
     {
         return $this->belongsTo(User::class, 'idUsuario');
     }
+
+    public function comentarios()
+    {
+        return $this -> morphMany(Comentario::class, 'comentable')
+        ->whereNull('parent_id')->with('respuesta.user');
+    }
+
 }

@@ -27,4 +27,10 @@ export default defineConfig({
         react(),
 
     ],
+    define: {
+        global: 'window', 
+    },
+    optimizeDeps: {
+        include: ['emoji-picker-react'],
+    },
 });

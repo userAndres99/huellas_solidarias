@@ -270,16 +270,21 @@ class CasoController extends Controller
     }
 
     // Devuelve JSON de un solo caso (para detalle para fetch)
-    public function show(Caso $caso)
-    {
-        if ($caso->estado !== 'activo') {
-            return response()->json(['message' => 'Not found'], 404);
-        }
+    public function show($id)
+{
+    $caso = Caso::where('id', $id)
+        ->where('estado', 'activo')
+        ->with('comentarios.user', 'comentarios.respuesta')
+        ->first();
 
-        $caso->fotoAnimal = $caso->fotoAnimal ? Storage::url($caso->fotoAnimal) : null;
-
-        return response()->json($caso);
+    if (!$caso) {
+        return response()->json(['message' => 'Caso no encontrado'], 404);
     }
+
+    $caso->fotoAnimal = $caso->fotoAnimal ? Storage::url($caso->fotoAnimal) : null;
+
+    return response()->json($caso);
+}
 
     public function json(Request $request)
     {

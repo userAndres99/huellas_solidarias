@@ -2,6 +2,7 @@ import { Head } from "@inertiajs/react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import {useState, useEffect } from "react";
 import { Link } from "@inertiajs/react";
+import Comentarios from "@/Components/Comentarios";
 
 
 
@@ -121,6 +122,18 @@ function Show ({initialId}){
                         </blockquote>
                     </div>
                 </div>
+
+
+                {/* SECCIÓN DE COMENTARIOS */}
+            {historia && (
+                <div className="mt-8">
+                    <h3 className="text-lg font-semibold mb-4">Comentarios</h3>
+                    <Comentarios
+                        comentableType="App\\Models\\Historia"
+                        comentableId={historia.id}
+                    />
+                </div>
+            )}
             </div>
         
         </>

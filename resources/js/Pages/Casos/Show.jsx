@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link, Head } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import MapaInteractivo from '../../Components/MapaInteractivo';
+import Comentarios from '@/Components/Comentarios';
 
 export default function Show(props) {
   const { initialId } = props;
@@ -104,7 +105,19 @@ export default function Show(props) {
             )}
           </div>
         </div>
+
+            {/** Sección de comentarios */}
+        <div className="mt-8">
+          <h3 className="text-lg font-semibold mb-4">Comentarios</h3>
+          <Comentarios
+            comentableType="App\\Models\\Caso" // o el nombre exacto del modelo que uses en Laravel
+            comentableId={caso.id}
+            
+          />
+        </div>
       </div>
     </AuthenticatedLayout>
+
+    
   );
 }
