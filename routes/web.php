@@ -9,6 +9,7 @@ use App\Http\Controllers\OrganizationController;
 use App\Http\Controllers\SolicitudVerificacionController; 
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\ComentarioController;
 use Inertia\Inertia;
 
 /* -----------------------------------------------------------------
@@ -46,7 +47,7 @@ Route::middleware('auth')->group(function () {
 ----------------------------------------------------------------- */
 // Cambié 'index' por 'json' para que devuelva la colección con la relación usuario
 Route::get('/casos/json', [CasoController::class, 'json'])->name('casos.json');
-Route::get('/casos/json/{caso}', [CasoController::class, 'show'])->name('casos.json.show');
+Route::get('/casos/json/{id}', [CasoController::class, 'show'])->name('casos.json.show');
 
 /* -----------------------------------------------------------------
 | Rutas Inertia (vistas React)
@@ -148,6 +149,15 @@ Route::middleware(['auth', 'role:Organizacion'])->group(function () {
         ->name('organizacion.eventos.store');
 });
 
+/* -----------------------------------------------------------------
+| Rutas para comentarios
+----------------------------------------------------------------- */
+Route::middleware('auth')->group(function(){
+    Route::post('/comentarios', [ComentarioController::class, 'store'])->name('comentarios.store');
+});
+
+
+Route::get('/comentarios/json', [ComentarioController::class, 'index'])->name('comentarios.json');
 /* -----------------------------------------------------------------
 | Rutas de autenticación (login, register, etc.)
 ----------------------------------------------------------------- */

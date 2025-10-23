@@ -38,4 +38,10 @@ export default defineConfig({
     react({ jsxRuntime: 'automatic' }),
 
     ],
+    define: {
+        global: 'window', 
+    },
+    optimizeDeps: {
+        include: ['emoji-picker-react'],
+    },
 });
