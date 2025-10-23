@@ -19,12 +19,23 @@ export default defineConfig({
             },
         }
     },
+    //  FullCalendar usa (evita errores que me salian en consola)
+    optimizeDeps: {
+        include: [
+            '@fullcalendar/core',
+            '@fullcalendar/daygrid',
+            '@fullcalendar/timegrid',
+            '@fullcalendar/interaction',
+            '@fullcalendar/core/locales/es'
+        ]
+    },
     plugins: [
         laravel({
             input: ['resources/css/app.css', 'resources/js/app.jsx'],
             refresh: true,
         }),
-        react(),
+    // Usar el runtime JSX automático mejora rendimiento y evita warnings
+    react({ jsxRuntime: 'automatic' }),
 
     ],
 });

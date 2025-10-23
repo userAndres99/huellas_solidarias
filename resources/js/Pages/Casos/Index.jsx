@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { Link, Head } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import Select from 'react-select';
@@ -180,6 +180,55 @@ function Pagination({ meta, links, onPage }) {
   );
 }
 
+// Componente LazyImage: (evita usar "loading=\"lazy\"" nativo y controla cuando renderizar la imagen)
+// despues lo separamos en un componente aparte para que no haya tanto codigo aca
+function LazyImage({ src, alt = '', className = '', rootMargin = '200px', threshold = 0.01, priority = false }) {
+  const ref = useRef(null);
+  const [inView, setInView] = useState(false);
+
+  useEffect(() => {
+    if (!ref.current) return;
+    if (typeof IntersectionObserver === 'undefined') {
+      setInView(true);
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            setInView(true);
+            observer.disconnect();
+          }
+        });
+      },
+      { root: null, rootMargin, threshold }
+    );
+
+    observer.observe(ref.current);
+
+    return () => observer.disconnect();
+  }, [rootMargin, threshold]);
+
+  return (
+    <div ref={ref} className={`w-full h-full ${className}`}>
+      {inView ? (
+        // cargamos la imagen con loading="eager" cuando sabemos que está en pantalla
+        <img
+          src={src}
+          alt={alt}
+          className="object-cover w-full h-full"
+          loading="eager"
+          decoding="async"
+          {...(priority ? { fetchPriority: 'high' } : {})}
+        />
+      ) : (
+        <div className="bg-gray-100 w-full h-full" />
+      )}
+    </div>
+  );
+}
+
 export default function Index(props) {
   const [casos, setCasos] = useState([]); // array de items 
   const [meta, setMeta] = useState(null); 
@@ -283,24 +332,22 @@ export default function Index(props) {
               <div key={c.id} className="bg-white shadow rounded overflow-hidden">
                 <div className="h-48 w-full bg-gray-100 flex items-center justify-center overflow-hidden relative">
                   {c.fotoAnimal ? (
-                    <img
-                      src={c.fotoAnimal}
-                      alt={c.tipoAnimal || 'Foto'}
-                      className="object-cover w-full h-full"
-                      loading="lazy"
-                    />
+                    <LazyImage src={c.fotoAnimal} alt={c.tipoAnimal || 'Foto'} className="h-full w-full" priority={page === 1} />
                   ) : (
                     <div className="text-gray-500">Sin imagen</div>
                   )}
 
                   <div className="absolute top-2 left-2 flex items-center gap-2 bg-white/90 px-2 py-1 rounded-full shadow-sm">
                     <a href={usuario ? `/users/${usuario.id}` : '#'} className="flex items-center gap-2">
-                      {userPhoto ? (
+                        {userPhoto ? (
+                        // avatar: cargamos con prioridad alta si tiene foto
                         <img
                           src={userPhoto}
                           alt={userName}
                           className="w-9 h-9 rounded-full object-cover border"
-                          loading="lazy"
+                          loading="eager"
+                          decoding="async"
+                          fetchPriority="high"
                         />
                       ) : (
                         <div className="w-9 h-9 rounded-full flex items-center justify-center font-medium border text-sm bg-gray-100">

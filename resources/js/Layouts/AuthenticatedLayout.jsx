@@ -58,6 +58,16 @@ export default function AuthenticatedLayout({ header, children }) {
                                     Historias de Éxito
                                 </NavLink>
 
+                                {/* Link solo visible para Organizacion */}
+                                {user?.role === 'Organizacion' && (
+                                    <NavLink
+                                        href={route('organizacion.index')}
+                                        active={route().current('organizacion.index')}
+                                    >
+                                        Eventos
+                                    </NavLink>
+                                )}
+
                                 {/* Link solo visible para Admin (faltan detalles) */}
                                 {user?.role === 'Admin' && (
                                     <NavLink
@@ -183,6 +193,25 @@ export default function AuthenticatedLayout({ header, children }) {
                         >
                             Publicar Caso
                         </ResponsiveNavLink>
+
+                        {user?.role === 'Organizacion' && (
+                            <ResponsiveNavLink
+                                href={route('organizacion.index')}
+                                active={route().current('organizacion.index')}
+                            >
+                                Eventos
+                            </ResponsiveNavLink>
+                        )}
+
+                        {/* Link solo visible para Admin */}
+                        {user?.role === 'Admin' && (
+                            <ResponsiveNavLink
+                                href={route('admin.solicitudes.index')}
+                                active={route().current('admin.solicitudes.index')}
+                            >
+                                Solicitudes
+                            </ResponsiveNavLink>
+                        )}
                     </div>
 
                     <div className="border-t border-gray-200 pb-1 pt-4">

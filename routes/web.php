@@ -138,7 +138,14 @@ Route::middleware(['auth', 'role:Admin'])->group(function () {
 ----------------------------------------------------------------- */
 Route::middleware(['auth', 'role:Organizacion'])->group(function () {
     Route::get('/organizacion', [OrganizationController::class, 'index'])->name('organizacion.index');
-    // aca rutas para organizaciones
+
+    // ruta para mostrar el formulario "Crear evento"
+    Route::get('/organizacion/eventos/create', [OrganizationController::class, 'create'])
+        ->name('organizacion.eventos.create');
+
+    // ruta para guardar el evento 
+    Route::post('/organizacion/eventos', [OrganizationController::class, 'store'])
+        ->name('organizacion.eventos.store');
 });
 
 /* -----------------------------------------------------------------
