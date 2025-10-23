@@ -6,11 +6,14 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\HistoriaController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\OrganizationController;
+use App\Http\Controllers\SolicitudVerificacionController; 
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
-// Página principal
+/* -----------------------------------------------------------------
+| Página principal
+----------------------------------------------------------------- */
 Route::get('/', function () {
     return Inertia::render('Home', [
         'canLogin' => Route::has('login'),
@@ -20,14 +23,18 @@ Route::get('/', function () {
     ]);
 })->name('home');
 
-// Dashboard 
-// En vez de renderizar aca la vista directamente, delegamos en DashboardController
-// para que pueda proporcionar "misPublicaciones",etc.
+/* -----------------------------------------------------------------
+| Dashboard 
+| En vez de renderizar aca la vista directamente, delegamos en DashboardController
+| para que pueda proporcionar "misPublicaciones",etc.
+----------------------------------------------------------------- */
 Route::get('/dashboard', [DashboardController::class, 'index'])
     ->middleware(['auth', 'verified'])
     ->name('dashboard');
 
-// Perfil de usuario
+/* -----------------------------------------------------------------
+| Perfil de usuario
+----------------------------------------------------------------- */
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
@@ -71,45 +78,70 @@ Route::get('/mapa', function () {
     return Inertia::render('MapaPage');
 })->middleware(['auth'])->name('mapa');
 
-
+/* -----------------------------------------------------------------
+| Historias de éxito
+----------------------------------------------------------------- */
 Route::get('/historias/json', [HistoriaController::class, 'jsonIndex'])->name('historias.json');
-Route::get('/historias/json/{historia}',[HistoriaController::class, 'show'])->name('historia.json.show');
+Route::get('/historias/json/{historia}', [HistoriaController::class, 'show'])->name('historia.json.show');
 
-Route::get('/historias', function(){
+Route::get('/historias', function () {
     return Inertia::render('HistoriaExito/Index');
 });
 
-
-Route::get('/historias/{id}', function($id){
+Route::get('/historias/{id}', function ($id) {
     return Inertia::render('HistoriaExito/Show', ['initialId' => $id]);
 })->name('historias.show');
 
-//Publicar una Historia (solo usuarios autenticado)
-Route::middleware(['auth'])->group(function (){
+// Publicar una Historia (solo usuarios autenticado)
+Route::middleware(['auth'])->group(function () {
     Route::get('/publicar-historia', [HistoriaController::class, 'create'])->name('historias.create');
     Route::post('/historias', [HistoriaController::class, 'store'])->name('historias.store');
-    
 });
 
-// Guardar solicitud de verificación (solo usuarios autenticados con rol Usuario)
-Route::post('/profile/request-verification', [\App\Http\Controllers\ProfileController::class, 'requestVerification'])
+/* -----------------------------------------------------------------
+| Solicitudes de verificación de usuario
+----------------------------------------------------------------- */
+
+// Página con el formulario (solo usuarios con rol Usuario)
+Route::get('/profile/solicitud-verificacion', function () {
+    return Inertia::render('Profile/SolicitudVerificacionForm');
+})->name('profile.solicitud_form')->middleware(['auth', 'role:Usuario']);
+
+// Guardar solicitud (solo usuarios autenticados con rol Usuario)
+Route::post('/profile/request-verification', [SolicitudVerificacionController::class, 'store'])
     ->name('profile.request_verification')
     ->middleware(['auth', 'role:Usuario']);
 
-// Rutas para administradores 
+/* -----------------------------------------------------------------
+| Rutas para administradores 
+----------------------------------------------------------------- */
 Route::middleware(['auth', 'role:Admin'])->group(function () {
     Route::get('/admin', [AdminController::class, 'index'])->name('admin.index');
-    Route::get('/admin/solicitudes', function () {
-        return Inertia::render('Admin/Solicitudes');
-    })->name('admin.solicitudes');
+
+    // listado de solicitudes gestionado por controller
+    Route::get('/admin/solicitudes', [SolicitudVerificacionController::class, 'index'])
+        ->name('admin.solicitudes.index');
+
+    // ver detalle de una solicitud
+    Route::get('/admin/solicitudes/{id}', [SolicitudVerificacionController::class, 'show'])
+        ->name('admin.solicitudes.show');
+
+    // actualizar estado (aprobar/rechazar)
+    Route::post('/admin/solicitudes/{id}/status', [SolicitudVerificacionController::class, 'updateStatus'])
+        ->name('admin.solicitudes.update_status');
+
     // aca rutas para los admins
 });
 
-// Rutas para organizaciones 
+/* -----------------------------------------------------------------
+| Rutas para organizaciones 
+----------------------------------------------------------------- */
 Route::middleware(['auth', 'role:Organizacion'])->group(function () {
     Route::get('/organizacion', [OrganizationController::class, 'index'])->name('organizacion.index');
     // aca rutas para organizaciones
 });
 
-// Rutas de autenticación (login, register, etc.)
+/* -----------------------------------------------------------------
+| Rutas de autenticación (login, register, etc.)
+----------------------------------------------------------------- */
 require __DIR__.'/auth.php';

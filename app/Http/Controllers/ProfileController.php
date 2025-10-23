@@ -79,19 +79,4 @@ class ProfileController extends Controller
 
         return Redirect::to('/');
     }
-
-    /**
-     * Handle verification request from a user.
-     */
-    public function requestVerification(Request $request): RedirectResponse
-    {
-        $user = $request->user();
-
-        // marcar que solicito verificacion
-        $user->verification_requested_at = now();
-        $user->verification_status = 'pending';
-        $user->save();
-
-        return Redirect::back()->with('success', 'Solicitud enviada');
-    }
 }

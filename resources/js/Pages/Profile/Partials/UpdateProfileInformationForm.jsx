@@ -74,30 +74,7 @@ export default function UpdateProfileInformation({
                 console.error('Errores del servidor:', errors);
             },
         });
-    };
-
-    // handler para solicitar verificación — solo visible a users (rol 'Usuario')
-    const handleRequestVerification = (e) => {
-        e && e.preventDefault();
-        setReqProcessing(true);
-        setReqError(null);
-        setReqSuccess(false);
-
-        // POST a la ruta que manejará la solicitud en el backend
-        Inertia.post(route('profile.request_verification'), {}, {
-            onSuccess: (page) => {
-                setReqProcessing(false);
-                setReqSuccess(true);
-                // recargar auth para reflejar cambios si es necesario
-                Inertia.reload({ only: ['auth'] });
-            },
-            onError: (errors) => {
-                setReqProcessing(false);
-                setReqError(errors?.message || 'Error al solicitar verificación');
-                console.error('Errores al solicitar verificación:', errors);
-            },
-        });
-    };
+    };   
 
     return (
         <section className={className}>
@@ -170,7 +147,7 @@ export default function UpdateProfileInformation({
                     <InputError className="mt-2" message={errors.email} />
                 </div>
 
-                {/*sugerencia / boton de Solicitar verificacion solo para usuarios (rol 'Usuario') */}
+                {/*boton de Solicitar verificacion (rol 'Usuario') */}
                 {user?.role === 'Usuario' && (
                     <div className="rounded-md border border-gray-200 bg-gray-50 p-4">
                         <h3 className="text-sm font-semibold text-gray-900">
@@ -198,20 +175,17 @@ export default function UpdateProfileInformation({
                                 )}
 
                                 <div className="mt-3 flex items-center gap-3">
-                                    <PrimaryButton
-                                        onClick={handleRequestVerification}
-                                        disabled={reqProcessing}
+                                    <Link
+                                        href={route('profile.solicitud_form')}
+                                        className="inline-flex items-center rounded bg-indigo-600 px-4 py-2 text-white text-sm font-medium hover:bg-indigo-700"
                                     >
-                                        {reqProcessing ? 'Enviando...' : 'Solicitar verificación'}
-                                    </PrimaryButton>
+                                        Solicitar verificación
+                                    </Link>
 
                                     <button
                                         type="button"
                                         className="text-sm underline text-gray-600 hover:text-gray-800"
-                                        onClick={() => {
-                                            // por ahora redirigimosa una ruta informativa (todavia no la creo xd)
-                                            Inertia.get(route('profile.verification_requirements'));
-                                        }}
+                                        onClick={() => Inertia.get(route('profile.verification_requirements'))}
                                     >
                                         Requisitos y documentación
                                     </button>

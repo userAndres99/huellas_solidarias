@@ -53,15 +53,16 @@ export default function AuthenticatedLayout({ header, children }) {
                                 >
                                     Mapa
                                 </NavLink>
-                                <NavLink href="/historias" >
-                                    Historias de Éxtio
+
+                                <NavLink href="/historias">
+                                    Historias de Éxito
                                 </NavLink>
 
-                                {/* Link solo visible para Admin probando nada mas(faltan detalles) */}
+                                {/* Link solo visible para Admin (faltan detalles) */}
                                 {user?.role === 'Admin' && (
                                     <NavLink
-                                        href={route('admin.solicitudes')}
-                                        active={route().current('admin.solicitudes')}
+                                        href={route('admin.solicitudes.index')}
+                                        active={route().current('admin.solicitudes.index')}
                                     >
                                         Solicitudes
                                     </NavLink>
@@ -97,9 +98,7 @@ export default function AuthenticatedLayout({ header, children }) {
                                     </Dropdown.Trigger>
 
                                     <Dropdown.Content>
-                                        <Dropdown.Link
-                                            href={route('profile.edit')}
-                                        >
+                                        <Dropdown.Link href={route('profile.edit')}>
                                             Perfil
                                         </Dropdown.Link>
                                         <Dropdown.Link
