@@ -90,7 +90,9 @@ class User extends Authenticatable implements MustVerifyEmail
     public function getProfilePhotoUrlAttribute(): string
     {
         if ($this->profile_photo_path) {
-            return Storage::disk('public')->url($this->profile_photo_path);
+            // Devuelve una ruta RELATIVA (no me mostraba correctamente la foto asi que lo cambie a este) 
+            return '/storage/' . ltrim($this->profile_photo_path, '/');
+            //return Storage::disk('public')->url($this->profile_photo_path);
         }
 
         return asset('images/DefaultPerfil.jpg');
