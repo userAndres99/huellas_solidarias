@@ -22,11 +22,13 @@ export default defineConfig({
     //  FullCalendar usa (evita errores que me salian en consola)
     optimizeDeps: {
         include: [
-            '@fullcalendar/core',
+             '@fullcalendar/core',
             '@fullcalendar/daygrid',
             '@fullcalendar/timegrid',
             '@fullcalendar/interaction',
-            '@fullcalendar/core/locales/es'
+            '@fullcalendar/core/locales/es',
+            'emoji-picker-react',
+            '@tanstack/react-query',
         ]
     },
     plugins: [
@@ -41,7 +43,5 @@ export default defineConfig({
     define: {
         global: 'window', 
     },
-    optimizeDeps: {
-        include: ['emoji-picker-react'],
-    },
+    
 });

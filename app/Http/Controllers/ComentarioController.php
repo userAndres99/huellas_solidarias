@@ -15,8 +15,22 @@ class ComentarioController extends Controller
 
         $comentarios = Comentario::where('comentable_id', $comentableId)
             ->where('comentable_type', $comentableType)
-            ->with('user', 'respuesta')
-            ->get();
+            ->whereNull('parent_id')
+            ->with('user', 'respuesta.user')
+            ->get()
+            ->map(function ($c) {
+                return [
+                    'id' => $c->id,
+                    'user_id' => $c->user_id,
+                    'usuario_nombre' => $c->user->name ?? $c->usuario_nombre ?? 'Invitado',
+                    'usuario_avatar' => $c->user->avatar ?? $c->usuario_avatar ?? '/default.png',
+                    'texto' => $c->texto,
+                    'parent_id' => $c->parent_id,
+                    'likes' => $c->likes,
+                    'respuesta' => $c->respuesta ?? [],
+                    'created_at' => $c->created_at ? $c->created_at->toIsoString() : now()->toIsoString(),
+                ];
+            });
 
         return response()->json($comentarios);
     }
@@ -41,13 +55,26 @@ class ComentarioController extends Controller
         $comentarios = Comentario::where('comentable_id', $data['comentable_id'])
             ->where('comentable_type', $data['comentable_type'])
             ->with('user', 'respuesta')
-            ->get();
+            ->get()
+            ->map(function ($c) {
+                return [
+                    'id' => $c->id,
+                    'user_id' => $c->user_id,
+                    'usuario_nombre' => $c->user->name ?? $c->usuario_nombre ?? 'Invitado',
+                    'usuario_avatar' => $c->user->avatar ?? $c->usuario_avatar ?? '/default.png',
+                    'texto' => $c->texto,
+                    'parent_id' => $c->parent_id,
+                    'likes' => $c->likes,
+                    'respuesta' => $c->respuesta ?? [],
+                    'created_at' => $c->created_at ? $c->created_at->toIsoString() : now()->toIsoString(),
+                ];
+            });
 
 
         // Si la petición es XHR (fetch/AJAX), devolvemos JSON
-    if ($request->wantsJson() || $request->ajax()) {
-        return response()->json($comentarios);
-    }
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json($comentarios);
+        }
         return response()->json($comentarios);
     }
 }
