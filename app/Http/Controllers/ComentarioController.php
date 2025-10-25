@@ -23,7 +23,9 @@ class ComentarioController extends Controller
                     'id' => $c->id,
                     'user_id' => $c->user_id,
                     'usuario_nombre' => $c->user->name ?? $c->usuario_nombre ?? 'Invitado',
-                    'usuario_avatar' => $c->user->avatar ?? $c->usuario_avatar ?? '/images/DefaultPerfil.jpg',
+                    'usuario_avatar' => $c->user
+                        ? ($c->user->profile_photo_url . '?v=' . ($c->user->updated_at ? $c->user->updated_at->timestamp : time()))
+                        : ($c->usuario_avatar ?? '/images/DefaultPerfil.jpg'),
                     'texto' => $c->texto,
                     'parent_id' => $c->parent_id,
                     'likes' => $c->likes,
