@@ -17,11 +17,13 @@ class OrganizationController extends Controller
                 return [
                     'id' => $e->id,
                     'title' => $e->titulo,
+                    'description' => $e->descripcion,
                     'start' => $e->starts_at,
                     'end' => $e->ends_at,
                     'lat' => $e->lat,
                     'lng' => $e->lng,
-                    'image_url' => $e->image_url,
+                    // ruta relativa para evitar depender de APP_URL/ngrok
+                    'image_url' => $e->image_path ? '/storage/' . ltrim($e->image_path, '/') : null,
                 ];
             })
         ]);
@@ -57,7 +59,7 @@ class OrganizationController extends Controller
             'image_path' => $path
         ]);
 
-        // opcional: notificar
+        // opcional: notificar (tengo que hacerlo todavia)
 
         return redirect()->route('organizacion.index')->with('success', 'Evento creado con éxito');
     }
@@ -66,5 +68,24 @@ class OrganizationController extends Controller
     {
         // Renderiza el formulario de creación de evento (JSX Inertia)
         return Inertia::render('Organizacion/CreateEvento');
+    }
+
+    public function show($id)
+    {
+        $user = Auth::user();
+        $e = Evento::where('id', $id)->where('organizacion_id', $user->id)->firstOrFail();
+
+        return Inertia::render('Organizacion/EventShow', [
+            'event' => [
+                'id' => $e->id,
+                'title' => $e->titulo,
+                'description' => $e->descripcion,
+                'start' => $e->starts_at,
+                'end' => $e->ends_at,
+                'lat' => $e->lat,
+                'lng' => $e->lng,
+                'image_url' => $e->image_path ? '/storage/' . ltrim($e->image_path, '/') : null,
+            ]
+        ]);
     }
 }

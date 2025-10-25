@@ -147,6 +147,10 @@ Route::middleware(['auth', 'role:Organizacion'])->group(function () {
     // ruta para guardar el evento 
     Route::post('/organizacion/eventos', [OrganizationController::class, 'store'])
         ->name('organizacion.eventos.store');
+    
+    // ver detalle de un evento (organizacion)
+    Route::get('/organizacion/eventos/{id}', [OrganizationController::class, 'show'])
+        ->name('organizacion.eventos.show');
 });
 
 /* -----------------------------------------------------------------
