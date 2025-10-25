@@ -34,7 +34,7 @@ class ProfileController extends Controller
     {
         $user = $request->user();
 
-        // Reglas flexibles: por defecto no exigimos name/email
+        //por defecto no exigimos name/email
         $rules = [
             'name'  => ['string', 'max:255'],
             'email' => ['email', 'max:255'],
@@ -53,14 +53,14 @@ class ProfileController extends Controller
             return isset($input->email) && trim($input->email) !== '' && $input->email !== $user->email;
         });
 
-        // Ejecutar validación (lanzará ValidationException si falla)
+        // Ejecutar validación 
         $validated = $validator->validate();
 
         $uploadedPath = null;
 
-        // Procesar archivo si se subió
+        // Procesar archivo si se subio
         if ($request->hasFile('photo')) {
-            // borrar anterior si existe (seguro)
+            // borrar anterior si existe 
             if ($user->profile_photo_path) {
                 try {
                     Storage::disk('public')->delete($user->profile_photo_path);
@@ -72,14 +72,14 @@ class ProfileController extends Controller
             $file = $request->file('photo');
             $filename = 'user_' . $user->id . '_' . time() . '.' . $file->getClientOriginalExtension();
 
-            // almacenar en disk 'public' dentro de profile-photos
+            // almacenar
             $path = $file->storeAs('profile-photos', $filename, 'public');
             $uploadedPath = $path;
 
             // setear path en el usuario
             $user->profile_photo_path = $path;
 
-            // logs para debugging
+            //debug
             Log::info("Profile photo uploaded for user {$user->id}: path={$path}");
             Log::info("Exists on disk? " . (Storage::disk('public')->exists($path) ? 'yes' : 'no'));
         }
@@ -101,7 +101,7 @@ class ProfileController extends Controller
             $user->save();
         }
 
-        // Si la petición quiere JSON (AJAX), devolver info útil
+        // Si la petición quiere JSON
         if ($request->wantsJson()) {
             $user->refresh();
             return response()->json([

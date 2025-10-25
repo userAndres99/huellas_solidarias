@@ -15,7 +15,6 @@ export default function UpdateProfileInformation({
 }) {
     const user = usePage().props.auth.user;
 
-    // <-- incluimos processing y recentlySuccessful aquí
     const { data, setData, processing, recentlySuccessful } = useForm({
         name: user.name,
         email: user.email,
@@ -26,7 +25,6 @@ export default function UpdateProfileInformation({
         user.profile_photo_url ?? '/images/DefaultPerfil.jpg'
     );
 
-    // limpiar objectURL al desmontar
     useEffect(() => {
         return () => {
             if (preview && preview.startsWith('blob:')) {
@@ -35,7 +33,6 @@ export default function UpdateProfileInformation({
         };
     }, [preview]);
 
-    // si el profile_photo_url cambia desde el servidor actualizamos preview
     useEffect(() => {
         setPreview(user.profile_photo_url ?? '/images/DefaultPerfil.jpg');
     }, [user.profile_photo_url]);
@@ -72,7 +69,7 @@ export default function UpdateProfileInformation({
 
         Inertia.post(route('profile.update'), formData, {
             onSuccess: () => {
-                // recargar el usuario compartido en Inertia (para que profile_photo_url se actualice)
+                // recargar el usuario compartido en Inertia 
                 Inertia.reload({ only: ['auth'] });
                 // notificar a otros componentes que escuchen para refetch (comentarios, publicaciones)
                 window.dispatchEvent(new Event('profile-updated'));

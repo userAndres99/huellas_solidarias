@@ -46,7 +46,6 @@ export default function Comentarios({ comentableType, comentableId }) {
         }
     });
 
-    // Escuchar evento global para refetch cuando el perfil se actualice
     useEffect(() => {
         const handler = () => {
             if (typeof refetch === 'function') refetch();
