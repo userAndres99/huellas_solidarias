@@ -106,7 +106,7 @@ const handleSubmitReply = async (data) => {
                 comentable_id: comentableId,
                 comentable_type: comentableType,
                 texto: data.text,
-                parent_id: data.repliedToCommentId || null, // ✅ acá la corrección
+                parent_id: data.repliedToCommentId || null, 
             })
         });
 

@@ -329,56 +329,58 @@ export default function Index(props) {
             const userPhoto = usuario?.profile_photo_url ?? null;
 
             return (
-              <div key={c.id} className="bg-white shadow rounded overflow-hidden">
-                <div className="h-48 w-full bg-gray-100 flex items-center justify-center overflow-hidden relative">
+              <article key={c.id} className="bg-white rounded-2xl shadow-md hover:shadow-xl transition-shadow overflow-hidden">
+                <div className="relative h-56 md:h-48 lg:h-56">
                   {c.fotoAnimal ? (
                     <LazyImage src={c.fotoAnimal} alt={c.tipoAnimal || 'Foto'} className="h-full w-full" priority={page === 1} />
                   ) : (
-                    <div className="text-gray-500">Sin imagen</div>
+                    <div className="h-full w-full bg-gradient-to-br from-gray-100 to-gray-50 flex items-center justify-center text-gray-500">Sin imagen</div>
                   )}
 
-                  <div className="absolute top-2 left-2 flex items-center gap-2 bg-white/90 px-2 py-1 rounded-full shadow-sm">
-                    <a href={usuario ? `/users/${usuario.id}` : '#'} className="flex items-center gap-2">
-                        {userPhoto ? (
-                        // avatar: cargamos con prioridad alta si tiene foto
-                        <img
-                          src={userPhoto}
-                          alt={userName}
-                          className="w-9 h-9 rounded-full object-cover border"
-                          loading="eager"
-                          decoding="async"
-                          fetchPriority="high"
-                        />
-                      ) : (
-                        <div className="w-9 h-9 rounded-full flex items-center justify-center font-medium border text-sm bg-gray-100">
-                          {getInitials(userName)}
-                        </div>
-                      )}
-                      <span className="text-sm font-medium text-gray-800">{userName}</span>
-                    </a>
+                  
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+
+                  
+                  <div className="absolute top-3 left-3 flex items-center gap-2">
+                    <span className="px-3 py-1 rounded-full bg-white/90 text-xs font-semibold text-gray-800 shadow">{c.situacion || 'Publicación'}</span>
                   </div>
-                </div>
 
-                <div className="p-3">
-                  <div className="text-sm text-gray-500 mb-1">{c.tipoAnimal || 'No especificado'}</div>
-                  <div className="font-medium line-clamp-2 mb-2">{c.descripcion}</div>
-                  <div className="text-sm text-gray-600 mb-2">{c.ciudad} · {c.situacion}</div>
-
-                  <div className="flex items-center justify-between">
-                    <Link href={`/casos/${c.id}`} className="text-blue-600">Ver detalle</Link>
-                    {c.latitud && c.longitud && (
-                      <a
-                        href={`https://www.openstreetmap.org/?mlat=${c.latitud}&mlon=${c.longitud}#map=16/${c.latitud}/${c.longitud}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-sm text-gray-600"
-                      >
-                        Ver mapa
-                      </a>
+                  
+                  <a href={usuario ? `/users/${usuario.id}` : '#'} className="absolute left-3 bottom-3 flex items-center gap-3 bg-white/80 backdrop-blur rounded-full px-2 py-1">
+                    {userPhoto ? (
+                      <img src={userPhoto} alt={userName} className="w-10 h-10 rounded-full object-cover border" loading="eager" decoding="async" fetchPriority="high" />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full flex items-center justify-center font-semibold text-sm bg-gray-200 border">{getInitials(userName)}</div>
                     )}
+                    <div className="text-sm">
+                      <div className="text-xs text-gray-700 font-medium">{userName}</div>
+                      <div className="text-2xs text-gray-600">{c.ciudad || '—'}</div>
+                    </div>
+                  </a>
+
+                  
+                  <div className="absolute right-3 top-3 flex flex-col items-end gap-2">
+                    <span className="px-2 py-1 bg-white/90 rounded text-xs text-gray-700">{c.tipoAnimal || 'Animal'}</span>
                   </div>
                 </div>
-              </div>
+
+                <div className="p-4 space-y-3">
+                  <p className="text-sm text-gray-500">{new Date(c.fechaPublicacion || c.created_at).toLocaleDateString()}</p>
+                  <h3 className="text-lg font-semibold text-gray-800 line-clamp-2">{c.descripcion}</h3>
+                  <p className="text-sm text-gray-600 line-clamp-3">{c.descripcion}</p>
+
+                  <div className="flex items-center justify-between mt-2">
+                    <div className="flex items-center gap-3">
+                      <Link href={`/casos/${c.id}`} className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-600 text-white rounded-full text-sm hover:bg-blue-700 transition">Ver detalle</Link>
+                      {c.latitud && c.longitud && (
+                        <a href={`https://www.openstreetmap.org/?mlat=${c.latitud}&mlon=${c.longitud}#map=16/${c.latitud}/${c.longitud}`} target="_blank" rel="noreferrer" className="text-sm text-gray-600 hover:text-gray-800">Ver mapa</a>
+                      )}
+                    </div>
+
+                    <div className="text-sm text-gray-500">{c.situacion ? c.situacion : ''}</div>
+                  </div>
+                </div>
+              </article>
             );
           })}
         </div>

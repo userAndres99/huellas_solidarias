@@ -23,7 +23,7 @@ class ComentarioController extends Controller
                     'id' => $c->id,
                     'user_id' => $c->user_id,
                     'usuario_nombre' => $c->user->name ?? $c->usuario_nombre ?? 'Invitado',
-                    'usuario_avatar' => $c->user->avatar ?? $c->usuario_avatar ?? '/default.png',
+                    'usuario_avatar' => $c->user->avatar ?? $c->usuario_avatar ?? '/images/DefaultPerfil.jpg',
                     'texto' => $c->texto,
                     'parent_id' => $c->parent_id,
                     'likes' => $c->likes,
@@ -47,7 +47,7 @@ class ComentarioController extends Controller
 
         $data['user_id'] = auth()->id();
         $data['usuario_nombre'] = auth()->user()->name ?? 'Invitado';
-        $data['usuario_avatar'] = auth()->user()->avatar ?? '/default.png';
+    $data['usuario_avatar'] = auth()->user()->avatar ?? '/images/DefaultPerfil.jpg';
 
         Comentario::create($data);
 
@@ -61,7 +61,7 @@ class ComentarioController extends Controller
                     'id' => $c->id,
                     'user_id' => $c->user_id,
                     'usuario_nombre' => $c->user->name ?? $c->usuario_nombre ?? 'Invitado',
-                    'usuario_avatar' => $c->user->avatar ?? $c->usuario_avatar ?? '/default.png',
+                    'usuario_avatar' => $c->user->avatar ?? $c->usuario_avatar ?? '/images/DefaultPerfil.jpg',
                     'texto' => $c->texto,
                     'parent_id' => $c->parent_id,
                     'likes' => $c->likes,
