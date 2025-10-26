@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { Link } from "@inertiajs/react";
-import { FaEye } from 'react-icons/fa';
+import { Link, usePage } from "@inertiajs/react";
+import { FaEye, FaPlus } from 'react-icons/fa';
 
 export default function Historias() {
+    const { auth } = usePage().props; // 🔹 obtenemos info del usuario
     const [historias, setHistorias] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -36,7 +37,19 @@ export default function Historias() {
 
     return (
        <div className="container mx-auto p-6">
-            <h2 className="text-3xl font-bold mb-8 text-center text-gray-800">Historias de Éxito</h2>
+            <div className="flex justify-between items-center mb-8">
+                <h2 className="text-3xl font-bold text-gray-800">Historias de Éxito</h2>
+
+                {auth.user && (
+                    <Link
+                        href="/publicar-historia" // Ruta para crear nueva historia
+                        className="inline-flex items-center px-4 py-2 bg-green-600 text-white font-semibold rounded-lg shadow hover:bg-green-700 hover:scale-105 transform transition-all duration-200"
+                    >
+                        <FaPlus className="mr-2" />
+                        Nueva Historia
+                    </Link>
+                )}
+            </div>
 
             <div className="grid sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {historias.map(h => (
