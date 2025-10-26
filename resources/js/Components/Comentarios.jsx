@@ -3,7 +3,7 @@ import { usePage } from '@inertiajs/react';
 import { formatDistanceToNow } from 'date-fns';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { FaCommentDots } from 'react-icons/fa';
-import { fetchWithCsrf } from '@/helper/fetchWithCsrf';
+import axios from 'axios';
 
 export default function Comentarios({ comentableType, comentableId }) {
     const { auth } = usePage().props;
@@ -48,11 +48,10 @@ export default function Comentarios({ comentableType, comentableId }) {
 
     // Like / Unlike
     const likeMutation = useMutation({
-        mutationFn: async (comentarioId) => {
-            return await fetchWithCsrf(`/comentarios/${comentarioId}/like`, {
-                method: 'POST',
-            });
-        },
+            mutationFn: async (comentarioId) => {
+                const res = await axios.post(`/comentarios/${comentarioId}/like`);
+                return res.data;
+            },
         onMutate: async (comentarioId) => {
             await queryClient.cancelQueries(['comentarios', comentableId, comentableType]);
             const prevData = queryClient.getQueryData(['comentarios', comentableId, comentableType]);
@@ -77,11 +76,8 @@ export default function Comentarios({ comentableType, comentableId }) {
     // Editar comentario
     const updateMutation = useMutation({
         mutationFn: async ({ id, texto }) => {
-            return await fetchWithCsrf(`/comentarios/${id}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ texto }),
-            });
+            const res = await axios.put(`/comentarios/${id}`, { texto });
+            return res.data;
         },
         onSuccess: () => {
             refetch();
@@ -93,7 +89,8 @@ export default function Comentarios({ comentableType, comentableId }) {
     // Eliminar comentario
     const deleteMutation = useMutation({
         mutationFn: async (id) => {
-            return await fetchWithCsrf(`/comentarios/${id}`, { method: 'DELETE' });
+            const res = await axios.delete(`/comentarios/${id}`);
+            return res.data;
         },
         onSuccess: () => refetch(),
     });
@@ -103,11 +100,7 @@ export default function Comentarios({ comentableType, comentableId }) {
         e.preventDefault();
         const texto = e.target.texto.value.trim();
         if (!texto || !auth.user) return alert('Debes iniciar sesión para comentar.');
-        await fetchWithCsrf('/comentarios', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ comentable_id: comentableId, comentable_type: comentableType, texto }),
-        });
+        await axios.post('/comentarios', { comentable_id: comentableId, comentable_type: comentableType, texto });
         e.target.reset();
         refetch();
     };
@@ -115,11 +108,7 @@ export default function Comentarios({ comentableType, comentableId }) {
     // Enviar respuesta
     const handleReplySubmit = async (parentId) => {
         if (!replyText.trim() || !auth.user) return alert('Debes iniciar sesión para comentar.');
-        await fetchWithCsrf('/comentarios', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ comentable_id: comentableId, comentable_type: comentableType, texto: replyText, parent_id: parentId }),
-        });
+        await axios.post('/comentarios', { comentable_id: comentableId, comentable_type: comentableType, texto: replyText, parent_id: parentId });
         setReplyingTo(null);
         setReplyText('');
         refetch();
