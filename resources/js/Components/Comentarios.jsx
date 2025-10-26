@@ -1,156 +1,306 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { usePage } from '@inertiajs/react';
-import { CommentSection } from 'react-comments-section';
-import 'react-comments-section/dist/index.css';
 import { formatDistanceToNow } from 'date-fns';
-
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { FaCommentDots } from 'react-icons/fa';
 
 export default function Comentarios({ comentableType, comentableId }) {
     const { auth } = usePage().props;
+    const queryClient = useQueryClient();
+    const [replyingTo, setReplyingTo] = useState(null);
+    const [replyText, setReplyText] = useState('');
+    const [editingId, setEditingId] = useState(null);
+    const [editingText, setEditingText] = useState('');
 
-    // convierte url relativa a absoluta
-    function makeAbsolute(url) {
-      if (!url) return null;
-      if (/^https?:\/\//.test(url)) return url;
-      return `${window.location.origin}${url}`;
-    }
+    const makeAbsolute = (url) => {
+        if (!url) return null;
+        if (/^https?:\/\//.test(url)) return url;
+        return `${window.location.origin}${url}`;
+    };
 
-    // Formatear comentarios al formato de react-comments-section
     const formatComentario = (c) => {
-        if (!c) return null;
         const photo = c.usuario_avatar || c.user?.profile_photo_url || '/images/DefaultPerfil.jpg';
         const absPhoto = makeAbsolute(photo);
 
         return {
-            comId: c.id,
-            userId: c.user_id || `guest-${c.id}`,
+            id: c.id,
+            userId: c.user_id,
             fullName: c.user?.name || c.usuario_nombre || 'Invitado',
             avatarUrl: absPhoto,
-            userProfile: absPhoto,
-            text: c.texto,
+            texto: c.texto,
             replies: c.respuesta?.map(formatComentario) || [],
             createdAt: formatDistanceToNow(new Date(c.created_at), { addSuffix: true }),
+            likes: c.likes_count || 0,
+            likedByCurrentUser: c.liked_by_current_user || false,
+            parentId: c.parent_id || null,
         };
     };
 
-    // Traer comentarios al montar
+    // 🔹 Traer comentarios
     const { data: comentarios = [], refetch, isLoading, isError } = useQuery({
         queryKey: ['comentarios', comentableId, comentableType],
-        queryFn: async() => {
+        queryFn: async () => {
             const res = await fetch(`/comentarios/json?comentable_id=${comentableId}&comentable_type=${comentableType}`);
-            if(!res.ok) throw new Error('Error al cargar comentarios');
+            if (!res.ok) throw new Error('Error al cargar comentarios');
             const data = await res.json();
             return data.map(formatComentario);
         }
     });
 
-    useEffect(() => {
-        const handler = () => {
-            if (typeof refetch === 'function') refetch();
-        };
-        window.addEventListener('profile-updated', handler);
-        return () => window.removeEventListener('profile-updated', handler);
-    }, [refetch]);
+    // 🔹 Mutación de like/unlike
+    const likeMutation = useMutation({
+        mutationFn: async (comentarioId) => {
+            const res = await fetch(`/comentarios/${comentarioId}/like`, {
+                method: 'POST',
+                headers: {
+                    Accept: 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                },
+            });
+            if (!res.ok) throw new Error('Error al enviar like');
+            return res.json();
+        },
+        onMutate: async (comentarioId) => {
+            await queryClient.cancelQueries(['comentarios', comentableId, comentableType]);
+            const prevData = queryClient.getQueryData(['comentarios', comentableId, comentableType]);
 
-    // Cuando el usuario envía un comentario
-    const handleSubmitComment = async (data) => {
-        console.log('Comentario enviado:', data);
+            queryClient.setQueryData(['comentarios', comentableId, comentableType], (old = []) =>
+                old.map(c => {
+                    if (c.id === comentarioId) {
+                        const liked = !c.likedByCurrentUser;
+                        return { ...c, likedByCurrentUser: liked, likes: c.likes + (liked ? 1 : -1) };
+                    }
+                    return { ...c, replies: c.replies?.map(r => r.id === comentarioId
+                        ? { ...r, likedByCurrentUser: !r.likedByCurrentUser, likes: r.likes + (r.likedByCurrentUser ? -1 : 1) }
+                        : r
+                    ) };
+                })
+            );
+
+            return { prevData };
+        },
+        onError: (err, _, context) => {
+            if (context?.prevData) queryClient.setQueryData(['comentarios', comentableId, comentableType], context.prevData);
+        },
+        onSettled: () => {
+            queryClient.invalidateQueries(['comentarios', comentableId, comentableType]);
+        },
+    });
+
+    // 🔹 Mutación para actualizar comentario/respuesta
+    const updateMutation = useMutation({
+        mutationFn: async ({ id, texto }) => {
+            const res = await fetch(`/comentarios/${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                },
+                body: JSON.stringify({ texto })
+            });
+            if (!res.ok) throw new Error('Error al actualizar comentario');
+            return res.json();
+        },
+        onSuccess: () => {
+            refetch();
+            setEditingId(null);
+            setEditingText('');
+        }
+    });
+
+    // 🔹 Mutación para eliminar comentario/respuesta
+    const deleteMutation = useMutation({
+        mutationFn: async (id) => {
+            const res = await fetch(`/comentarios/${id}`, {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                }
+            });
+            if (!res.ok) throw new Error('Error al eliminar comentario');
+            return res.json();
+        },
+        onSuccess: () => {
+            refetch();
+        }
+    });
+
+    // 🔹 Enviar nuevo comentario
+    const handleSubmitComment = async (e) => {
+        e.preventDefault();
+        const texto = e.target.texto.value.trim();
+        if (!texto) return;
         if (!auth.user) return alert('Debes iniciar sesión para comentar.');
 
-        try {
-            const res = await fetch('/comentarios', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                },
-                body: JSON.stringify({
-                    comentable_id: comentableId,
-                    comentable_type: comentableType,
-                    texto: data.text,
-                    parent_id: data.parentOfRepliedCommentId || data.repliedToCommentId || null
-                })
-            });
-
-            if (!res.ok) throw new Error('Error al enviar comentario');
-
+        const res = await fetch('/comentarios', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+            },
+            body: JSON.stringify({ comentable_id: comentableId, comentable_type: comentableType, texto })
+        });
+        if (res.ok) {
+            e.target.reset();
             refetch();
-            console.log("✅ Comentario o respuesta enviado correctamente");
-        } catch (error) {
-            console.error(error);
-            alert('No se pudo enviar el comentario');
         }
     };
 
-    const handleSubmitReply = async (data) => {
-        console.log("💬 Respuesta enviada:", data);
+    // 🔹 Enviar respuesta
+    const handleReplySubmit = async (parentId) => {
+        if (!auth.user) return alert('Debes iniciar sesión para comentar.');
+        if (!replyText.trim()) return;
 
-        if (!auth.user) return alert('Debes iniciar sesión para responder.');
-
-        try {
-            const res = await fetch('/comentarios', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                },
-                body: JSON.stringify({
-                    comentable_id: comentableId,
-                    comentable_type: comentableType,
-                    texto: data.text,
-                    parent_id: data.repliedToCommentId || null,
-                })
-            });
-
-            if (!res.ok) {
-                const errorData = await res.json();
-                console.error("⚠️ Error del servidor:", errorData);
-                throw new Error('Error al enviar respuesta');
-            }
-
-            console.log("✅ Respuesta guardada correctamente");
+        const res = await fetch('/comentarios', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+            },
+            body: JSON.stringify({
+                comentable_id: comentableId,
+                comentable_type: comentableType,
+                texto: replyText,
+                parent_id: parentId
+            })
+        });
+        if (res.ok) {
+            setReplyingTo(null);
+            setReplyText('');
             refetch();
-        } catch (error) {
-            console.error("❌ Error al enviar respuesta:", error);
         }
     };
 
-    if (isLoading) return <p>Cargando Comentarios...</p>;
+    if (isLoading) return <p>Cargando comentarios...</p>;
     if (isError) return <p>Error al cargar comentarios.</p>;
 
+    // 🔹 Render recursivo de comentarios y respuestas
+    const renderComentarios = (lista) => (
+        <div className="space-y-4">
+            {lista.map(c => (
+                <div key={c.id} className="border rounded-lg p-3 bg-gray-50">
+                    <div className="flex items-start gap-3">
+                        <img
+                            src={c.avatarUrl}
+                            alt={c.fullName}
+                            className="w-10 h-10 rounded-full object-cover"
+                        />
+                        <div className="flex-1">
+                            <div className="flex justify-between items-center">
+                                <span className="font-semibold">{c.fullName}</span>
+                                <span className="text-xs text-gray-500">{c.createdAt}</span>
+                            </div>
+
+                            {/* Mostrar texto o textarea si se está editando */}
+                            {editingId === c.id ? (
+                                <div className="mt-2">
+                                    <textarea
+                                        value={editingText}
+                                        onChange={(e) => setEditingText(e.target.value)}
+                                        className="w-full border rounded-lg p-2 text-sm"
+                                    />
+                                    <div className="flex justify-end gap-2 mt-1">
+                                        <button onClick={() => setEditingId(null)} className="text-xs text-gray-500 hover:text-gray-700">Cancelar</button>
+                                        <button onClick={() => updateMutation.mutate({ id: c.id, texto: editingText })} className="text-xs bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600">Guardar</button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <p className="text-gray-800 mt-1">{c.texto}</p>
+                            )}
+
+                            {/* Botones: like, responder, editar, eliminar */}
+                            <div className="flex gap-2 mt-2">
+                                <button
+                                    onClick={() => likeMutation.mutate(c.id)}
+                                    className={`text-sm px-3 py-1 rounded-full border transition ${c.likedByCurrentUser ? 'bg-blue-500 text-white' : 'bg-gray-100 hover:bg-gray-200'}`}
+                                >
+                                    👍 {c.likes}
+                                </button>
+
+                                {auth.user && c.parentId === null && (
+                                    <button
+                                        onClick={() => setReplyingTo(replyingTo === c.id ? null : c.id)}
+                                        className="text-sm text-gray-600 hover:text-blue-500"
+                                    >
+                                        💬 Responder
+                                    </button>
+                                )}
+
+                                {auth.user?.id === c.userId && (
+                                    <>
+                                        <button
+                                            onClick={() => { setEditingId(c.id); setEditingText(c.texto); }}
+                                            className="text-sm text-gray-600 hover:text-green-500"
+                                        >
+                                            ✏️ Editar
+                                        </button>
+                                        <button
+                                            onClick={() => deleteMutation.mutate(c.id)}
+                                            className="text-sm text-gray-600 hover:text-red-500"
+                                        >
+                                            🗑️ Eliminar
+                                        </button>
+                                    </>
+                                )}
+                            </div>
+
+                            {/* Textarea para responder */}
+                            {replyingTo === c.id && (
+                                <div className="mt-2">
+                                    <textarea
+                                        value={replyText}
+                                        onChange={(e) => setReplyText(e.target.value)}
+                                        placeholder="Escribe tu respuesta..."
+                                        className="w-full border rounded-lg p-2 text-sm"
+                                    />
+                                    <div className="flex justify-end mt-1 gap-2">
+                                        <button onClick={() => setReplyingTo(null)} className="text-xs text-gray-500 hover:text-gray-700">Cancelar</button>
+                                        <button onClick={() => handleReplySubmit(c.id)} className="text-xs bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600">Enviar</button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Respuestas */}
+                            {c.replies?.length > 0 && (
+                                <div className="ml-6 mt-3 border-l-2 border-gray-200 pl-3">
+                                    {renderComentarios(c.replies)}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            ))}
+        </div>
+    );
+
     return (
-        <div className="comentarios-container">
-            <h3 className='text-lg font-semibold flex items-center gap-2'>
-                <FaCommentDots className="text-blue-500"/>
+        <div className="comentarios-container mt-6">
+            <h3 className='text-lg font-semibold flex items-center gap-2 mb-4'>
+                <FaCommentDots className="text-blue-500" />
                 Comentarios
             </h3>
+
             {auth.user ? (
-                <CommentSection
-                    currentUser={{
-                        currentUserId: auth.user.id,
-                        currentUserFullName: auth.user.name,
-                        currentUserImg: auth.user.profile_photo_url
-                          ? (auth.user.profile_photo_url.startsWith('http') ? auth.user.profile_photo_url : window.location.origin + auth.user.profile_photo_url)
-                          : `${window.location.origin}/images/DefaultPerfil.jpg`
-                    }}
-                    commentData={comentarios}
-                    onSubmitAction={handleSubmitComment}
-                    onReplyAction={handleSubmitReply}
-                    logIn={{
-                        loginLink: '/login',
-                        signupLink: '/register'
-                    }}
-                    customInputPlaceHolder="Escribe tu comentario..."
-                    commentDateFormat="relative"
-                />
+                <>
+                    <form onSubmit={handleSubmitComment} className="mb-4">
+                        <textarea
+                            name="texto"
+                            placeholder="Escribe tu comentario..."
+                            className="w-full border rounded-lg p-2 focus:ring-2 focus:ring-blue-400"
+                        />
+                        <button type="submit" className="mt-2 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg">
+                            Comentar
+                        </button>
+                    </form>
+
+                    {comentarios.length > 0 ? renderComentarios(comentarios) : (
+                        <p className="text-gray-600">Aún no hay comentarios. Sé el primero en comentar.</p>
+                    )}
+                </>
             ) : (
-                <p>
-                    Debes <a href="/login">Iniciar sesión</a> para comentar
-                </p>
+                <p>Debes <a href="/login" className="text-blue-500 underline">iniciar sesión</a> para comentar.</p>
             )}
         </div>
     );

@@ -153,11 +153,25 @@ Route::middleware(['auth', 'role:Organizacion'])->group(function () {
         ->name('organizacion.eventos.show');
 });
 
+   Route::prefix('comentarios')
+    ->middleware('auth')
+    ->group(function () {
+        Route::post('/{comentario}/like', [ComentarioController::class, 'like'])
+            ->name('comentarios.like');
+        Route::delete('/{comentario}/like', [ComentarioController::class, 'unlike'])
+            ->name('comentarios.unlike');
+    });
+
 /* -----------------------------------------------------------------
 | Rutas para comentarios
 ----------------------------------------------------------------- */
 Route::middleware('auth')->group(function(){
     Route::post('/comentarios', [ComentarioController::class, 'store'])->name('comentarios.store');
+
+    // Actualizar comentario o respuesta
+    Route::put('/comentarios/{id}', [ComentarioController::class, 'update'])->name('comentario.update');
+
+    Route::delete('/comentarios/{id}', [ComentarioController::class,'destroy'])->name('comentario.destroy');
 });
 
 
