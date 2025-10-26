@@ -16,6 +16,8 @@ class SolicitudVerificacion extends Model
         'organization_email',
         'message',
         'documents',
+        'latitud',
+        'longitud',
         'status',
         'reviewed_by',
         'response_message',
@@ -23,6 +25,8 @@ class SolicitudVerificacion extends Model
 
     protected $casts = [
         'documents' => 'array',
+        'latitud' => 'float',
+        'longitud' => 'float',
     ];
 
     public function user(): BelongsTo

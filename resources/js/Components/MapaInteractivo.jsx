@@ -3,8 +3,16 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useEffect, useState } from 'react';
 
-// Función para obtener el icono según el tipo de animal
-function getAnimalIcon(tipoAnimal) {
+// Función para obtener el icono según el tipo de animal (o de organización que quiere marcar su ubicacion)
+function getMarkerIcon(tipoAnimal, markerType = 'animal') {
+
+  // para la organizacion si quiere marcar su ubicacion
+  if (markerType === 'org') {
+    const iconUrl = 'https://cdn-icons-png.flaticon.com/512/684/684908.png'; // edificio
+    return new L.icon({ iconUrl, iconSize: [28, 28], iconAnchor: [14, 28] });
+  }
+
+  // modo animal
   let iconUrl;
   switch (tipoAnimal) {
     case 'Perro':
@@ -17,7 +25,7 @@ function getAnimalIcon(tipoAnimal) {
       // icono por defecto 
       iconUrl = '/images/interrogante.jpeg';
   }
-  return new L.icon({ iconUrl, iconSize: [32, 32] });
+  return new L.icon({ iconUrl, iconSize: [32, 32], iconAnchor: [16, 32] });
 }
 
 function ChangeView({ center }) {
@@ -28,7 +36,7 @@ function ChangeView({ center }) {
   return null;
 }
 
-function LocationMarker({ onLocationSelect, getTipoAnimal }) {
+function LocationMarker({ onLocationSelect, getTipoAnimal, markerType = 'animal' }) {
   const [position, setPosition] = useState(null);
   const [tipo, setTipo] = useState('default');
 
@@ -42,7 +50,9 @@ function LocationMarker({ onLocationSelect, getTipoAnimal }) {
     },
   });
 
-  return position ? <Marker position={position} icon={getAnimalIcon(tipo)} /> : null;
+  return position ? (
+    <Marker position={position} icon={getMarkerIcon(tipo, markerType)} />
+  ) : null;
 }
 
 export default function MapaInteractivo({
@@ -52,6 +62,7 @@ export default function MapaInteractivo({
   readOnly = false,
   initialPosition = null,
   marker = false,
+  markerType = 'animal',
   showMarkers = true,
 }) {
   const [markers, setMarkers] = useState([]);
@@ -83,12 +94,16 @@ export default function MapaInteractivo({
         <ChangeView center={center || initialPosition} />
 
         {!readOnly && onLocationSelect && (
-          <LocationMarker onLocationSelect={onLocationSelect} getTipoAnimal={() => tipoAnimal} />
+          <LocationMarker
+            onLocationSelect={onLocationSelect}
+            getTipoAnimal={() => tipoAnimal}
+            markerType={markerType}
+          />
         )}
 
         {/* marcador para modo lectura/detalle*/}
         {readOnly && initialPosition && marker && (
-          <Marker position={initialPosition} icon={getAnimalIcon(tipoAnimal)} />
+          <Marker position={initialPosition} icon={getMarkerIcon(tipoAnimal, markerType)} />
         )}
 
         {/* marcadores globales (solo si showMarkers = true) */}

@@ -5,21 +5,31 @@ import InputLabel from '@/Components/InputLabel';
 import InputError from '@/Components/InputError';
 import PrimaryButton from '@/Components/PrimaryButton';
 
+import FiltroCiudad from '@/Components/FiltroCiudad'; // tu componente existente
+import MapaInteractivo from '@/Components/MapaInteractivo'; // tu componente existente
+
 export default function SolicitudVerificacionForm() {
   const page = usePage();
   const user = page.props.auth?.user ?? null;
 
-  // useForm maneja estado, post y errores automáticamente
+  // añadimos ciudad/ciudad_id/latitud/longitud al formulario
   const { data, setData, post, processing, errors, reset } = useForm({
     organization_name: '',
     organization_phone: '',
     organization_email: '',
     message: '',
-    documents: [], //guardamos archivos
+    documents: [],
+    // ubicacion
+    ciudad: '',
+    ciudad_id: '',
+    latitud: '',
+    longitud: '',
   });
 
-  // preview opcional para el primer archivo
   const [previewUrl, setPreviewUrl] = useState(null);
+  const [mapCenter, setMapCenter] = useState(null);
+  const [initialPosition, setInitialPosition] = useState(null);
+  const [showMarker, setShowMarker] = useState(false);
 
   useEffect(() => {
     return () => {
@@ -32,7 +42,6 @@ export default function SolicitudVerificacionForm() {
     setData('documents', files);
 
     if (files[0]) {
-      // preview solo del primer archivo si es imagen
       if (files[0].type.startsWith('image/')) {
         const obj = URL.createObjectURL(files[0]);
         setPreviewUrl((prev) => {
@@ -47,16 +56,77 @@ export default function SolicitudVerificacionForm() {
     }
   };
 
+  // Maneja la selección desde tu FiltroCiudad (devuelve [lat, lon])
+  const handleCiudadSelect = async (value) => {
+    if (!value || !Array.isArray(value)) return;
+    const [lat, lon] = value.map(Number);
+
+    setData('ciudad', '');      // opcional: usamos reverse-geocode para nombre
+    setData('ciudad_id', '');
+    setData('latitud', lat);
+    setData('longitud', lon);
+
+    // centrar y mostrar marcador
+    setMapCenter([lat, lon]);
+    setInitialPosition([lat, lon]);
+    setShowMarker(true);
+
+    // intentar obtener nombre de ciudad por reverse-geocode
+    await reverseGeocodeAndSetCity(lat, lon);
+  };
+
+  // Cuando el usuario marca en el mapa
+  const handleLocationSelect = async ([lat, lng]) => {
+    setData('latitud', lat);
+    setData('longitud', lng);
+    await reverseGeocodeAndSetCity(lat, lng);
+
+    setMapCenter([lat, lng]);
+    setInitialPosition([lat, lng]);
+    setShowMarker(true);
+  };
+
+  // Reverse geocoding con Nominatim para obtener nombre de ciudad
+  const reverseGeocodeAndSetCity = async (lat, lon) => {
+    try {
+      const nominatimUrl = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${encodeURIComponent(
+        lat
+      )}&lon=${encodeURIComponent(lon)}&accept-language=es`;
+
+      const response = await fetch(nominatimUrl, {
+        headers: { 'User-Agent': 'HuellasSolidarias/1.0 (contacto@example.com)' },
+      });
+
+      if (!response.ok) {
+        console.warn('Nominatim no respondió OK', response.status);
+        return;
+      }
+
+      const result = await response.json();
+      const addr = result.address || {};
+      const cityName =
+        addr.city || addr.town || addr.village || addr.municipality || addr.county || '';
+
+      if (cityName) {
+        setData('ciudad', cityName);
+        setData('ciudad_id', result.place_id || ''); // opcional
+      }
+    } catch (err) {
+      console.error('Error en reverse geocode:', err);
+    }
+  };
+
   const submit = (e) => {
     e.preventDefault();
 
-    // post usando useForm.post 
     post(route('profile.request_verification'), {
-      forceFormData: true, // fuerza multipart/form-data cuando hay File objects
+      forceFormData: true,
       onSuccess: () => {
-        // limpiar campos
-        reset('organization_name', 'organization_phone', 'organization_email', 'message', 'documents');
+        reset('organization_name', 'organization_phone', 'organization_email', 'message', 'documents', 'ciudad', 'ciudad_id', 'latitud', 'longitud');
         setPreviewUrl(null);
+        setShowMarker(false);
+        setInitialPosition(null);
+        setMapCenter(null);
       },
     });
   };
@@ -136,7 +206,7 @@ export default function SolicitudVerificacionForm() {
         </div>
 
         <div>
-          <InputLabel htmlFor="documents" value="Documentación (PDF / JPG / PNG) - opcional" />
+          <InputLabel htmlFor="documents" value="Documentación (PDF) - opcional" />
           {previewUrl && (
             <div className="mb-2">
               <img src={previewUrl} alt="preview" className="w-32 h-32 object-cover rounded" />
@@ -152,6 +222,47 @@ export default function SolicitudVerificacionForm() {
             className="mt-1 block w-full"
           />
           <InputError message={errors['documents.0'] ?? errors.documents} className="mt-1" />
+        </div>
+
+        {/* Buscar ciudad (tu componente existente) */}
+        <div>
+          <InputLabel value="Buscar ciudad / seleccionar ubicación" />
+          <div className="mt-1">
+            <FiltroCiudad onCiudadSelect={handleCiudadSelect} />
+          </div>
+        </div>
+
+        <div>
+          <InputLabel value="Ciudad seleccionada" />
+          <input
+            type="text"
+            name="ciudad"
+            value={data.ciudad}
+            readOnly
+            className="w-full rounded-md border border-gray-200 px-3 py-2 bg-gray-50 cursor-not-allowed"
+          />
+        </div>
+
+        {/* MAPA para seleccionar ubicación */}
+        <div>
+          <InputLabel value="Marcar ubicación en el mapa (opcional)" />
+          <div className="h-64 w-full rounded-md overflow-hidden border border-gray-200 mt-2">
+            <MapaInteractivo
+              onLocationSelect={handleLocationSelect}
+              tipoAnimal={null}
+              showMarkers={false}
+              markerType="org"
+              center={mapCenter}
+              initialPosition={initialPosition}
+              marker={showMarker}
+            />
+          </div>
+        </div>
+
+        <div className="text-sm text-gray-600">
+          <span className="font-medium">Latitud:</span> {data.latitud || '-'}{' '}
+          <span className="mx-2">|</span>
+          <span className="font-medium">Longitud:</span> {data.longitud || '-'}
         </div>
 
         <div className="pt-4">

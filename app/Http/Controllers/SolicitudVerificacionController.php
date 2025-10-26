@@ -21,6 +21,8 @@ class SolicitudVerificacionController extends Controller
             'organization_email' => ['nullable','email','max:255'],
             'message' => ['nullable','string'],
             'documents.*' => ['nullable','file','mimes:pdf,jpg,jpeg,png','max:5120'],
+            'latitud' => ['nullable','numeric','between:-90,90'],
+            'longitud' => ['nullable','numeric','between:-180,180'],
         ]);
 
         $user = $request->user();
@@ -50,6 +52,8 @@ class SolicitudVerificacionController extends Controller
             'organization_email' => $request->input('organization_email'),
             'message' => $request->input('message'),
             'documents' => $saved ?: null,
+            'latitud' => $request->input('latitud'),
+            'longitud' => $request->input('longitud'),
             'status' => 'pending',
         ]);
 
