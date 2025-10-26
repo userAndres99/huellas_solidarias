@@ -7,11 +7,21 @@ import { createRoot } from 'react-dom/client';
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
+import { Inertia } from '@inertiajs/inertia';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
 const queryClient = new QueryClient();
-
+// Cada vez que Inertia navegue a una nueva página
+// 🔹 Actualizar CSRF token dinámicamente al navegar con Inertia
+Inertia.on('navigate', () => {
+  const newToken = document.querySelector('meta[name="csrf-token"]')?.content;
+  if (newToken) {
+    document.querySelectorAll('meta[name="csrf-token"]').forEach(meta => {
+      meta.setAttribute('content', newToken);
+    });
+  }
+});
 createInertiaApp({
     title: (title) => `${title} - ${appName}`,
     resolve: (name) =>

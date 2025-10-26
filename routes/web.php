@@ -156,10 +156,8 @@ Route::middleware(['auth', 'role:Organizacion'])->group(function () {
    Route::prefix('comentarios')
     ->middleware('auth')
     ->group(function () {
-        Route::post('/{comentario}/like', [ComentarioController::class, 'like'])
-            ->name('comentarios.like');
-        Route::delete('/{comentario}/like', [ComentarioController::class, 'unlike'])
-            ->name('comentarios.unlike');
+        Route::post('/{comentario}/like', [ComentarioController::class, 'like'])->name('comentarios.like');
+        Route::delete('/{comentario}/like', [ComentarioController::class, 'unlike'])->name('comentarios.unlike');
     });
 
 /* -----------------------------------------------------------------
