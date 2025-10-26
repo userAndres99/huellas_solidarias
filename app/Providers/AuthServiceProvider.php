@@ -16,8 +16,8 @@ class AuthServiceProvider extends ServiceProvider
     {
         $this->registerPolicies();
 
-        // null-safe: acepta usuario null sin romper
-        Gate::define('is-admin', fn(?User $user) => $user?->role === User::ROLE_ADMIN);
+        //gate para verificar si el usuario es admin
+        Gate::define('is-admin', fn(?User $user) => $user?->isAdmin());
 
         // o, alternativa: permitir que los admins pasen cualquier gate
         Gate::before(function (?User $user, $ability) {

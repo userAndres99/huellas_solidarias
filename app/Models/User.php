@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Notifications\CustomVerifyEmail;
 use App\Notifications\CustomResetPassword;
+use App\Models\Rol;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -31,7 +32,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'password',
         'profile_photo_path', 
         'apellido', 
-        'role', 
+        'rol_id',
     ];
 
     /**
@@ -51,6 +52,7 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     protected $appends = [
         'profile_photo_url',
+        'role_name',
     ];
 
     /**
@@ -97,31 +99,42 @@ class User extends Authenticatable implements MustVerifyEmail
 
         return asset('images/DefaultPerfil.jpg');
     }
-
     // helpers de rol
+    public function rol()
+    {
+        return $this->belongsTo(Rol::class, 'rol_id');
+    }
+
+    /**
+     * Accessor conveniente que devuelve el nombre del rol.
+     */
+    public function getRoleNameAttribute()
+    {
+        return $this->rol?->nombre ?? null;
+    }
+
     public function isAdmin(): bool
     {
-        return $this->role === self::ROLE_ADMIN;
+        return $this->rol?->nombre === self::ROLE_ADMIN;
     }
 
     public function isOrganization(): bool
     {
-        return $this->role === self::ROLE_ORG;
+        return $this->rol?->nombre === self::ROLE_ORG;
     }
 
     public function isUser(): bool
     {
-        return $this->role === self::ROLE_USER;
+        return $this->rol?->nombre === self::ROLE_USER;
     }
 
     public function casos()
     {
         return $this -> hasMany(Caso::class, 'idUsuario');
-    } 
+    }
 
     public function historias()
     {
         return $this->hasMany(Historia::class);
     }
-
 }

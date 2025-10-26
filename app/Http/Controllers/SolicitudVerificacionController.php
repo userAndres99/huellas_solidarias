@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\SolicitudVerificacion;
 use App\Models\User;
+use App\Models\Rol;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Notification;
@@ -101,9 +102,11 @@ class SolicitudVerificacionController extends Controller
 
         if ($user) {
             if ($request->status === 'approved') {
-                $user->role = $user::ROLE_ORG; // usa constante
+                $rol = Rol::where('nombre', $user::ROLE_ORG)->first();
+                if ($rol) $user->rol_id = $rol->id;
             } elseif ($request->status === 'rejected') {
-                $user->role = $user::ROLE_USER; // usa constante
+                $rol = Rol::where('nombre', $user::ROLE_USER)->first();
+                if ($rol) $user->rol_id = $rol->id;
             }
             $user->save();
         }

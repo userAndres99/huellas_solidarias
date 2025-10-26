@@ -69,7 +69,7 @@ export default function SolicitudVerificacionForm() {
     );
   }
 
-  if (user.role !== 'Usuario') {
+  if (user.role_name !== 'Usuario') {
     return (
       <div className="p-6">
         <h1 className="text-xl font-semibold">Acceso no permitido</h1>

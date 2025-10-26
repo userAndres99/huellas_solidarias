@@ -59,7 +59,7 @@ export default function AuthenticatedLayout({ header, children }) {
                                 </NavLink>
 
                                 {/* Link solo visible para Organizacion */}
-                                {user?.role === 'Organizacion' && (
+                                {user?.role_name === 'Organizacion' && (
                                     <NavLink
                                         href={route('organizacion.index')}
                                         active={route().current('organizacion.index')}
@@ -69,7 +69,7 @@ export default function AuthenticatedLayout({ header, children }) {
                                 )}
 
                                 {/* Link solo visible para Admin (faltan detalles) */}
-                                {user?.role === 'Admin' && (
+                                {user?.role_name === 'Admin' && (
                                     <NavLink
                                         href={route('admin.solicitudes.index')}
                                         active={route().current('admin.solicitudes.index')}
@@ -194,7 +194,7 @@ export default function AuthenticatedLayout({ header, children }) {
                             Publicar Caso
                         </ResponsiveNavLink>
 
-                        {user?.role === 'Organizacion' && (
+                        {user?.role_name === 'Organizacion' && (
                             <ResponsiveNavLink
                                 href={route('organizacion.index')}
                                 active={route().current('organizacion.index')}
@@ -204,7 +204,7 @@ export default function AuthenticatedLayout({ header, children }) {
                         )}
 
                         {/* Link solo visible para Admin */}
-                        {user?.role === 'Admin' && (
+                        {user?.role_name === 'Admin' && (
                             <ResponsiveNavLink
                                 href={route('admin.solicitudes.index')}
                                 active={route().current('admin.solicitudes.index')}

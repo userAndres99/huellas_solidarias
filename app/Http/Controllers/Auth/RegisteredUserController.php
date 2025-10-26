@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Models\Rol;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -20,7 +21,11 @@ class RegisteredUserController extends Controller
      */
     public function create(): Response
     {
-        return Inertia::render('Auth/Register');
+        // Pasamos los roles disponibles al formulario de registro
+        $roles = Rol::orderBy('id')->get(['id', 'nombre']);
+        return Inertia::render('Auth/Register', [
+            'roles' => $roles,
+        ]);
     }
 
     /**
@@ -34,14 +39,20 @@ class RegisteredUserController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|string|lowercase|email|max:255|unique:'.User::class,
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
-            'role' => 'nullable|string|in:Usuario,Admin,Organizacion',
+            'rol_id' => 'nullable|exists:roles,id',
         ]);
+
+        // Si no se envía rol_id, asignamos por defecto el rol 'Usuario' si existe.
+        $rolId = $request->input('rol_id');
+        if (!$rolId) {
+            $rolId = Rol::where('nombre', User::ROLE_USER)->value('id');
+        }
 
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
-            'role' => $request->input('role', \App\Models\User::ROLE_USER),
+            'rol_id' => $rolId,
         ]);
 
         event(new Registered($user));

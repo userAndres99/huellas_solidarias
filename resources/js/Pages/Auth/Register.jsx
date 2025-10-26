@@ -5,13 +5,14 @@ import TextInput from '@/Components/TextInput';
 import GuestLayout from '@/Layouts/GuestLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
 
-export default function Register({ auth, canLogin, canRegister }) {
+export default function Register({ auth, canLogin, canRegister, roles = [] }) {
+  const defaultRolId = roles.length ? roles[0].id : '';
   const { data, setData, post, processing, errors, reset } = useForm({
     name: '',
     email: '',
     password: '',
     password_confirmation: '',
-    role: 'Usuario', 
+    rol_id: defaultRolId,
   });
 
   const submit = (e) => {
@@ -96,24 +97,23 @@ export default function Register({ auth, canLogin, canRegister }) {
           <InputError message={errors.password_confirmation} className="mt-2" />
         </div>
 
-        {/* Select de rol agregado (por ahora solo esta para probar) */}
         <div className="mt-4">
-          <InputLabel htmlFor="role" value="Rol" />
+          <InputLabel htmlFor="rol_id" value="Rol" />
 
           <select
-            id="role"
-            name="role"
-            value={data.role}
-            onChange={(e) => setData('role', e.target.value)}
+            id="rol_id"
+            name="rol_id"
+            value={data.rol_id}
+            onChange={(e) => setData('rol_id', e.target.value)}
             className="mt-1 block w-full rounded border-gray-300"
             required
           >
-            <option value="Usuario">Usuario</option>
-            <option value="Admin">Admin</option>
-            <option value="Organizacion">Organizacion</option>
+            {roles.map((r) => (
+              <option key={r.id} value={r.id}>{r.nombre}</option>
+            ))}
           </select>
 
-          <InputError message={errors.role} className="mt-2" />
+          <InputError message={errors.rol_id} className="mt-2" />
         </div>
 
         <div className="mt-4 flex items-center justify-end">

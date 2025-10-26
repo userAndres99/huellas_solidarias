@@ -149,7 +149,7 @@ export default function UpdateProfileInformation({
                     <InputError className="mt-2" message={null} />
                 </div>
 
-                {user?.role === 'Usuario' && (
+                {user?.role_name === 'Usuario' && (
                     <div className="rounded-md border border-gray-200 bg-gray-50 p-4">
                         <h3 className="text-sm font-semibold text-gray-900">
                             Solicitar verificación como representante de una organización
