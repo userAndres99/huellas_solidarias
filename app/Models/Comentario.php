@@ -27,12 +27,29 @@ class Comentario extends Model
     }
 
     public function comentable()
-    {
+    {   
         return $this -> morphTo();
     }
 
     public function respuesta()
     {
         return $this->hasMany(Comentario::class, 'parent_id');
+    }
+
+    public function likesUsers()
+    {
+        return $this->belongsToMany(User::class, 'comentario_user_like');
+    }
+
+    public function likesCount()
+    {
+        return $this->likesUsers()->count();
+    }
+
+    public function likedByCurrentUser()
+    {
+        $user = auth()->user();
+        if (!$user) return false;
+        return $this->likesUsers()->where('user_id', $user->id)->exists();
     }
 }
