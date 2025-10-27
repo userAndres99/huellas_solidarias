@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useForm, Head } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import FiltroCiudad from '@/Components/FiltroCiudad';
+import MapaInteractivo from '@/Components/MapaInteractivo';
 
 export default function CreateEvento() {
   const { data, setData, post, processing, errors, reset } = useForm({
@@ -15,6 +17,31 @@ export default function CreateEvento() {
   });
 
   const [preview, setPreview] = useState(null);
+  const [mapCenter, setMapCenter] = useState(null);
+  const [initialPosition, setInitialPosition] = useState(null);
+  const [showMarker, setShowMarker] = useState(false);
+
+  const handleCiudadSelect = async (value) => {
+    if (!value || !Array.isArray(value)) return;
+    const [lat, lon] = value.map(Number);
+
+    setData('lat', lat);
+    setData('lng', lon);
+
+    setMapCenter([lat, lon]);
+    setInitialPosition([lat, lon]);
+    setShowMarker(true);
+  };
+
+  // Cuando el usuario marca en el mapa
+  const handleLocationSelect = async ([lat, lng]) => {
+    setData('lat', lat);
+    setData('lng', lng);
+
+    setMapCenter([lat, lng]);
+    setInitialPosition([lat, lng]);
+    setShowMarker(true);
+  };
 
   
 
@@ -153,6 +180,32 @@ export default function CreateEvento() {
 
                 <span className="text-sm text-gray-700">{data.ends_at ? new Date(data.ends_at).toLocaleString() : 'No seleccionado'}</span>
               </div>
+            </div>
+          </div>
+
+          {/* Ubicacion del evento */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Seleccione la ubicación del evento (opcional)</label>
+            <div className="mt-2">
+              <FiltroCiudad onCiudadSelect={handleCiudadSelect} />
+            </div>
+
+            <div className="mt-3 h-64 w-full rounded-md overflow-hidden border border-gray-200">
+              <MapaInteractivo
+                onLocationSelect={handleLocationSelect}
+                tipoAnimal={null}
+                showMarkers={false}
+                markerType="org"
+                center={mapCenter}
+                initialPosition={initialPosition}
+                marker={showMarker}
+              />
+            </div>
+
+            <div className="text-sm text-gray-600 mt-2">
+              <span className="font-medium">Lat:</span> {data.lat ?? '-'}{' '}
+              <span className="mx-2">|</span>
+              <span className="font-medium">Lng:</span> {data.lng ?? '-'}
             </div>
           </div>
 

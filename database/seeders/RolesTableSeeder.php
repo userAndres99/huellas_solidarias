@@ -16,7 +16,7 @@ class RolesTableSeeder extends Seeder {
                 'updated_at' => $ahora,
             ],
             [
-                'nombre' => 'Organización',
+                'nombre' => 'Organizacion',
                 'descripcion' => 'Asociación o grupo verificado que puede crear eventos, gestionar casos y acceder a estadísticas. (ademas de las funciones de Usuario)',
                 'created_at' => $ahora,
                 'updated_at' => $ahora,

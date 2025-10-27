@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Link, usePage } from "@inertiajs/react";
+import { Link, usePage, Head } from "@inertiajs/react";
+import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { FaEye, FaPlus } from 'react-icons/fa';
 
 export default function Historias() {
@@ -33,10 +34,12 @@ export default function Historias() {
         return () => controller.abort();
     }, []);
 
-    if(loading) return <div>Cargando...</div>;
+     if(loading) return <div>Cargando...</div>;
 
-    return (
-       <div className="container mx-auto p-6">
+     return (
+         <AuthenticatedLayout header={<h2 className="text-xl font-semibold leading-tight text-gray-800">Historias de Éxito</h2>}>
+            <Head title="Historias de Éxito" />
+            <div className="container mx-auto p-6">
             <div className="flex justify-between items-center mb-8">
                 <h2 className="text-3xl font-bold text-gray-800">Historias de Éxito</h2>
 
@@ -91,7 +94,7 @@ export default function Historias() {
                                 <blockquote className="italic text-blue-700 mb-4">"{h.testimonio}"</blockquote>
                             )}
 
-                            {/* Botón */}
+                            {/* Boton */}
                             <div className="mt-auto flex justify-end">
                                 <Link
                                     href={`/historias/${h.id}`}
@@ -106,5 +109,6 @@ export default function Historias() {
                 ))}
             </div>
         </div>
+       </AuthenticatedLayout>
     );
 }
