@@ -12,6 +12,34 @@ use Illuminate\Support\Facades\Storage;
 
 class SolicitudVerificacionController extends Controller
 {
+    // Mostrar formulario (verifica si ya existe una solicitud pendiente)
+    public function create()
+    {
+        $user = auth()->user();
+
+        $existingPending = null;
+        $lastSolicitud = null;
+
+        if ($user) {
+            $existingPending = SolicitudVerificacion::where('user_id', $user->id)
+                ->where('status', 'pending')
+                ->first();
+
+            $lastSolicitud = SolicitudVerificacion::where('user_id', $user->id)
+                ->orderBy('created_at', 'desc')
+                ->first();
+        }
+
+        return Inertia::render('Profile/SolicitudVerificacionForm', [
+            'existingPending' => (bool) $existingPending,
+            'lastSolicitud' => $lastSolicitud ? [
+                'id' => $lastSolicitud->id,
+                'status' => $lastSolicitud->status,
+                'created_at' => $lastSolicitud->created_at,
+                'response_message' => $lastSolicitud->response_message,
+            ] : null,
+        ]);
+    }
     // STORE: para que lo invoque (rol 'Usuario')
     public function store(Request $request)
     {

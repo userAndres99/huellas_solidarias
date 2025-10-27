@@ -104,9 +104,9 @@ Route::middleware(['auth'])->group(function () {
 ----------------------------------------------------------------- */
 
 // Página con el formulario (solo usuarios con rol Usuario)
-Route::get('/profile/solicitud-verificacion', function () {
-    return Inertia::render('Profile/SolicitudVerificacionForm');
-})->name('profile.solicitud_form')->middleware(['auth', 'role:Usuario']);
+Route::get('/profile/solicitud-verificacion', [SolicitudVerificacionController::class, 'create'])
+    ->name('profile.solicitud_form')
+    ->middleware(['auth', 'role:Usuario']);
 
 // Guardar solicitud (solo usuarios autenticados con rol Usuario)
 Route::post('/profile/request-verification', [SolicitudVerificacionController::class, 'store'])
