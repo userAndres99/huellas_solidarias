@@ -1,9 +1,11 @@
 <?php
 namespace App\Http\Controllers;
 use App\Models\Evento;
+use App\Models\Organizacion;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Auth;
+use Illuminate\Support\Facades\Redirect;
 
 class OrganizationController extends Controller
 {
@@ -87,5 +89,36 @@ class OrganizationController extends Controller
                 'image_url' => $e->image_path ? '/storage/' . ltrim($e->image_path, '/') : null,
             ]
         ]);
+    }
+
+    /**
+     * Actualizar los datos de la organización asociada al usuario autenticado.
+     * Solo permite modificar nombre, email, telefono y descripcion.
+     */
+    public function update(Request $request)
+    {
+        $user = $request->user();
+
+        if (!$user || !$user->organizacion_id) {
+            return Redirect::back()->with('error', 'No pertenecés a una organización para editar.');
+        }
+
+        $org = Organizacion::findOrFail($user->organizacion_id);
+
+        $validated = $request->validate([
+            'nombre' => 'required|string|max:255',
+            'email' => 'nullable|email|max:255',
+            'telefono' => 'nullable|string|max:50',
+            'descripcion' => 'nullable|string',
+        ]);
+
+        $org->update([
+            'nombre' => $validated['nombre'],
+            'email' => $validated['email'] ?? $org->email,
+            'telefono' => $validated['telefono'] ?? $org->telefono,
+            'descripcion' => $validated['descripcion'] ?? $org->descripcion,
+        ]);
+
+        return Redirect::route('profile.edit')->with('success', 'Datos de la organización actualizados.');
     }
 }

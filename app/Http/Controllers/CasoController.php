@@ -297,7 +297,7 @@ class CasoController extends Controller
         $tamano = $request->input('tamano', null);
         $ordenFecha = $request->input('ordenFecha', 'reciente'); // 'reciente' o 'antigua'
 
-        $query = Caso::with('usuario')
+        $query = Caso::with('usuario.organizacion')
             ->where('estado', 'activo');
 
         // aplicar filtros si vienen
@@ -350,6 +350,10 @@ class CasoController extends Controller
                     'id' => $c->usuario->id,
                     'name' => $c->usuario->name,
                     'profile_photo_url' => $c->usuario->profile_photo_url ?? ($c->usuario->profile_photo_path ? Storage::url($c->usuario->profile_photo_path) : null),
+                    'organizacion' => $c->usuario->organizacion ? [
+                        'id' => $c->usuario->organizacion->id,
+                        'nombre' => $c->usuario->organizacion->nombre,
+                    ] : null,
                 ] : null,
             ];
         });

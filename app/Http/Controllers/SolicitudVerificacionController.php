@@ -5,10 +5,13 @@ namespace App\Http\Controllers;
 use App\Models\SolicitudVerificacion;
 use App\Models\User;
 use App\Models\Rol;
+use App\Models\Organizacion;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 
 class SolicitudVerificacionController extends Controller
 {
@@ -133,14 +136,42 @@ class SolicitudVerificacionController extends Controller
         $user = $solicitud->user;
 
         if ($user) {
-            if ($request->status === 'approved') {
-                $rol = Rol::where('nombre', $user::ROLE_ORG)->first();
-                if ($rol) $user->rol_id = $rol->id;
-            } elseif ($request->status === 'rejected') {
-                $rol = Rol::where('nombre', $user::ROLE_USER)->first();
-                if ($rol) $user->rol_id = $rol->id;
-            }
-            $user->save();
+            // actualizar solicitud, crear organizacion y actualizar usuario
+            DB::transaction(function () use ($request, $solicitud, $user) {
+                if ($request->status === 'approved') {
+                    // asignar rol de organizacion al usuario
+                    $rol = Rol::where('nombre', $user::ROLE_ORG)->first();
+                    if ($rol) $user->rol_id = $rol->id;
+
+                    // crear organizacion a partir de la solicitud (si no existe ya una)
+                    $orgData = [
+                        'usuario_creador_id' => $user->id,
+                        'nombre' => $solicitud->organization_name ?? $user->name,
+                        'telefono' => $solicitud->organization_phone,
+                        'email' => $solicitud->organization_email,
+                        'descripcion' => null,
+                        'latitud' => $solicitud->latitud,
+                        'longitud' => $solicitud->longitud,
+                        'documentacion' => $solicitud->documents ?: null,
+                        'verificado_en' => Carbon::now(),
+                    ];
+
+                    $organizacion = Organizacion::create($orgData);
+
+                    // vincular la organizacion al usuario
+                    $user->organizacion_id = $organizacion->id;
+                    $user->save();
+
+                } elseif ($request->status === 'rejected') {
+
+                    $rol = Rol::where('nombre', $user::ROLE_USER)->first();
+                    if ($rol) $user->rol_id = $rol->id;
+
+                    // si existiera una relacion organizacion en el usuario, la mantenemos con valor null
+                    $user->organizacion_id = null;
+                    $user->save();
+                }
+            });
         }
 
         return redirect()

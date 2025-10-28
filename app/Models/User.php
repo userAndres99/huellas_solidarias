@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Notifications\CustomVerifyEmail;
 use App\Notifications\CustomResetPassword;
 use App\Models\Rol;
+use App\Models\Organizacion;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -33,6 +34,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'profile_photo_path', 
         'apellido', 
         'rol_id',
+        'organizacion_id',
     ];
 
     /**
@@ -103,6 +105,14 @@ class User extends Authenticatable implements MustVerifyEmail
     public function rol()
     {
         return $this->belongsTo(Rol::class, 'rol_id');
+    }
+
+    /**
+     * Relacion con la organizacion a la que pertenece el usuario 
+     */
+    public function organizacion()
+    {
+        return $this->belongsTo(Organizacion::class, 'organizacion_id');
     }
 
     /**

@@ -131,8 +131,11 @@ export default function FormCasos() {
           alt="avatar"
           className="w-8 h-8 rounded-full object-cover border"
         />
-        <span className="hidden sm:inline text-sm font-medium text-gray-700 truncate max-w-[6.5rem]">
-          {userName}
+        <span className="hidden sm:inline text-sm font-medium text-gray-700 truncate max-w-[6.5rem] sm:max-w-[14rem]">
+          <span className="align-middle">{userName}</span>
+          {user?.organizacion?.nombre ? (
+            <span className="text-xs text-gray-500 align-middle"> ({user.organizacion.nombre})</span>
+          ) : null}
         </span>
       </div>
 

@@ -34,7 +34,8 @@ class HandleInertiaRequests extends Middleware
             ...parent::share($request),
 
             'auth' => [
-                'user' => $request->user(),
+                // cargamos la relacion organizacion 
+                'user' => $request->user() ? $request->user()->load('organizacion') : null,
             ],
 
             'canLogin' => Route::has('login'),

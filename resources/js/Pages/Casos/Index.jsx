@@ -346,14 +346,19 @@ export default function Index(props) {
                   </div>
 
                   
-                  <a href={usuario ? `/users/${usuario.id}` : '#'} className="absolute left-3 bottom-3 flex items-center gap-3 bg-white/80 backdrop-blur rounded-full px-2 py-1">
+                    <a href={usuario ? `/users/${usuario.id}` : '#'} className="absolute left-3 bottom-3 flex items-center gap-3 bg-white/80 backdrop-blur rounded-full px-2 py-1">
                     {userPhoto ? (
                       <img src={userPhoto} alt={userName} className="w-10 h-10 rounded-full object-cover border" loading="eager" decoding="async" fetchPriority="high" />
                     ) : (
                       <div className="w-10 h-10 rounded-full flex items-center justify-center font-semibold text-sm bg-gray-200 border">{getInitials(userName)}</div>
                     )}
                     <div className="text-sm">
-                      <div className="text-xs text-gray-700 font-medium">{userName}</div>
+                      <div className="text-xs text-gray-700 font-medium">
+                        {userName}
+                        {usuario?.organizacion?.nombre ? (
+                          <span className="text-xs text-gray-500"> ({usuario.organizacion.nombre})</span>
+                        ) : null}
+                      </div>
                       <div className="text-2xs text-gray-600">{c.ciudad || '—'}</div>
                     </div>
                   </a>
