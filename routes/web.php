@@ -44,6 +44,10 @@ Route::middleware('auth')->group(function () {
     // Actualizar datos de la organización a la que pertenece el usuario autenticado
     Route::patch('/organizacion', [OrganizationController::class, 'update'])
         ->name('organizacion.update');
+
+    // Cambiar estado de un caso (finalizar / cancelar) por su autor
+    Route::post('/casos/{id}/status', [\App\Http\Controllers\CasoController::class, 'updateStatus'])
+        ->name('casos.update_status');
 });
 
 /* -----------------------------------------------------------------

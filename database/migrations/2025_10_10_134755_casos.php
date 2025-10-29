@@ -25,7 +25,7 @@ return new class extends Migration
             $table->decimal('longitud', 10, 7)->nullable();
             $table->string('telefonoContacto', 30)->nullable();
             $table->dateTime('fechaPublicacion')->default(now());
-            $table->enum('estado', ['activo', 'cerrado', 'resuelto'])->default('activo');
+            $table->enum('estado', ['activo', 'cancelado', 'finalizado'])->default('activo');
             $table->timestamps();
 
             $table->index('estado');

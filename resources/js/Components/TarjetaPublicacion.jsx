@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from '@inertiajs/react';
+import { Inertia } from '@inertiajs/inertia';
 
 function formatDate(dateStr) {
   if (!dateStr) return '';
@@ -55,6 +56,36 @@ export default function TarjetaPublicacion({ publicacion }) {
           >
             Editar
           </Link>
+
+          {p.estado === 'activo' && (
+            <> 
+              <button
+                type="button"
+                onClick={() => {
+                  if (!confirm('¿Querés finalizar esta publicación?')) return;
+                  Inertia.post(route('casos.update_status', p.id), { status: 'finalizado' }, {
+                    onSuccess: () => { window.location.href = route('dashboard'); }
+                  });
+                }}
+                className="text-sm inline-block px-3 py-1 border rounded bg-green-50 text-green-700 hover:bg-green-100"
+              >
+                Finalizar
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  if (!confirm('¿Querés cancelar esta publicación?')) return;
+                  Inertia.post(route('casos.update_status', p.id), { status: 'cancelado' }, {
+                    onSuccess: () => { window.location.href = route('dashboard'); }
+                  });
+                }}
+                className="text-sm inline-block px-3 py-1 border rounded bg-red-50 text-red-700 hover:bg-red-100"
+              >
+                Cancelar
+              </button>
+            </>
+          )}
         </div>
       </div>
     </div>

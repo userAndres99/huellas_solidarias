@@ -360,4 +360,26 @@ class CasoController extends Controller
 
         return response()->json($casos);
     }
+
+    /**
+     * Cambiar estado de un caso (finalizar o cancelar).
+     */
+    public function updateStatus(Request $request, $id)
+    {
+        $request->validate([
+            'status' => ['required', 'in:finalizado,cancelado'],
+        ]);
+
+        $caso = Caso::where('id', $id)->where('estado', 'activo')->firstOrFail();
+
+        // solo el autor puede cambiar
+        if ($caso->idUsuario !== $request->user()->id) {
+            return response()->json(['message' => 'No autorizado'], 403);
+        }
+
+        $caso->estado = $request->input('status');
+        $caso->save();
+
+        return response()->json(['success' => true, 'estado' => $caso->estado]);
+    }
 }
