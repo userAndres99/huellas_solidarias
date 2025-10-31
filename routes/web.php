@@ -159,6 +159,13 @@ Route::middleware(['auth', 'role:Organizacion'])->group(function () {
     // ver detalle de un evento (organizacion)
     Route::get('/organizacion/eventos/{id}', [OrganizationController::class, 'show'])
         ->name('organizacion.eventos.show');
+
+    // Estadísticas para la organización
+    Route::get('/organizacion/estadisticas', [OrganizationController::class, 'estadisticas'])
+        ->name('organizacion.estadisticas');
+    // Endpoint JSON para obtener counts filtrados (usado por el frontend para peticiones AJAX)
+    Route::get('/organizacion/estadisticas/data', [OrganizationController::class, 'estadisticasData'])
+        ->name('organizacion.estadisticas.data');
 });
 
    Route::prefix('comentarios')

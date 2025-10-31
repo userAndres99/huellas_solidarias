@@ -114,7 +114,7 @@ export default function MapaInteractivo({
               <Marker
                 key={m.id}
                 position={[Number(m.latitud), Number(m.longitud)]}
-                icon={getAnimalIcon(m.tipoAnimal)}
+                icon={getMarkerIcon(m.tipoAnimal)}
               >
                 <Popup>
                   <div style={{ fontWeight: 600 }}>{m.tipoAnimal}</div>

@@ -121,4 +121,90 @@ class OrganizationController extends Controller
 
         return Redirect::route('profile.edit')->with('success', 'Datos de la organización actualizados.');
     }
+
+    /**
+     * Página de estadísticas para la organizacion
+     */
+    public function estadisticas(Request $request)
+    {
+        $user = $request->user();
+
+        // Filtro opcional por tipo de animal (Perro, Gato, Otro)
+        $tipo = $request->query('tipo');
+        $situacion = $request->query('situacion');
+
+        $query = \App\Models\Caso::query();
+        if (!empty($tipo)) {
+            $allowed = ['Perro', 'Gato', 'Otro'];
+            $normalized = ucfirst(strtolower($tipo));
+            if (in_array($normalized, $allowed)) {
+                $query->where('tipoAnimal', $normalized);
+            }
+        }
+
+        if (!empty($situacion)) {
+            $allowedSituacion = ['Adopcion', 'Abandonado', 'Perdido'];
+            $normalizedS = ucfirst(strtolower($situacion));
+            if (in_array($normalizedS, $allowedSituacion)) {
+                $query->where('situacion', $normalizedS);
+            }
+        }
+
+        $counts = $query->selectRaw('estado, COUNT(*) as cnt')
+            ->groupBy('estado')
+            ->pluck('cnt', 'estado')
+            ->toArray();
+
+        // normalizar
+        $data = [
+            'activo' => isset($counts['activo']) ? (int)$counts['activo'] : 0,
+            'finalizado' => isset($counts['finalizado']) ? (int)$counts['finalizado'] : 0,
+            'cancelado' => isset($counts['cancelado']) ? (int)$counts['cancelado'] : 0,
+        ];
+
+        return Inertia::render('Organizacion/Estadisticas/Index', [
+            'counts' => $data,
+            'selectedTipo' => $tipo ?? '',
+            'selectedSituacion' => $situacion ?? '',
+        ]);
+    }
+
+    /**
+     * Endpoint JSON que devuelve los counts (activo/finalizado/cancelado).
+     */
+    public function estadisticasData(Request $request)
+    {
+        $tipo = $request->query('tipo');
+        $situacion = $request->query('situacion');
+
+        $query = \App\Models\Caso::query();
+        if (!empty($tipo)) {
+            $allowed = ['Perro', 'Gato', 'Otro'];
+            $normalized = ucfirst(strtolower($tipo));
+            if (in_array($normalized, $allowed)) {
+                $query->where('tipoAnimal', $normalized);
+            }
+        }
+
+        if (!empty($situacion)) {
+            $allowedSituacion = ['Adopcion', 'Abandonado', 'Perdido'];
+            $normalizedS = ucfirst(strtolower($situacion));
+            if (in_array($normalizedS, $allowedSituacion)) {
+                $query->where('situacion', $normalizedS);
+            }
+        }
+
+        $counts = $query->selectRaw('estado, COUNT(*) as cnt')
+            ->groupBy('estado')
+            ->pluck('cnt', 'estado')
+            ->toArray();
+
+        $data = [
+            'activo' => isset($counts['activo']) ? (int)$counts['activo'] : 0,
+            'finalizado' => isset($counts['finalizado']) ? (int)$counts['finalizado'] : 0,
+            'cancelado' => isset($counts['cancelado']) ? (int)$counts['cancelado'] : 0,
+        ];
+
+        return response()->json(['counts' => $data]);
+    }
 }

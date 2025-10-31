@@ -68,6 +68,15 @@ export default function AuthenticatedLayout({ header, children }) {
                                     </NavLink>
                                 )}
 
+                                {user?.role_name === 'Organizacion' && (
+                                    <NavLink
+                                        href={route('organizacion.estadisticas')}
+                                        active={route().current('organizacion.estadisticas')}
+                                    >
+                                        Estadísticas
+                                    </NavLink>
+                                )}
+
                                 {/* Link solo visible para Admin (faltan detalles) */}
                                 {user?.role_name === 'Admin' && (
                                     <NavLink
@@ -200,6 +209,14 @@ export default function AuthenticatedLayout({ header, children }) {
                                 active={route().current('organizacion.index')}
                             >
                                 Eventos
+                            </ResponsiveNavLink>
+                        )}
+                        {user?.role_name === 'Organizacion' && (
+                            <ResponsiveNavLink
+                                href={route('organizacion.estadisticas')}
+                                active={route().current('organizacion.estadisticas')}
+                            >
+                                Estadísticas
                             </ResponsiveNavLink>
                         )}
 
