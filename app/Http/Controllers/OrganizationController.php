@@ -132,6 +132,7 @@ class OrganizationController extends Controller
         // Filtro opcional por tipo de animal (Perro, Gato, Otro)
         $tipo = $request->query('tipo');
         $situacion = $request->query('situacion');
+        $ciudad = $request->query('ciudad');
 
         $query = \App\Models\Caso::query();
         if (!empty($tipo)) {
@@ -148,6 +149,11 @@ class OrganizationController extends Controller
             if (in_array($normalizedS, $allowedSituacion)) {
                 $query->where('situacion', $normalizedS);
             }
+        }
+
+        if (!empty($ciudad)) {
+            // Filtrar por la busqueda del usuario.
+            $query->where('ciudad', $ciudad);
         }
 
         $counts = $query->selectRaw('estado, COUNT(*) as cnt')
@@ -166,6 +172,7 @@ class OrganizationController extends Controller
             'counts' => $data,
             'selectedTipo' => $tipo ?? '',
             'selectedSituacion' => $situacion ?? '',
+            'selectedCiudad' => $ciudad ?? '',
         ]);
     }
 
@@ -176,6 +183,7 @@ class OrganizationController extends Controller
     {
         $tipo = $request->query('tipo');
         $situacion = $request->query('situacion');
+        $ciudad = $request->query('ciudad');
 
         $query = \App\Models\Caso::query();
         if (!empty($tipo)) {
@@ -192,6 +200,10 @@ class OrganizationController extends Controller
             if (in_array($normalizedS, $allowedSituacion)) {
                 $query->where('situacion', $normalizedS);
             }
+        }
+
+        if (!empty($ciudad)) {
+            $query->where('ciudad', $ciudad);
         }
 
         $counts = $query->selectRaw('estado, COUNT(*) as cnt')
