@@ -26,6 +26,9 @@ export default function FormCasos() {
   const [initialPosition, setInitialPosition] = useState(null);
   const [showMarkerOnSelect, setShowMarkerOnSelect] = useState(false);
 
+  // Georef API base (para obtener la etiqueta formateada igual que FiltroCiudad)
+  const GEOREF_BASE = 'https://apis.datos.gob.ar/georef/api/v2.0';
+
   // preview para la imagen
   const [previewUrl, setPreviewUrl] = useState(null);
 
@@ -89,6 +92,58 @@ export default function FormCasos() {
         const cityName =
           addr.city || addr.town || addr.village || addr.municipality || addr.county || '';
         if (cityName) {
+          // obtener la misma etiqueta que usamos en FiltroCiudad
+          try {
+            const params = new URLSearchParams({
+              nombre: cityName,
+              max: '5',
+              campos: 'nombre,centroide,provincia,id',
+              formato: 'json',
+            });
+
+            const geoRes = await fetch(`${GEOREF_BASE}/localidades?${params.toString()}`);
+            if (geoRes.ok) {
+              const geoJson = await geoRes.json();
+              const localidades = geoJson.localidades || [];
+
+              // Buscar la localidad más cercana si tenemos centroide
+              let chosen = null;
+              if (localidades.length === 1) {
+                chosen = localidades[0];
+              } else if (localidades.length > 1) {
+                // Si hay varios preferir la que tenga centroide y si es posible la más cercana al punto
+                let minDist = Infinity;
+                for (const loc of localidades) {
+                  const centro = loc.centroide || {};
+                  if (centro.lat !== undefined && centro.lon !== undefined) {
+                    const d = Math.hypot(Number(centro.lat) - Number(lat), Number(centro.lon) - Number(lon));
+                    if (d < minDist) {
+                      minDist = d;
+                      chosen = loc;
+                    }
+                  }
+                }
+                // fallback si ninguno tenía centroide
+                if (!chosen) chosen = localidades[0];
+              }
+
+              if (chosen) {
+                const nombre = chosen.nombre || cityName;
+                const prov = chosen.provincia?.nombre || '';
+                const labelParts = [nombre];
+                if (prov) labelParts.push(prov);
+                const label = labelParts.join(' - ');
+                setData('ciudad', label);
+                setData('ciudad_id', chosen.id || '');
+                return;
+              }
+            }
+          } catch (e) {
+            // si falla la consulta a georef
+            console.warn('Georef lookup failed:', e);
+          }
+
+          // fallback sencillo usar lo que devolvió Nominatim (en caso de error en georef)
           setData('ciudad', cityName);
           setData('ciudad_id', '');
         }
