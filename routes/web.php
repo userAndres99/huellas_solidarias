@@ -160,6 +160,18 @@ Route::middleware(['auth', 'role:Organizacion'])->group(function () {
     Route::get('/organizacion/eventos/{id}', [OrganizationController::class, 'show'])
         ->name('organizacion.eventos.show');
 
+    // editar evento (form)
+    Route::get('/organizacion/eventos/{id}/edit', [OrganizationController::class, 'edit'])
+        ->name('organizacion.eventos.edit');
+
+    // actualizar evento (PUT y PATCH por compatibilidad con Inertia)
+    Route::put('/organizacion/eventos/{id}', [OrganizationController::class, 'updateEvent'])
+        ->name('organizacion.eventos.update');
+    Route::patch('/organizacion/eventos/{id}', [OrganizationController::class, 'updateEvent']);
+    // eliminar evento
+    Route::delete('/organizacion/eventos/{id}', [OrganizationController::class, 'destroy'])
+        ->name('organizacion.eventos.destroy');
+
     // Estadísticas para la organización
     Route::get('/organizacion/estadisticas', [OrganizationController::class, 'estadisticas'])
         ->name('organizacion.estadisticas');
