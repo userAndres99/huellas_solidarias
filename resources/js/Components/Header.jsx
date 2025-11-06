@@ -4,12 +4,12 @@ import Nav from '@/Components/Nav';
 
 export default function Header({ auth, canLogin, canRegister }) {
   return (
-    <header className="border-b bg-white">
+    <header className="footer-surface border-b">
       <div className="mx-auto max-w-6xl px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Link href="/" aria-label="Ir al inicio" className="inline-flex items-center">
             <ApplicationLogo className="h-8 w-8 text-indigo-600" />
-            <span className="ml-3 text-lg font-semibold">Huellas Solidarias</span>
+            <span className="ml-3 text-lg font-semibold text-slate-800">Huellas Solidarias</span>
           </Link>
         </div>
 

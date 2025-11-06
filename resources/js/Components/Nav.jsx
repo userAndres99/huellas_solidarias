@@ -5,7 +5,7 @@ import React from 'react';
 
 export default function Nav({ auth, canLogin, canRegister }) {
   return (
-    <nav aria-label="Navegación principal" className="flex items-center gap-4">
+    <nav aria-label="Navegación principal" className="flex items-center nav-container">
       <NavLink href={route('home')} active={route().current('home')}>Inicio</NavLink>
 
       {auth?.user ? (

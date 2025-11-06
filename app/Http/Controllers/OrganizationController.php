@@ -8,6 +8,7 @@ use Auth;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB;
 
 class OrganizationController extends Controller
 {
@@ -309,5 +310,67 @@ class OrganizationController extends Controller
         ];
 
         return response()->json(['counts' => $data]);
+    }
+
+    /**
+     * Devuelve la serie anual de casos 
+     */
+    public function estadisticasYearsData(Request $request)
+    {
+        $tipo = $request->query('tipo');
+        $situacion = $request->query('situacion');
+        $ciudad = $request->query('ciudad');
+        $period = $request->query('period', 'year'); 
+
+        $query = \App\Models\Caso::query();
+        if (!empty($tipo)) {
+            $allowed = ['Perro', 'Gato', 'Otro'];
+            $normalized = ucfirst(strtolower($tipo));
+            if (in_array($normalized, $allowed)) {
+                $query->where('tipoAnimal', $normalized);
+            }
+        }
+
+        if (!empty($situacion)) {
+            $allowedSituacion = ['Adopcion', 'Abandonado', 'Perdido'];
+            $normalizedS = ucfirst(strtolower($situacion));
+            if (in_array($normalizedS, $allowedSituacion)) {
+                $query->where('situacion', $normalizedS);
+            }
+        }
+
+        if (!empty($ciudad)) {
+            $query->where('ciudad', $ciudad);
+        }
+
+        // Dependiendo de la granularidad, agrupamos distinto
+        if ($period === 'month') {
+            $rows = $query->selectRaw("DATE_FORMAT(created_at, '%Y-%m') as period, COUNT(*) as cnt")
+                ->groupBy('period')
+                ->orderBy('period')
+                ->get();
+        } elseif ($period === 'day') {
+            $rows = $query->selectRaw("DATE(created_at) as period, COUNT(*) as cnt")
+                ->groupBy('period')
+                ->orderBy('period')
+                ->get();
+        } elseif ($period === 'week') {
+            $rows = $query->selectRaw("DATE_FORMAT(created_at, '%x-W%v') as period, COUNT(*) as cnt")
+                ->groupBy('period')
+                ->orderBy('period')
+                ->get();
+        } else {
+            // default
+            $rows = $query->selectRaw('YEAR(created_at) as period, COUNT(*) as cnt')
+                ->groupBy('period')
+                ->orderBy('period')
+                ->get();
+        }
+
+        $series = $rows->map(function ($r) {
+            return ['period' => (string)$r->period, 'total' => (int)$r->cnt];
+        })->values();
+
+        return response()->json(['series' => $series]);
     }
 }

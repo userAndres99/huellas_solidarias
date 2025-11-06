@@ -88,6 +88,17 @@ Route::get('/mapa', function () {
 })->middleware(['auth'])->name('mapa');
 
 /* -----------------------------------------------------------------
+| Paginas legales 
+----------------------------------------------------------------- */
+Route::get('/politica-privacidad', function () {
+    return Inertia::render('Static/Privacy');
+})->name('politica.privacidad');
+
+Route::get('/terminos', function () {
+    return Inertia::render('Static/Terms');
+})->name('terminos');
+
+/* -----------------------------------------------------------------
 | Historias de éxito
 ----------------------------------------------------------------- */
 Route::get('/historias/json', [HistoriaController::class, 'jsonIndex'])->name('historias.json');
@@ -178,6 +189,9 @@ Route::middleware(['auth', 'role:Organizacion'])->group(function () {
     // Endpoint JSON para obtener counts filtrados (usado por el frontend para peticiones AJAX)
     Route::get('/organizacion/estadisticas/data', [OrganizationController::class, 'estadisticasData'])
         ->name('organizacion.estadisticas.data');
+    // Endpoint JSON para obtener la serie anual (casos por año) con los mismos filtros
+    Route::get('/organizacion/estadisticas/years', [OrganizationController::class, 'estadisticasYearsData'])
+        ->name('organizacion.estadisticas.years');
 });
 
    Route::prefix('comentarios')
