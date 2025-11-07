@@ -124,7 +124,6 @@ export default function CreateEvento({ event = null }) {
       <Head title={event ? 'Editar evento' : 'Crear evento'} />
 
       <div className="max-w-3xl mx-auto p-4">
-        <h1 className="text-2xl mb-4 font-semibold">{event ? 'Editar evento' : 'Nuevo evento'}</h1>
         <form onSubmit={submit} encType="multipart/form-data" className="space-y-4">
           {/* Imagen */}
           <div>

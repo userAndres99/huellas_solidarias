@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { Link, Head } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import EstadoBadge from '@/Components/EstadoBadge';
 import Select from 'react-select';
 import debounce from 'lodash.debounce';
 
@@ -104,6 +105,22 @@ function getInitials(name = '') {
     .slice(0,2)
     .join('')
     .toUpperCase();
+}
+
+function normalizeSituacionSimple(s) {
+  if (!s) return 'activo';
+  try {
+    return s
+      .toString()
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/\p{Diacritic}/gu, '')
+      .replace(/\s+/g, '')
+      .replace(/ó/g, 'o')
+      .replace(/á/g, 'a');
+  } catch (e) {
+    return s.toString().toLowerCase().replace(/[^a-z0-9]/g, '');
+  }
 }
 
 function Pagination({ meta, links, onPage }) {
@@ -306,83 +323,80 @@ export default function Index(props) {
       <Head title="Publicaciones" />
 
       <div className="container mx-auto p-4">
-        <h1 className="text-2xl font-semibold mb-4">Publicaciones</h1>
 
         <Filtros filtros={filtros} setFiltros={setFiltros} />
 
-        {/* PAGINACIÓN ARRIBA */}
-        <Pagination
-          meta={meta}
-          links={links}
-          onPage={(p) => {
-            if (p < 1) p = 1;
-            if (meta && p > meta.last_page) p = meta.last_page;
-            setPage(p);
-            window.scrollTo({ top: 200, behavior: 'smooth' });
-          }}
-        />
+        <div className="mt-4 mx-auto max-w-6xl card-surface shadow-lg sm:rounded-2xl p-8 fade-in">
+          {/* PAGINACIÓN ARRIBA */}
+          <Pagination
+            meta={meta}
+            links={links}
+            onPage={(p) => {
+              if (p < 1) p = 1;
+              if (meta && p > meta.last_page) p = meta.last_page;
+              setPage(p);
+              window.scrollTo({ top: 200, behavior: 'smooth' });
+            }}
+          />
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-          {casos.map(c => {
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+            {casos.map(c => {
             const usuario = c.usuario || c.user || null;
             const userName = usuario?.name ?? 'Anónimo';
             const userPhoto = usuario?.profile_photo_url ?? null;
 
+            const estadoKey = normalizeSituacionSimple(c.situacion);
             return (
-              <article key={c.id} className="bg-white rounded-2xl shadow-md hover:shadow-xl transition-shadow overflow-hidden">
+              <article key={c.id} className="card-surface-alt rounded-xl overflow-hidden fade-in card-hover relative">
                 <div className="relative h-56 md:h-48 lg:h-56">
                   {c.fotoAnimal ? (
                     <LazyImage src={c.fotoAnimal} alt={c.tipoAnimal || 'Foto'} className="h-full w-full" priority={page === 1} />
                   ) : (
-                    <div className="h-full w-full bg-gradient-to-br from-gray-100 to-gray-50 flex items-center justify-center text-gray-500">Sin imagen</div>
+                    <div className="h-full w-full bg-[rgba(2,132,199,0.06)] flex items-center justify-center text-slate-500">Sin imagen</div>
                   )}
 
-                  
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/35 via-transparent to-transparent" />
 
-                  
-                  <div className="absolute top-3 left-3 flex items-center gap-2">
-                    <span className="px-3 py-1 rounded-full bg-white/90 text-xs font-semibold text-gray-800 shadow">{c.situacion || 'Publicación'}</span>
-                  </div>
-
-                  
-                    <a href={usuario ? `/users/${usuario.id}` : '#'} className="absolute left-3 bottom-3 flex items-center gap-3 bg-white/80 backdrop-blur rounded-full px-2 py-1">
+                  <a href={usuario ? `/users/${usuario.id}` : '#'} className="absolute left-3 bottom-3 flex items-center gap-3 bg-white/80 backdrop-blur rounded-full px-2 py-1">
                     {userPhoto ? (
                       <img src={userPhoto} alt={userName} className="w-10 h-10 rounded-full object-cover border" loading="eager" decoding="async" fetchPriority="high" />
                     ) : (
                       <div className="w-10 h-10 rounded-full flex items-center justify-center font-semibold text-sm bg-gray-200 border">{getInitials(userName)}</div>
                     )}
                     <div className="text-sm">
-                      <div className="text-xs text-gray-700 font-medium">
+                      <div className="text-xs text-slate-900 font-medium">
                         {userName}
                         {usuario?.organizacion?.nombre ? (
-                          <span className="text-xs text-gray-500"> ({usuario.organizacion.nombre})</span>
+                          <span className="text-xs text-slate-600"> ({usuario.organizacion.nombre})</span>
                         ) : null}
                       </div>
-                      <div className="text-2xs text-gray-600">{c.ciudad || '—'}</div>
+                      <div className="text-2xs text-slate-600">{c.ciudad || '—'}</div>
                     </div>
                   </a>
 
-                  
                   <div className="absolute right-3 top-3 flex flex-col items-end gap-2">
-                    <span className="px-2 py-1 bg-white/90 rounded text-xs text-gray-700">{c.tipoAnimal || 'Animal'}</span>
+                    <span className="px-2 py-1 bg-white/90 rounded text-xs text-slate-700">{c.tipoAnimal || 'Animal'}</span>
                   </div>
                 </div>
 
                 <div className="p-4 space-y-3">
-                  <p className="text-sm text-gray-500">{new Date(c.fechaPublicacion || c.created_at).toLocaleDateString()}</p>
-                  <h3 className="text-lg font-semibold text-gray-800 line-clamp-2">{c.descripcion}</h3>
-                  <p className="text-sm text-gray-600 line-clamp-3">{c.descripcion}</p>
+                  <div className="flex items-center gap-3">
+                    <p className="text-sm text-slate-600">{new Date(c.fechaPublicacion || c.created_at).toLocaleDateString()}</p>
+                    <EstadoBadge situacion={c.situacion} />
+                  </div>
+                  <h3 className="text-lg font-bold text-slate-900 line-clamp-2">{c.descripcion}</h3>
+                  <p className="text-sm text-slate-800 line-clamp-3">{c.descripcion}</p>
 
                   <div className="flex items-center justify-between mt-2">
                     <div className="flex items-center gap-3">
-                      <Link href={`/casos/${c.id}`} className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-600 text-white rounded-full text-sm hover:bg-blue-700 transition">Ver detalle</Link>
-                      {c.latitud && c.longitud && (
-                        <a href={`https://www.openstreetmap.org/?mlat=${c.latitud}&mlon=${c.longitud}#map=16/${c.latitud}/${c.longitud}`} target="_blank" rel="noreferrer" className="text-sm text-gray-600 hover:text-gray-800">Ver mapa</a>
-                      )}
+                      <Link href={`/casos/${c.id}`} className="inline-flex items-center gap-2 px-3 py-1.5 bg-[var(--color-primary)] text-white rounded-full text-sm hover:shadow-md transition transform hover:-translate-y-0.5" aria-label={`Ver caso ${c.id}`}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="inline-block">
+                          <path d="M12 5c-7 0-11 6-11 7s4 7 11 7 11-6 11-7-4-7-11-7zm0 11a4 4 0 110-8 4 4 0 010 8z" fill="currentColor"/>
+                          <path d="M12 9.5a2.5 2.5 0 100 5 2.5 2.5 0 000-5z" fill="white"/>
+                        </svg>
+                        Ver detalle
+                      </Link>
                     </div>
-
-                    <div className="text-sm text-gray-500">{c.situacion ? c.situacion : ''}</div>
                   </div>
                 </div>
               </article>
@@ -401,6 +415,7 @@ export default function Index(props) {
             window.scrollTo({ top: 200, behavior: 'smooth' });
           }}
         />
+      </div>
       </div>
     </AuthenticatedLayout>
   );

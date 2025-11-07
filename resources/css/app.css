@@ -38,6 +38,63 @@
 		box-shadow: 0 6px 16px rgba(7, 22, 28, 0.06);
 	}
 
+	.card-surface-alt {
+		background: linear-gradient(180deg, rgba(14,165,233,0.18) 0%, rgba(14,165,233,0.10) 100%);
+		background-color: rgba(200, 235, 232, 0.96); /* fallback más oscuro y visible */
+		border: 1px solid rgba(6, 95, 70, 0.16);
+		box-shadow: 0 18px 44px rgba(6,22,20,0.12);
+		color: #022626;
+		transition: transform 220ms cubic-bezier(.2,.8,.2,1), box-shadow 220ms ease, background-color 200ms ease;
+	}
+
+	.card-accent-left { position: relative; }
+	.card-accent-left::before {
+		content: '';
+		position: absolute;
+		left: 0;
+		top: 0;
+		bottom: 0;
+		width: 6px;
+		background: linear-gradient(180deg, var(--color-primary), var(--color-brand));
+		border-top-left-radius: 12px;
+		border-bottom-left-radius: 12px;
+		transform: translateX(-1px);
+	}
+
+	/* Badge*/
+	.card-badge {
+		background: rgba(255,255,255,0.85);
+		padding: 0.25rem 0.5rem;
+		border-radius: 9999px;
+		font-size: 0.75rem;
+		box-shadow: 0 6px 16px rgba(7,22,28,0.06);
+		color: #052f2e;
+	}
+
+	/* estado badge*/
+	.badge-estado {
+		display: inline-block;
+		padding: 0.125rem 0.5rem;
+		border-radius: 9999px;
+		font-size: 0.72rem;
+		font-weight: 600;
+	}
+	.badge-estado.perdido { background: rgba(253,224,71,0.18); color: #92400e; }
+	.badge-estado.abandonado { background: rgba(239,68,68,0.14); color: #7f1d1d; }
+	.badge-estado.adopcion { background: rgba(34,197,94,0.14); color: #065f46; }
+	.badge-estado.activo { background: rgba(14,165,233,0.12); color: #0c4a6e; }
+
+	/* Efecto */
+	.card-surface-alt.card-hover:hover {
+		transform: translateY(-8px) scale(1.02);
+		box-shadow: 0 28px 56px rgba(6,22,20,0.16);
+	}
+
+	.card-surface-alt:focus-within {
+		outline: 1px solid rgba(6,95,70,0.16);
+		box-shadow: 0 22px 44px rgba(6,22,20,0.12);
+	}
+
 	/* del footer mas oscuro */
 	.footer-surface { background: var(--color-footer); }
 }

@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { useForm, usePage, Head } from '@inertiajs/react';
-import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import { useForm } from '@inertiajs/react';
 
 export default function  FormHistoria() {
     const [previewAntes, setPreviewAntes] = useState(null);
@@ -48,28 +47,21 @@ export default function  FormHistoria() {
 
 
     return (
-        <AuthenticatedLayout header={<h2 className="text-xl font-semibold">Nueva Historia</h2>}>
-            <Head title="Publicar Historia" />
+        <div className='max-w-2xl mx-auto p-6 bg-white rounded-2xl shadow'>
+            {recentlySuccessful && (
+                <div className = "bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4 flex-items-center">
+                    <span className='text-2xl mr-2'>🐾</span>
+                    <span>
+                        <strong>¡Historia subida con éxito!</strong> Gracias por compartir esperanza 💚
+                    </span>
+                </div>
+            )}
 
-            <div className='max-w-2xl mx-auto p-6 bg-white rounded-2xl shadow'>
-                {recentlySuccessful && (
-                    <div className = "bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4 flex-items-center">
-                        <span className='text-2xl mr-2'>🐾</span>
-                        <span>
-                            <strong>¡Historia subida con éxito!</strong> Gracias por compartir esperanza 💚
-                        </span>
-                    </div>
-                )}
-
-                <h2 className='text-2xl font-semibold mb-4 text-center'>
-                    Historias de Éxito
-                </h2>
-
-                <form 
-                    onSubmit={handleSubmit}
-                    className='space-y-4'
-                    encType='multipart/form-data'
-                >
+            <form 
+                onSubmit={handleSubmit}
+                className='space-y-4'
+                encType='multipart/form-data'
+            >
 
             <div className='grid grid-cols-2 gap-4 text-center'>
                 <div>
@@ -176,8 +168,6 @@ export default function  FormHistoria() {
 
             </form>
         </div>
-        </AuthenticatedLayout>
-    )
-
+    );
 
 }

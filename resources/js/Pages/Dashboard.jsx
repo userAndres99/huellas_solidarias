@@ -53,11 +53,11 @@ export default function Dashboard({ auth, misPublicaciones }) {
           )}
 
           {/* bienvenida  */}
-          <div className="mt-6 mx-auto max-w-4xl bg-gradient-to-r from-white via-gray-50 to-white shadow-lg rounded-2xl overflow-hidden">
+          <div className="mt-6 mx-auto max-w-4xl card-surface shadow-lg rounded-2xl overflow-hidden fade-in">
             <div className="p-6 flex items-center gap-4">
               <div className="flex-shrink-0">
                 {profileUrl ? (
-                  <img src={profileUrl} alt={auth?.user?.name ?? 'Perfil'} className="h-14 w-14 rounded-full object-cover border-2 border-white shadow-sm" />
+                  <img src={profileUrl} alt={auth?.user?.name ?? 'Perfil'} className="h-14 w-14 rounded-full object-cover ring-2 ring-white shadow-sm" />
                 ) : (
                   <div className="h-14 w-14 rounded-full bg-gradient-to-br from-green-400 to-blue-500 flex items-center justify-center text-white font-bold">{(auth?.user?.name || auth?.user?.email || "?").charAt(0)}</div>
                 )}
@@ -71,35 +71,31 @@ export default function Dashboard({ auth, misPublicaciones }) {
 
           {/* Acciones rapidas centradas */}
           <div className="mt-6">
-            <div className="flex justify-center">
-              <div className="inline-flex items-center gap-3 bg-white/60 p-2 rounded-xl shadow-sm">
-                <Link
-                  href="/mapa"
-                  className="inline-flex items-center gap-2 bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:shadow-md transition transform hover:-translate-y-0.5"
-                >
-                  Ver mapa
-                </Link>
-                <Link
-                  href="/publicar-caso"
-                  className="inline-flex items-center gap-2 bg-gradient-to-r from-green-500 to-teal-500 text-white px-4 py-2 rounded-lg hover:opacity-95 transition transform hover:-translate-y-0.5"
-                >
-                  Publicar nuevo caso
-                </Link>
-              </div>
+          <div className="flex justify-center">
+            <div className="inline-flex items-center gap-3 bg-[var(--color-surface)] p-3 rounded-xl shadow-sm card-hover">
+              <Link
+                href={route('casos.create')}
+                className="inline-flex items-center gap-2 btn-gradient btn-animate-gradient text-white px-4 py-2 rounded-lg hover:opacity-95 transition transform hover:-translate-y-0.5"
+              >
+                Publicar nuevo caso
+              </Link>
             </div>
+          </div>
           </div>
 
           {/* Mis publicaciones */}
           <div className="mt-8">
-            <div className="mx-auto max-w-6xl bg-white shadow-lg sm:rounded-2xl p-8">
+            <div className="mx-auto max-w-6xl card-surface shadow-lg sm:rounded-2xl p-8 fade-in">
               <h3 className="text-2xl font-semibold mb-6 text-center">Mis publicaciones</h3>
 
               {(!misPublicaciones || misPublicaciones.length === 0) ? (
                 <div className="text-gray-600 text-center py-8">No tenés publicaciones todavía.</div>
               ) : (
                 <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 justify-items-center">
-                  {misPublicaciones.map((p) => (
-                    <TarjetaPublicacion key={p.id} publicacion={p} />
+                  {misPublicaciones.map((p, i) => (
+                    <div key={p.id} className={`w-full md:w-auto fade-in ${i % 3 === 0 ? 'fade-delay-1' : i % 3 === 1 ? 'fade-delay-2' : 'fade-delay-3'}`}>
+                      <TarjetaPublicacion publicacion={p} />
+                    </div>
                   ))}
                 </div>
               )}

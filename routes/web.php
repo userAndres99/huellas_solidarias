@@ -82,11 +82,6 @@ Route::get('/casos/perdido-results', function () {
     return Inertia::render('Casos/PerdidoResults');
 })->name('casos.perdido-results');
 
-// Mapa interactivo (solo usuarios autenticados)
-Route::get('/mapa', function () {
-    return Inertia::render('MapaPage');
-})->middleware(['auth'])->name('mapa');
-
 /* -----------------------------------------------------------------
 | Paginas legales 
 ----------------------------------------------------------------- */
