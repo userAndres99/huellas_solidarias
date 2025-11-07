@@ -11,6 +11,7 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 class UploadToNyckel implements ShouldQueue
 {
@@ -100,7 +101,7 @@ class UploadToNyckel implements ShouldQueue
                     // ruta relativa en storage/public
                     $rel = str_replace(storage_path('app/public/'), '', $fileToUpload);
                     if ($rel) {
-                        \Storage::disk('public')->delete($rel);
+                        Storage::disk('public')->delete($rel);
                         Log::info("RemoveBg: archivo temporal eliminado: {$rel}");
                     }
                 }
