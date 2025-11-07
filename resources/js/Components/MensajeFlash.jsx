@@ -9,7 +9,7 @@ export default function MensajeFlash({ tipo = 'success', children }) {
   };
 
   return (
-    <div className={`${base} ${variants[tipo] || variants.info}`} role="status">
+    <div className={`${base} ${variants[tipo] || variants.info} card-surface shadow-sm`} role="status">
       {children}
     </div>
   );

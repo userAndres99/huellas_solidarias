@@ -41,7 +41,6 @@ export default function Historias() {
             <Head title="Historias de Éxito" />
             <div className="container mx-auto p-6">
             <div className="flex justify-between items-center mb-8">
-                <h2 className="text-3xl font-bold text-gray-800">Historias de Éxito</h2>
 
                 {auth.user && (
                     <Link

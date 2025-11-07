@@ -7,13 +7,18 @@ import {
   ArcElement,
   Tooltip,
   Legend,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
 } from 'chart.js';
-import { Pie } from 'react-chartjs-2';
+import { Pie, Line } from 'react-chartjs-2';
 
 import MapaInteractivo from '@/Components/MapaInteractivo';
 import FiltroCiudad from '@/Components/FiltroCiudad';
 
-ChartJS.register(ArcElement, Tooltip, Legend);
+ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, PointElement, LineElement, Title);
 
 export default function Index(props) {
   const initialCounts = props.counts || usePage().props.counts || { activo: 0, finalizado: 0, cancelado: 0 };
@@ -23,11 +28,12 @@ export default function Index(props) {
   const [counts, setCounts] = useState(initialCounts);
   const [selectedTipo, setSelectedTipo] = useState(initialTipo);
   const [selectedSituacion, setSelectedSituacion] = useState(initialSituacion);
-  // center for the interactive map (lat, lon)
+  // centro para el mapa interactivo (lat, lon)
   const [center, setCenter] = useState([-38.9339, -67.9900]);
   const [selectedCiudad, setSelectedCiudad] = useState('');
+  const [yearly, setYearly] = useState([]);
+  const [period, setPeriod] = useState('year'); // usamos 'year' | 'month' | 'day'
 
-  // Georef API para resolver etiquetas de ciudad similares a como se guardan en `casos.ciudad`
   const GEOREF_BASE = 'https://apis.datos.gob.ar/georef/api/v2.0';
 
   const handleTipoChange = async (e) => {
@@ -93,10 +99,9 @@ export default function Index(props) {
     }
   };
 
-  // Rreverse geocode para obtener etiqueta ciudad similar a como se guarda en `casos.ciudad`
+  // Geocodificación inversa para obtener la etiqueta de ciudad similar
   const reverseGeocodeToLabel = async (lat, lon) => {
     try {
-      // Nominatim usa OpenStreetMap para la geocodificación inversa
       const nominatimUrl = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${encodeURIComponent(
         lat
       )}&lon=${encodeURIComponent(lon)}&accept-language=es`;
@@ -151,7 +156,6 @@ export default function Index(props) {
           } catch (e) {
             console.warn('Georef lookup failed:', e);
           }
-          // fallback to the name from nominatim
           return cityName;
         }
       }
@@ -175,12 +179,39 @@ export default function Index(props) {
       if (!res.ok) throw new Error('Network response was not ok');
       const json = await res.json();
       if (json && json.counts) {
-        setCounts(json.counts);
-      }
+          setCounts(json.counts);
+          fetchYearly(tipoVal, situacionVal, ciudadVal, period);
+        }
     } catch (err) {
       console.error('Error fetching stats data:', err);
     }
   };
+
+  const fetchYearly = async (tipoVal, situacionVal, ciudadVal, periodParam = 'year') => {
+    const base = route('organizacion.estadisticas.years');
+    const params = [];
+    if (tipoVal) params.push(`tipo=${encodeURIComponent(tipoVal)}`);
+    if (situacionVal) params.push(`situacion=${encodeURIComponent(situacionVal)}`);
+    if (ciudadVal) params.push(`ciudad=${encodeURIComponent(ciudadVal)}`);
+    if (periodParam) params.push(`period=${encodeURIComponent(periodParam)}`);
+    const url = params.length ? `${base}?${params.join('&')}` : base;
+
+    try {
+      const res = await fetch(url, { credentials: 'same-origin' });
+      if (!res.ok) throw new Error('Network response was not ok');
+      const json = await res.json();
+      if (json && json.series) {
+        setYearly(json.series);
+      }
+    } catch (err) {
+      console.error('Error fetching yearly stats:', err);
+    }
+  };
+
+
+  React.useEffect(() => {
+    fetchYearly(selectedTipo, selectedSituacion, selectedCiudad, period);
+  }, []);
 
   const data = {
     labels: ['Activos', 'Finalizados', 'Cancelados'],
@@ -201,6 +232,86 @@ export default function Index(props) {
       },
     },
     maintainAspectRatio: false,
+  };
+
+  const lineData = {
+    labels: yearly.map((r) => r.period),
+    datasets: [
+      {
+        label: period === 'year' ? 'Casos por año' : period === 'month' ? 'Casos por mes' : period === 'week' ? 'Casos por semana' : 'Casos por día',
+        data: yearly.map((r) => r.total),
+        fill: false,
+        borderColor: '#3b82f6',
+        backgroundColor: '#60a5fa',
+        tension: 0.2,
+      },
+    ],
+  };
+
+  const lineOptions = {
+    plugins: {
+      legend: { position: 'bottom' },
+      title: { display: true, text: period === 'year' ? 'Casos por año' : period === 'month' ? 'Casos por mes' : period === 'week' ? 'Casos por semana' : 'Casos por día' },
+    },
+    maintainAspectRatio: false,
+    scales: {
+      x: {
+        title: { display: true, text: period === 'year' ? 'Año' : period === 'month' ? 'Mes' : period === 'week' ? 'Semana (inicio)' : 'Día' },
+        ticks: {
+          callback: function (value, index, ticks) {
+            const label = this.getLabelForValue ? this.getLabelForValue(value) : value;
+            try {
+              return formatPeriodLabel(String(label), period);
+            } catch (e) {
+              return String(label);
+            }
+          }
+        }
+      },
+      y: { title: { display: true, text: 'Cantidad de casos' }, beginAtZero: true },
+    },
+  };
+
+  // Funciones auxiliares para formatear etiquetas
+  const formatPeriodLabel = (label, periodType) => {
+    const monthOptions = { month: 'short', year: 'numeric' };
+    const dayOptions = { day: '2-digit', month: 'short', year: 'numeric' };
+    if (periodType === 'year') return label;
+    if (periodType === 'month') {
+      const date = new Date(label + '-01');
+      if (isNaN(date)) return label;
+      return date.toLocaleDateString('es-ES', monthOptions).replace('.', '');
+    }
+    if (periodType === 'week') {
+      const m = label.match(/(\d{4})-W(\d{1,2})/);
+      if (m) {
+        const y = Number(m[1]);
+        const w = Number(m[2]);
+        const start = isoWeekToDate(y, w); 
+        return start.toLocaleDateString('es-ES', dayOptions).replace('.', '');
+      }
+      // fallback: intentar parsear como fecha
+      const d = new Date(label);
+      if (!isNaN(d)) return d.toLocaleDateString('es-ES', dayOptions).replace('.', '');
+      return label;
+    }
+    // dia
+    if (periodType === 'day') {
+      const d = new Date(label);
+      if (isNaN(d)) return label;
+      return d.toLocaleDateString('es-ES', dayOptions).replace('.', '');
+    }
+    return label;
+  };
+
+  // Convierte semana 
+  const isoWeekToDate = (isoYear, isoWeek) => {
+    const simple = new Date(Date.UTC(isoYear, 0, 1 + (isoWeek - 1) * 7));
+    const dow = simple.getUTCDay();
+    const ISOweekStart = new Date(simple);
+    const diff = (dow <= 4 ? dow - 1 : dow - 8); 
+    ISOweekStart.setUTCDate(simple.getUTCDate() - diff);
+    return ISOweekStart;
   };
 
   return (
@@ -243,7 +354,6 @@ export default function Index(props) {
               <div className="text-sm text-gray-500">Mostrando: {selectedTipo ? selectedTipo : 'Todos'}</div>
             </div>
 
-            {/* Layout: map on left, stats on right */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="md:col-span-2 bg-gray-50 rounded p-2">
                 <div className="w-full h-96">
@@ -278,6 +388,31 @@ export default function Index(props) {
           </div>
         </div>
       </div>
+
+      <div className="py-6">
+        <div className="mx-auto max-w-6xl sm:px-6 lg:px-8">
+          <div className="bg-white p-4 rounded-2xl shadow">
+            <div className="p-4">
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="text-md font-semibold">Evolución de casos</h4>
+                <div className="flex items-center space-x-2">
+                  <label className="text-sm text-gray-600">Granularidad:</label>
+                  <select value={period} onChange={(e) => { setPeriod(e.target.value); fetchYearly(selectedTipo, selectedSituacion, selectedCiudad, e.target.value); }} className="border rounded px-3 py-1 text-sm bg-white pr-8 w-40 appearance-none">
+                    <option value="year">Año</option>
+                    <option value="month">Mes</option>
+                    <option value="week">Semana</option>
+                    <option value="day">Día</option>
+                  </select>
+                </div>
+              </div>
+              <div className="w-full h-72">
+                <Line data={lineData} options={lineOptions} />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
     </AuthenticatedLayout>
   );
 }

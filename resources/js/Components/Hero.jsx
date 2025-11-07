@@ -9,19 +9,21 @@ export default function Hero({
 }) {
   return (
     <section className="grid lg:grid-cols-2 gap-10 items-center">
-      {showContent && (
-        <div>
-          {title && <h1 className="text-3xl font-bold">{title}</h1>}
-          {subtitle && <p className="mt-4 text-gray-700">{subtitle}</p>}
-          {children}
+        {showContent && (
+        <div className="fade-in">
+          {title && <h1 className="text-4xl md:text-5xl font-extrabold leading-tight text-slate-900">{title}</h1>}
+          {subtitle && <p className="mt-4 text-lg text-slate-700">{subtitle}</p>}
+          <div className="mt-6 space-y-3">
+            {children}
+          </div>
         </div>
       )}
 
-      <div className="rounded-lg overflow-hidden border">
+      <div className="rounded-2xl overflow-hidden card-surface border border-transparent fade-in fade-delay-2">
         <img
           src={heroSrc}
           alt={title ?? 'Imagen principal'}
-          className={imageClass}
+          className={`${imageClass} object-cover w-full h-full`}
           width={1920}
           height={1080}
           loading="eager"

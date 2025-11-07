@@ -82,10 +82,16 @@ Route::get('/casos/perdido-results', function () {
     return Inertia::render('Casos/PerdidoResults');
 })->name('casos.perdido-results');
 
-// Mapa interactivo (solo usuarios autenticados)
-Route::get('/mapa', function () {
-    return Inertia::render('MapaPage');
-})->middleware(['auth'])->name('mapa');
+/* -----------------------------------------------------------------
+| Paginas legales 
+----------------------------------------------------------------- */
+Route::get('/politica-privacidad', function () {
+    return Inertia::render('Static/Privacy');
+})->name('politica.privacidad');
+
+Route::get('/terminos', function () {
+    return Inertia::render('Static/Terms');
+})->name('terminos');
 
 /* -----------------------------------------------------------------
 | Historias de éxito
@@ -160,12 +166,27 @@ Route::middleware(['auth', 'role:Organizacion'])->group(function () {
     Route::get('/organizacion/eventos/{id}', [OrganizationController::class, 'show'])
         ->name('organizacion.eventos.show');
 
+    // editar evento (form)
+    Route::get('/organizacion/eventos/{id}/edit', [OrganizationController::class, 'edit'])
+        ->name('organizacion.eventos.edit');
+
+    // actualizar evento (PUT y PATCH por compatibilidad con Inertia)
+    Route::put('/organizacion/eventos/{id}', [OrganizationController::class, 'updateEvent'])
+        ->name('organizacion.eventos.update');
+    Route::patch('/organizacion/eventos/{id}', [OrganizationController::class, 'updateEvent']);
+    // eliminar evento
+    Route::delete('/organizacion/eventos/{id}', [OrganizationController::class, 'destroy'])
+        ->name('organizacion.eventos.destroy');
+
     // Estadísticas para la organización
     Route::get('/organizacion/estadisticas', [OrganizationController::class, 'estadisticas'])
         ->name('organizacion.estadisticas');
     // Endpoint JSON para obtener counts filtrados (usado por el frontend para peticiones AJAX)
     Route::get('/organizacion/estadisticas/data', [OrganizationController::class, 'estadisticasData'])
         ->name('organizacion.estadisticas.data');
+    // Endpoint JSON para obtener la serie anual (casos por año) con los mismos filtros
+    Route::get('/organizacion/estadisticas/years', [OrganizationController::class, 'estadisticasYearsData'])
+        ->name('organizacion.estadisticas.years');
 });
 
    Route::prefix('comentarios')

@@ -194,10 +194,6 @@ export default function FormCasos() {
         </span>
       </div>
 
-      <header className="mb-4">
-        <h2 className="text-2xl font-semibold text-gray-800">Publicar caso</h2>
-        <p className="text-sm text-gray-500 mt-1">Completá los datos para publicar un animal.</p>
-      </header>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Preview del mensaje y Foto */}

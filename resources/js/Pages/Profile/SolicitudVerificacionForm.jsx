@@ -135,7 +135,7 @@ export default function SolicitudVerificacionForm() {
     <AuthenticatedLayout auth={page.props.auth} header={<h2 className="text-xl font-semibold leading-tight text-gray-800">Solicitar verificación</h2>}>
       <Head title="Solicitar verificación" />
 
-      <div className="max-w-3xl mx-auto p-6">
+  <div className="max-w-3xl mx-auto p-6 card-surface">
         {/* Mensajes flash */}
         {flash?.success && (
           <div className="mb-4 p-3 bg-green-50 border border-green-200 text-green-800 rounded">{flash.success}</div>
@@ -173,7 +173,6 @@ export default function SolicitudVerificacionForm() {
               </div>
             )}
 
-            <h1 className="text-2xl font-semibold mb-4">Solicitar verificación como representante</h1>
 
             <form onSubmit={submit} encType="multipart/form-data" className="space-y-4">
               <div>

@@ -18,7 +18,6 @@ export default function Index({ events }) {
           <div className="bg-white shadow-sm sm:rounded-lg p-6">
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
                   <div>
-                    <h1 className="text-2xl font-bold">Panel de organización</h1>
                     <p className="text-sm text-gray-500">Tus próximos eventos y agenda</p>
                   </div>
 

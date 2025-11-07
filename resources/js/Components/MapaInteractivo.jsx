@@ -84,7 +84,7 @@ export default function MapaInteractivo({
   const mapCenter = center || (initialPosition ? initialPosition : [-38.9339, -67.9900]);
 
   return (
-    <div style={{ height: '500px', width: '100%' }}>
+    <div style={{ height: '100%', width: '100%' }}>
       <MapContainer center={mapCenter} zoom={13} style={{ height: '100%', width: '100%' }}>
         <TileLayer
           attribution="Tiles &copy; Esri"

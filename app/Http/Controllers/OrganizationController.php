@@ -6,6 +6,9 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Auth;
 use Illuminate\Support\Facades\Redirect;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB;
 
 class OrganizationController extends Controller
 {
@@ -14,7 +17,7 @@ class OrganizationController extends Controller
         // return al frontend los eventos de la organización 
         $user = Auth::user();
         $events = Evento::where('organizacion_id', $user->id)->get();
-        return Inertia::render('Organizacion/Index', [
+    return Inertia::render('Organizacion/Eventos/Index', [
             'events' => $events->map(function($e){
                 return [
                     'id' => $e->id,
@@ -68,8 +71,8 @@ class OrganizationController extends Controller
 
     public function create()
     {
-        // Renderiza el formulario de creación de evento (JSX Inertia)
-        return Inertia::render('Organizacion/CreateEvento');
+    // Renderiza el formulario de creación de evento 
+    return Inertia::render('Organizacion/Eventos/CreateEvento');
     }
 
     public function show($id)
@@ -77,7 +80,7 @@ class OrganizationController extends Controller
         $user = Auth::user();
         $e = Evento::where('id', $id)->where('organizacion_id', $user->id)->firstOrFail();
 
-        return Inertia::render('Organizacion/EventShow', [
+    return Inertia::render('Organizacion/Eventos/EventShow', [
             'event' => [
                 'id' => $e->id,
                 'title' => $e->titulo,
@@ -89,6 +92,95 @@ class OrganizationController extends Controller
                 'image_url' => $e->image_path ? '/storage/' . ltrim($e->image_path, '/') : null,
             ]
         ]);
+    }
+
+    /**
+     * Mostrar el formulario de edición para un evento.
+     */
+    public function edit($id)
+    {
+        $user = Auth::user();
+        $e = Evento::where('id', $id)->where('organizacion_id', $user->id)->firstOrFail();
+
+        return Inertia::render('Organizacion/Eventos/CreateEvento', [
+            'event' => [
+                'id' => $e->id,
+                'title' => $e->titulo,
+                'description' => $e->descripcion,
+                'start' => $e->starts_at,
+                'end' => $e->ends_at,
+                'lat' => $e->lat,
+                'lng' => $e->lng,
+                'tipo' => $e->tipo,
+                'image_url' => $e->image_path ? '/storage/' . ltrim($e->image_path, '/') : null,
+            ]
+        ]);
+    }
+
+    /**
+     * Procesar la actualización de un evento existente.
+     */
+    public function updateEvent(Request $request, $id)
+    {
+        $user = $request->user();
+        $e = Evento::where('id', $id)->where('organizacion_id', $user->id)->firstOrFail();
+
+        $request->validate([
+            'titulo' => 'required|string|max:255',
+            'descripcion' => 'nullable|string',
+            'tipo' => 'nullable|string|max:100',
+            'starts_at' => 'required|date',
+            'ends_at' => 'nullable|date|after_or_equal:starts_at',
+            'lat' => 'nullable|numeric',
+            'lng' => 'nullable|numeric',
+            'image' => 'nullable|image|max:4096',
+            'remove_image' => 'nullable|boolean',
+        ]);
+
+        $path = $e->image_path;
+        if ($request->hasFile('image')) {
+            // nueva imagen, borrar la anterior si existe
+            if ($e->image_path) {
+                try { Storage::disk('public')->delete($e->image_path); } catch (\Throwable $ex) { Log::warning('Failed to delete old event image: '.$ex->getMessage()); }
+            }
+            $path = $request->file('image')->store('eventos', 'public');
+        } elseif ($request->boolean('remove_image')) {
+            // si el usuario solicitó eliminar la imagen existente
+            if ($e->image_path) {
+                try { Storage::disk('public')->delete($e->image_path); } catch (\Throwable $ex) { Log::warning('Failed to delete event image on remove request: '.$ex->getMessage()); }
+            }
+            $path = null;
+        }
+
+        $e->update([
+            'titulo' => $request->titulo,
+            'descripcion' => $request->descripcion,
+            'tipo' => $request->tipo,
+            'starts_at' => $request->starts_at,
+            'ends_at' => $request->ends_at,
+            'lat' => $request->lat,
+            'lng' => $request->lng,
+            'image_path' => $path,
+        ]);
+
+        return redirect()->route('organizacion.index')->with('success', 'Evento actualizado con éxito');
+    }
+
+    /**
+     * eliminar un evento y su imagen (si tiene).
+     */
+    public function destroy(Request $request, $id)
+    {
+        $user = $request->user();
+        $e = Evento::where('id', $id)->where('organizacion_id', $user->id)->firstOrFail();
+
+        if ($e->image_path) {
+            try { Storage::disk('public')->delete($e->image_path); } catch (\Throwable $ex) { Log::warning('Failed to delete event image on destroy: '.$ex->getMessage()); }
+        }
+
+        $e->delete();
+
+        return redirect()->route('organizacion.index')->with('success', 'Evento eliminado con éxito');
     }
 
     /**
@@ -218,5 +310,67 @@ class OrganizationController extends Controller
         ];
 
         return response()->json(['counts' => $data]);
+    }
+
+    /**
+     * Devuelve la serie anual de casos 
+     */
+    public function estadisticasYearsData(Request $request)
+    {
+        $tipo = $request->query('tipo');
+        $situacion = $request->query('situacion');
+        $ciudad = $request->query('ciudad');
+        $period = $request->query('period', 'year'); 
+
+        $query = \App\Models\Caso::query();
+        if (!empty($tipo)) {
+            $allowed = ['Perro', 'Gato', 'Otro'];
+            $normalized = ucfirst(strtolower($tipo));
+            if (in_array($normalized, $allowed)) {
+                $query->where('tipoAnimal', $normalized);
+            }
+        }
+
+        if (!empty($situacion)) {
+            $allowedSituacion = ['Adopcion', 'Abandonado', 'Perdido'];
+            $normalizedS = ucfirst(strtolower($situacion));
+            if (in_array($normalizedS, $allowedSituacion)) {
+                $query->where('situacion', $normalizedS);
+            }
+        }
+
+        if (!empty($ciudad)) {
+            $query->where('ciudad', $ciudad);
+        }
+
+        // Dependiendo de la granularidad, agrupamos distinto
+        if ($period === 'month') {
+            $rows = $query->selectRaw("DATE_FORMAT(created_at, '%Y-%m') as period, COUNT(*) as cnt")
+                ->groupBy('period')
+                ->orderBy('period')
+                ->get();
+        } elseif ($period === 'day') {
+            $rows = $query->selectRaw("DATE(created_at) as period, COUNT(*) as cnt")
+                ->groupBy('period')
+                ->orderBy('period')
+                ->get();
+        } elseif ($period === 'week') {
+            $rows = $query->selectRaw("DATE_FORMAT(created_at, '%x-W%v') as period, COUNT(*) as cnt")
+                ->groupBy('period')
+                ->orderBy('period')
+                ->get();
+        } else {
+            // default
+            $rows = $query->selectRaw('YEAR(created_at) as period, COUNT(*) as cnt')
+                ->groupBy('period')
+                ->orderBy('period')
+                ->get();
+        }
+
+        $series = $rows->map(function ($r) {
+            return ['period' => (string)$r->period, 'total' => (int)$r->cnt];
+        })->values();
+
+        return response()->json(['series' => $series]);
     }
 }

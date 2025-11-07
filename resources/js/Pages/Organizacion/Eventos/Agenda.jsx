@@ -29,7 +29,29 @@ export default function Agenda({ events = [] }) {
           </div>
 
           <div className="mt-auto pt-3 flex items-center justify-between">
-            <Link href={route('organizacion.eventos.show', ev.id)} className="text-blue-600 text-sm">Ver</Link>
+            <div className="flex items-center gap-3">
+              <Link href={route('organizacion.eventos.show', ev.id)} className="text-blue-600 text-sm">Ver</Link>
+              <Link href={route('organizacion.eventos.edit', ev.id)} className="text-sm text-gray-600 hover:text-blue-600">Editar</Link>
+              <button type="button" onClick={() => {
+                  if (!confirm('¿Estás seguro que querés eliminar este evento? Esta acción no se puede deshacer.')) return;
+                  try {
+                    const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+                    fetch(route('organizacion.eventos.destroy', ev.id), {
+                      method: 'DELETE',
+                      headers: {
+                        'X-CSRF-TOKEN': token,
+                        'X-Requested-With': 'XMLHttpRequest'
+                      },
+                      credentials: 'same-origin',
+                    }).finally(() => {
+                      // redireccionar de vuelta al panel de organización
+                      window.location.href = route('organizacion.index');
+                    });
+                  } catch (_) {
+                    window.location.href = route('organizacion.index');
+                  }
+                }} className="text-sm text-red-600 hover:text-red-800">Eliminar</button>
+            </div>
             <div className="text-xs text-gray-500">{ev.lat && ev.lng ? 'Con ubicación' : 'Sin ubicación'}</div>
           </div>
         </article>

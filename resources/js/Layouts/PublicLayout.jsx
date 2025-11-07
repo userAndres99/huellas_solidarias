@@ -9,7 +9,7 @@ export default function PublicLayout({ children, title = 'Huellas Solidarias', a
         <title>{title}</title>
       </Head>
 
-      <div className="min-h-screen bg-gray-50 text-gray-900">
+      <div className="min-h-screen bg-[var(--color-bg)] text-gray-900">
         <Header auth={auth} canLogin={canLogin} canRegister={canRegister} />
         <main className="mx-auto max-w-6xl px-6 py-16">{children}</main>
         <Footer />
