@@ -1,10 +1,13 @@
 import { useEffect, useState } from "react";
-import { Link, usePage, Head } from "@inertiajs/react";
+import { usePage, Head } from "@inertiajs/react";
+import EnlaceRequiereLogin from '@/Components/EnlaceRequiereLogin';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import PublicLayout from '@/Layouts/PublicLayout';
 import { FaEye, FaPlus } from 'react-icons/fa';
 
 export default function Historias() {
-    const { auth } = usePage().props; // 🔹 obtenemos info del usuario
+    const pageProps = usePage().props; // 🔹 obtenemos todas las props de la página (incluye auth, canLogin, canRegister)
+    const { auth } = pageProps;
     const [historias, setHistorias] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -36,8 +39,10 @@ export default function Historias() {
 
      if(loading) return <div>Cargando...</div>;
 
+     const Layout = auth?.user ? AuthenticatedLayout : PublicLayout;
+
      return (
-         <AuthenticatedLayout header={<h2 className="text-xl font-semibold leading-tight text-gray-800">Historias de Éxito</h2>}>
+         <Layout {...pageProps} header={<h2 className="text-xl font-semibold leading-tight text-gray-800">Historias de Éxito</h2>}>
             <Head title="Historias de Éxito" />
             <div className="container mx-auto p-6">
             <div className="flex justify-between items-center mb-8">
@@ -95,19 +100,19 @@ export default function Historias() {
 
                             {/* Boton */}
                             <div className="mt-auto flex justify-end">
-                                <Link
+                                <EnlaceRequiereLogin
                                     href={`/historias/${h.id}`}
                                     className="inline-flex items-center px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow hover:bg-blue-700 hover:scale-105 transform transition-all duration-200"
                                 >
                                     <FaEye className="mr-2" />
                                     Ver Historia
-                                </Link>
+                                </EnlaceRequiereLogin>
                             </div>
                         </div>
                     </div>
                 ))}
             </div>
         </div>
-       </AuthenticatedLayout>
+       </Layout>
     );
 }

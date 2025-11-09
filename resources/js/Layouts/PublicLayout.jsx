@@ -1,6 +1,6 @@
 import Header from '@/Components/Header';
 import Footer from '@/Components/Footer';
-import { Head } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 
 export default function PublicLayout({ children, title = 'Huellas Solidarias', auth, canLogin, canRegister }) {
   return (

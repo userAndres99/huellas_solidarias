@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useState, useRef } from 'react';
-import { Link, Head } from '@inertiajs/react';
+import { Head } from '@inertiajs/react';
+import EnlaceRequiereLogin from '@/Components/EnlaceRequiereLogin';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import PublicLayout from '@/Layouts/PublicLayout';
 import EstadoBadge from '@/Components/EstadoBadge';
 import Select from 'react-select';
 import debounce from 'lodash.debounce';
@@ -315,8 +317,10 @@ export default function Index(props) {
     );
   }
 
+  const Layout = props?.auth?.user ? AuthenticatedLayout : PublicLayout;
+
   return (
-    <AuthenticatedLayout
+    <Layout
       {...props}
       header={<h2 className="text-xl font-semibold leading-tight text-gray-800">Publicaciones</h2>}
     >
@@ -389,13 +393,13 @@ export default function Index(props) {
 
                   <div className="flex items-center justify-between mt-2">
                     <div className="flex items-center gap-3">
-                      <Link href={`/casos/${c.id}`} className="inline-flex items-center gap-2 px-3 py-1.5 bg-[var(--color-primary)] text-white rounded-full text-sm hover:shadow-md transition transform hover:-translate-y-0.5" aria-label={`Ver caso ${c.id}`}>
+                      <EnlaceRequiereLogin href={`/casos/${c.id}`} className="inline-flex items-center gap-2 px-3 py-1.5 bg-[var(--color-primary)] text-white rounded-full text-sm hover:shadow-md transition transform hover:-translate-y-0.5" ariaLabel={`Ver caso ${c.id}`}>
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="inline-block">
                           <path d="M12 5c-7 0-11 6-11 7s4 7 11 7 11-6 11-7-4-7-11-7zm0 11a4 4 0 110-8 4 4 0 010 8z" fill="currentColor"/>
                           <path d="M12 9.5a2.5 2.5 0 100 5 2.5 2.5 0 000-5z" fill="white"/>
                         </svg>
                         Ver detalle
-                      </Link>
+                      </EnlaceRequiereLogin>
                     </div>
                   </div>
                 </div>
@@ -417,6 +421,6 @@ export default function Index(props) {
         />
       </div>
       </div>
-    </AuthenticatedLayout>
+    </Layout>
   );
 }

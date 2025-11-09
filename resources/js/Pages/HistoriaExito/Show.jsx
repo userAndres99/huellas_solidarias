@@ -1,5 +1,6 @@
 import { Head } from "@inertiajs/react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
+import PublicLayout from '@/Layouts/PublicLayout';
 import {useState, useEffect } from "react";
 import { Link } from "@inertiajs/react";
 import Comentarios from "@/Components/Comentarios";
@@ -146,13 +147,15 @@ function Show ({initialId}){
 
 
 Show.layout = (page) => {
+    const Layout = page.props?.auth?.user ? AuthenticatedLayout : PublicLayout;
     return (
-        <AuthenticatedLayout
-            user = {page.props.auth.user}
+        <Layout
+            {...page.props}
             header={<h2 className="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">Profile</h2>}
-            children={page}
-        ></AuthenticatedLayout>
-    )
+        >
+            {page}
+        </Layout>
+    );
 }
 
 

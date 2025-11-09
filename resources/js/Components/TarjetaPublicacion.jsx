@@ -1,6 +1,7 @@
 import React from 'react';
-import { Link } from '@inertiajs/react';
 import { Inertia } from '@inertiajs/inertia';
+import { Link } from '@inertiajs/react';
+import EnlaceRequiereLogin from '@/Components/EnlaceRequiereLogin';
 import EstadoBadge from '@/Components/EstadoBadge';
 
 function formatDate(dateStr) {
@@ -51,9 +52,9 @@ export default function TarjetaPublicacion({ publicacion }) {
   <p className="mt-2 text-sm text-slate-800 line-clamp-3">{p.descripcion}</p>
 
         <div className="mt-4 flex flex-wrap gap-2">
-          <Link
+          <EnlaceRequiereLogin
             href={`/casos/${p.id}`}
-            aria-label={`Ver caso ${p.id}`}
+            ariaLabel={`Ver caso ${p.id}`}
             className="text-sm inline-flex items-center gap-2 px-3 py-1 rounded bg-[var(--color-primary)] text-white font-semibold shadow-sm hover:shadow-md transition transform hover:-translate-y-0.5"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="inline-block">
@@ -61,7 +62,7 @@ export default function TarjetaPublicacion({ publicacion }) {
               <path d="M12 9.5a2.5 2.5 0 100 5 2.5 2.5 0 000-5z" fill="white"/>
             </svg>
             Ver
-          </Link>
+          </EnlaceRequiereLogin>
           <Link
             href={`/casos/${p.id}/edit`}
             className="text-sm inline-block px-3 py-1 border rounded btn-gradient text-white transition btn-animate-gradient"

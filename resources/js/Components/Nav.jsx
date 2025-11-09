@@ -8,6 +8,10 @@ export default function Nav({ auth, canLogin, canRegister }) {
     <nav aria-label="Navegación principal" className="flex items-center nav-container">
       <NavLink href={route('home')} active={route().current('home')}>Inicio</NavLink>
 
+      {/* Public links visible */}
+      <NavLink href={route('casos.index')} active={route().current('casos.index')}>Publicaciones</NavLink>
+      <NavLink href="/historias">Historias</NavLink>
+
       {auth?.user ? (
         <>
           <NavLink href={route('dashboard')} active={route().current('dashboard')}>Panel</NavLink>
