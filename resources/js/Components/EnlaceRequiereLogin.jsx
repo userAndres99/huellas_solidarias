@@ -26,7 +26,10 @@ export default function EnlaceRequiereLogin({ href, children, className = '', ar
     } catch (err) {
       // No hacer nada si falla el almacenamiento
     }
-    Inertia.get(route('login'));
+    // redirección a login
+    if (typeof window !== 'undefined') {
+      window.location.href = route('login');
+    }
   };
 
   if (user) {

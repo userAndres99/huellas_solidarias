@@ -192,3 +192,17 @@
 
 		.nav-container { gap: 1rem; }
 	}
+
+/* Animación para la barra de carga  */
+@layer utilities {
+	.animate-loading-bar {
+		background-size: 200% 100%;
+		animation: loadingBar 1.6s linear infinite;
+	}
+
+	@keyframes loadingBar {
+		0% { background-position: 200% 0; }
+		50% { background-position: 50% 0; }
+		100% { background-position: -200% 0; }
+	}
+}

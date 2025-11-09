@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
-import { usePage, Head } from "@inertiajs/react";
+import { Link, usePage, Head } from "@inertiajs/react";
 import EnlaceRequiereLogin from '@/Components/EnlaceRequiereLogin';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import PublicLayout from '@/Layouts/PublicLayout';
 import { FaEye, FaPlus } from 'react-icons/fa';
+import Loading from '@/Components/Loading';
 
 export default function Historias() {
     const pageProps = usePage().props; // 🔹 obtenemos todas las props de la página (incluye auth, canLogin, canRegister)
@@ -37,7 +38,20 @@ export default function Historias() {
         return () => controller.abort();
     }, []);
 
-     if(loading) return <div>Cargando...</div>;
+     if(loading) return (
+         <LayoutPlaceholder />
+     );
+
+     function LayoutPlaceholder(){
+         const Layout = (usePage().props?.auth?.user) ? AuthenticatedLayout : PublicLayout;
+         return (
+                 <Layout {...usePage().props} header={<h2 className="text-xl font-semibold leading-tight text-gray-800">Historias de Éxito</h2>}>
+                     <div className="container mx-auto p-6">
+                         <Loading variant="centered" message="Cargando historias..." />
+                     </div>
+                 </Layout>
+         )
+     }
 
      const Layout = auth?.user ? AuthenticatedLayout : PublicLayout;
 

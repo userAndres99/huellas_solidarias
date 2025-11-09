@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Inertia } from '@inertiajs/inertia';
+import axios from 'axios';
 import { Link } from '@inertiajs/react';
 import EnlaceRequiereLogin from '@/Components/EnlaceRequiereLogin';
 import EstadoBadge from '@/Components/EstadoBadge';
+import Modal from '@/Components/Modal';
 
 function formatDate(dateStr) {
   if (!dateStr) return '';
@@ -15,8 +17,9 @@ function formatDate(dateStr) {
   }).format(d);
 }
 
-export default function TarjetaPublicacion({ publicacion }) {
+export default function TarjetaPublicacion({ publicacion, showEdit = true, onRemove = null }) {
   const p = publicacion;
+  const [confirmModal, setConfirmModal] = useState({ open: false, type: null });
 
   return (
   <div className="card-surface-alt rounded-xl overflow-hidden fade-in card-hover relative">
@@ -63,23 +66,20 @@ export default function TarjetaPublicacion({ publicacion }) {
             </svg>
             Ver
           </EnlaceRequiereLogin>
-          <Link
-            href={`/casos/${p.id}/edit`}
-            className="text-sm inline-block px-3 py-1 border rounded btn-gradient text-white transition btn-animate-gradient"
-          >
-            Editar
-          </Link>
+          {showEdit && (
+            <Link
+              href={`/casos/${p.id}/edit`}
+              className="text-sm inline-block px-3 py-1 border rounded btn-gradient text-white transition btn-animate-gradient"
+            >
+              Editar
+            </Link>
+          )}
 
           {p.estado === 'activo' && (
             <> 
               <button
                 type="button"
-                onClick={() => {
-                  if (!confirm('¿Querés finalizar esta publicación?')) return;
-                  Inertia.post(route('casos.update_status', p.id), { status: 'finalizado' }, {
-                    onSuccess: () => { window.location.href = route('dashboard'); }
-                  });
-                }}
+                onClick={() => setConfirmModal({ open: true, type: 'finalizar' })}
                 className="text-sm inline-block px-3 py-1 border rounded bg-yellow-50 text-yellow-700 hover:bg-yellow-100"
               >
                 Finalizar
@@ -87,16 +87,59 @@ export default function TarjetaPublicacion({ publicacion }) {
 
               <button
                 type="button"
-                onClick={() => {
-                  if (!confirm('¿Querés cancelar esta publicación?')) return;
-                  Inertia.post(route('casos.update_status', p.id), { status: 'cancelado' }, {
-                    onSuccess: () => { window.location.href = route('dashboard'); }
-                  });
-                }}
+                onClick={() => setConfirmModal({ open: true, type: 'cancelar' })}
                 className="text-sm inline-block px-3 py-1 border rounded bg-red-50 text-red-700 hover:bg-red-100"
               >
                 Cancelar
               </button>
+
+              <Modal show={confirmModal.open} onClose={() => setConfirmModal({ open: false, type: null })} maxWidth="md">
+                <div className="p-6">
+                  <h3 className="text-lg font-semibold mb-2 text-gray-900">
+                    {confirmModal.type === 'finalizar' ? 'Finalizar publicación' : 'Cancelar publicación'}
+                  </h3>
+                  <p className="text-sm text-gray-600 mb-4">
+                    {confirmModal.type === 'finalizar' ? (
+                      "Si considerás que esta publicación cumplió su objetivo (por ejemplo: la mascota fue encontrada o adoptada), seleccioná 'Finalizar' para marcarla como completada y dejar de mostrarla como activa. ¿Deseás continuar?"
+                    ) : (
+                      "Si por algún motivo querés cancelar esta publicación (por ejemplo: datos incorrectos o publicación duplicada), seleccioná 'Cancelar' para retirarla. ¿Deseás continuar?"
+                    )}
+                  </p>
+
+                  <div className="flex justify-end gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setConfirmModal({ open: false, type: null })}
+                      className="px-4 py-2 rounded bg-white border text-sm"
+                    >
+                      No, volver
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        const status = confirmModal.type === 'finalizar' ? 'finalizado' : 'cancelado';
+                        try {
+                          const url = route('casos.update_status', p.id);
+                          const resp = await axios.post(url, { status });
+                          if (resp && resp.data) {
+                            if (typeof onRemove === 'function') {
+                              onRemove(p.id);
+                            }
+                            setConfirmModal({ open: false, type: null });
+                          }
+                        } catch (err) {
+                          console.error('Error updating status', err);
+                          setConfirmModal({ open: false, type: null });
+                        }
+                      }}
+                      className={"px-4 py-2 rounded text-sm font-semibold " + (confirmModal.type === 'finalizar' ? 'bg-yellow-500 text-white' : 'bg-red-600 text-white')}
+                    >
+                      {confirmModal.type === 'finalizar' ? 'Sí, deseo finalizar' : 'Sí, deseo cancelar'}
+                    </button>
+                  </div>
+                </div>
+              </Modal>
             </>
           )}
         </div>

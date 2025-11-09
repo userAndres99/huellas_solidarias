@@ -4,6 +4,7 @@ import EnlaceRequiereLogin from '@/Components/EnlaceRequiereLogin';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import PublicLayout from '@/Layouts/PublicLayout';
 import EstadoBadge from '@/Components/EstadoBadge';
+import Loading from '@/Components/Loading';
 import Select from 'react-select';
 import debounce from 'lodash.debounce';
 
@@ -311,9 +312,18 @@ export default function Index(props) {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin-slow"></div>
-      </div>
+      <LayoutPlaceholder />
+    );
+  }
+
+  function LayoutPlaceholder() {
+    const LayoutToUse = props?.auth?.user ? AuthenticatedLayout : PublicLayout;
+    return (
+      <LayoutToUse {...props} header={<h2 className="text-xl font-semibold leading-tight text-gray-800">Publicaciones</h2>}>
+        <div className="container mx-auto p-4">
+          <Loading variant="centered" message="Cargando publicaciones..." />
+        </div>
+      </LayoutToUse>
     );
   }
 

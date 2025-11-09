@@ -3,6 +3,7 @@ import { Link, Head } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import MapaInteractivo from '../../Components/MapaInteractivo';
 import Comentarios from '@/Components/Comentarios';
+import Loading from '@/Components/Loading';
 
 export default function Show(props) {
   const { initialId } = props;
@@ -43,12 +44,7 @@ export default function Show(props) {
 
 
   if (loading){
-    return (
-      <div className='flex flex-col items-center justify-center h-64'>
-        <div className='w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin-low'></div>
-        <p className='mt-2 text-gray-600'>Cargando caso...</p>
-      </div>
-    )
+    return <Loading message="Cargando caso..." />
   }
 
 

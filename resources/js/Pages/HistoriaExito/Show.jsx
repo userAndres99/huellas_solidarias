@@ -1,9 +1,10 @@
 import { Head } from "@inertiajs/react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import PublicLayout from '@/Layouts/PublicLayout';
-import {useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "@inertiajs/react";
 import Comentarios from "@/Components/Comentarios";
+import Loading from '@/Components/Loading';
 
 
 
@@ -53,12 +54,7 @@ function Show ({initialId}){
 
 
     if(loading){
-        return (
-            <div className="flex flex-col items-center justify-center h-64">
-                <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin-low"></div>
-                <p className="mt-2 text-gray-600">Cargando Historia...</p>
-            </div>
-        )
+        return <Loading message="Cargando Historia..." />
     }
 
 
