@@ -64,6 +64,15 @@ export default function AuthenticatedLayout({ header, children }) {
                                     </NavLink>
                                 )}
 
+                                {user?.role_name === 'Organizacion' && (
+                                    <NavLink
+                                        href={route('organizacion.donaciones')}
+                                        active={route().current('organizacion.donaciones')}
+                                    >
+                                        Donaciones
+                                    </NavLink>
+                                )}
+
                                 {/* Link solo visible para Admin (faltan detalles) */}
                                 {user?.role_name === 'Admin' && (
                                     <NavLink
@@ -204,6 +213,15 @@ export default function AuthenticatedLayout({ header, children }) {
                                 active={route().current('organizacion.estadisticas')}
                             >
                                 Estadísticas
+                            </ResponsiveNavLink>
+                        )}
+
+                        {user?.role_name === 'Organizacion' && (
+                            <ResponsiveNavLink
+                                href={route('organizacion.donaciones')}
+                                active={route().current('organizacion.donaciones')}
+                            >
+                                Donaciones
                             </ResponsiveNavLink>
                         )}
 

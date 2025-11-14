@@ -34,8 +34,8 @@ class HandleInertiaRequests extends Middleware
             ...parent::share($request),
 
             'auth' => [
-                // cargamos la relacion organizacion 
-                'user' => $request->user() ? $request->user()->load('organizacion') : null,
+                // cargamos la relacion organizacion y la cuenta de Mercado Pago vinculada
+                'user' => $request->user() ? $request->user()->loadMissing(['organizacion.mp_cuenta']) : null,
             ],
 
             'canLogin' => Route::has('login'),

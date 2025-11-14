@@ -30,6 +30,11 @@ export default function OrganizationPanel() {
 
     const [orgSaved, setOrgSaved] = useState(false);
 
+    // detectar si la organización ya tiene cuenta MP vinculada 
+    const hasMpAccount = user?.organizacion && (
+        Boolean(user.organizacion.mp_user_id) || Boolean(user.organizacion.mp_cuenta?.mp_user_id)
+    );
+
     // sincronizar si cambia la organizacion 
     useEffect(() => {
         setOrgData('nombre', user?.organizacion?.nombre ?? '');
@@ -119,6 +124,16 @@ export default function OrganizationPanel() {
                         <PrimaryButton type="submit" disabled={orgProcessing}>Guardar organización</PrimaryButton>
                         {orgSaved && (
                             <p className="text-sm text-gray-600">Guardado.</p>
+                        )}
+                    </div>
+                    <div className="mt-4">
+                        {hasMpAccount ? (
+                            <div className="inline-flex items-center gap-2 px-3 py-2 bg-green-100 text-green-800 rounded">
+                                <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 00-1.414 0L8 12.586 4.707 9.293a1 1 0 10-1.414 1.414l4 4a1 1 0 001.414 0l8-8a1 1 0 000-1.414z" clipRule="evenodd" /></svg>
+                                <span>Cuenta de Mercado Pago conectada</span>
+                            </div>
+                        ) : (
+                            <a href={route('mercadopago.connect')} className="inline-flex items-center gap-2 px-3 py-2 bg-[var(--color-primary)] text-white rounded hover:shadow">Conectar Mercado Pago</a>
                         )}
                     </div>
                 </form>

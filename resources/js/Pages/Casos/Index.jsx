@@ -7,6 +7,7 @@ import EstadoBadge from '@/Components/EstadoBadge';
 import Loading from '@/Components/Loading';
 import Select from 'react-select';
 import debounce from 'lodash.debounce';
+import DonationModal from '@/Components/DonationModal';
 
 const opcionesTipo = [
   { value: '', label: 'Todos los tipos' },
@@ -257,6 +258,8 @@ export default function Index(props) {
   const [filtros, setFiltros] = useState({ tipo: '', ciudad: '', situacion: '', ordenFecha: 'reciente', sexo: '', tamanio: '' });
   const [page, setPage] = useState(1);
   const [perPage] = useState(9);
+  const [donationModalOpen, setDonationModalOpen] = useState(false);
+  const [donationTarget, setDonationTarget] = useState(null);
 
   // cuando cambian filtros, volver a la primera pagina
   useEffect(() => {
@@ -388,6 +391,16 @@ export default function Index(props) {
                     </div>
                   </a>
 
+                  {/* Donar: solo mostrar si la organización está vinculada a Mercado Pago */}
+                  {usuario?.organizacion && (usuario.organizacion.mp_user_id || usuario.organizacion.mp_cuenta?.mp_user_id) ? (
+                    <div className="absolute left-3 bottom-16">
+                      <button
+                        onClick={() => { setDonationTarget({ id: usuario.organizacion.id, nombre: usuario.organizacion.nombre }); setDonationModalOpen(true); }}
+                        className="inline-flex items-center gap-2 px-3 py-1.5 bg-yellow-500 text-white rounded-full text-sm hover:shadow"
+                      >Donar</button>
+                    </div>
+                  ) : null}
+
                   <div className="absolute right-3 top-3 flex flex-col items-end gap-2">
                     <span className="px-2 py-1 bg-white/90 rounded text-xs text-slate-700">{c.tipoAnimal || 'Animal'}</span>
                   </div>
@@ -430,6 +443,18 @@ export default function Index(props) {
           }}
         />
       </div>
+        {/* Modal de donación */}
+        <DonationModal
+          open={donationModalOpen}
+          onClose={(result) => {
+            setDonationModalOpen(false);
+            if (result === true) {
+              // opcionalmente mostrar un toast o recargar props
+            }
+          }}
+          organizacion={donationTarget}
+          userEmail={props?.auth?.user?.email ?? null}
+        />
       </div>
     </Layout>
   );

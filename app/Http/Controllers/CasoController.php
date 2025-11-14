@@ -297,7 +297,7 @@ class CasoController extends Controller
         $tamano = $request->input('tamano', null);
         $ordenFecha = $request->input('ordenFecha', 'reciente'); // 'reciente' o 'antigua'
 
-        $query = Caso::with('usuario.organizacion')
+        $query = Caso::with('usuario.organizacion.mp_cuenta')
             ->where('estado', 'activo');
 
         // aplicar filtros si vienen
@@ -353,6 +353,8 @@ class CasoController extends Controller
                     'organizacion' => $c->usuario->organizacion ? [
                         'id' => $c->usuario->organizacion->id,
                         'nombre' => $c->usuario->organizacion->nombre,
+                        'mp_user_id' => $c->usuario->organizacion->mp_cuenta->mp_user_id ?? null,
+                        'has_mp_account' => $c->usuario->organizacion->mp_cuenta ? true : false,
                     ] : null,
                 ] : null,
             ];

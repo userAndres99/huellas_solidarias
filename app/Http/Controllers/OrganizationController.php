@@ -1,6 +1,7 @@
 <?php
 namespace App\Http\Controllers;
 use App\Models\Evento;
+use App\Models\Donacion;
 use App\Models\Organizacion;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -372,5 +373,51 @@ class OrganizationController extends Controller
         })->values();
 
         return response()->json(['series' => $series]);
+    }
+
+    /**
+     * Mostrar las donaciones asociadas a la organización del usuario autenticado.
+     */
+    public function donaciones(Request $request)
+    {
+        $user = $request->user();
+
+        if (!$user || !$user->organizacion_id) {
+            return \Redirect::back()->with('error', 'No pertenecés a una organización.');
+        }
+
+        $perPage = 20;
+        $donaciones = Donacion::where('organizacion_id', $user->organizacion_id)
+            ->orderBy('created_at', 'desc')
+            ->paginate($perPage);
+
+        // Transformar para el frontend
+        $items = $donaciones->getCollection()->map(function ($d) {
+            return [
+                'id' => $d->id,
+                'mp_payment_id' => $d->mp_payment_id,
+                'monto' => (string) $d->monto,
+                'comision_marketplace' => (string) $d->comision_marketplace,
+                'estado' => $d->estado,
+                'fecha_disponible' => $d->fecha_disponible ? $d->fecha_disponible->toDateTimeString() : null,
+                'moneda' => $d->moneda,
+                'email_donante' => $d->email_donante,
+                'created_at' => $d->created_at->toDateTimeString(),
+            ];
+        })->values();
+
+        $meta = [
+            'current_page' => $donaciones->currentPage(),
+            'last_page' => $donaciones->lastPage(),
+            'per_page' => $donaciones->perPage(),
+            'total' => $donaciones->total(),
+        ];
+
+        return Inertia::render('Organizacion/Donaciones/Index', [
+            'donaciones' => [
+                'data' => $items,
+                'meta' => $meta,
+            ],
+        ]);
     }
 }

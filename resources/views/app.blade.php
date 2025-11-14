@@ -17,6 +17,34 @@
     <link rel="icon" href="/images/icono.jpg" type="image/jpeg">
     <link rel="apple-touch-icon" href="/images/icono.jpg">
 
+    <!-- FullCalendar CSS: para prevenir errores -->
+    @php
+        $fcCore = public_path('css/fullcalendar-core.min.css');
+        $fcDay = public_path('css/fullcalendar-daygrid.min.css');
+        $fcTime = public_path('css/fullcalendar-timegrid.min.css');
+    @endphp
+
+    @if(file_exists($fcCore) && file_exists($fcDay) && file_exists($fcTime))
+        @php
+            // Prefer the current request scheme: if the current request is secure, use secure_asset(),
+            // otherwise use asset(). This prevents forcing https when serving locally over http.
+            $useHttps = request()->isSecure();
+        @endphp
+        @if($useHttps)
+            <link rel="stylesheet" href="{{ secure_asset('css/fullcalendar-core.min.css') }}" />
+            <link rel="stylesheet" href="{{ secure_asset('css/fullcalendar-daygrid.min.css') }}" />
+            <link rel="stylesheet" href="{{ secure_asset('css/fullcalendar-timegrid.min.css') }}" />
+        @else
+            <link rel="stylesheet" href="{{ asset('css/fullcalendar-core.min.css') }}" />
+            <link rel="stylesheet" href="{{ asset('css/fullcalendar-daygrid.min.css') }}" />
+            <link rel="stylesheet" href="{{ asset('css/fullcalendar-timegrid.min.css') }}" />
+        @endif
+    @else
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fullcalendar/core@6.1.19/main.min.css" />
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fullcalendar/daygrid@6.1.19/main.min.css" />
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fullcalendar/timegrid@6.1.19/main.min.css" />
+    @endif
+
         <!-- Scripts -->
         @routes
         @viteReactRefresh

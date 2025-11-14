@@ -187,6 +187,14 @@ Route::middleware(['auth', 'role:Organizacion'])->group(function () {
     // Endpoint JSON para obtener la serie anual (casos por año) con los mismos filtros
     Route::get('/organizacion/estadisticas/years', [OrganizationController::class, 'estadisticasYearsData'])
         ->name('organizacion.estadisticas.years');
+
+    // Mercado Pago: OAuth connect (organizaciones)
+    Route::get('/mercadopago/connect', [\App\Http\Controllers\MercadoPagoController::class, 'connect'])
+        ->name('mercadopago.connect');
+
+    // Donaciones: listado para la organizacion autenticada
+    Route::get('/organizacion/donaciones', [\App\Http\Controllers\OrganizationController::class, 'donaciones'])
+        ->name('organizacion.donaciones');
 });
 
    Route::prefix('comentarios')
@@ -214,3 +222,26 @@ Route::get('/comentarios/json', [ComentarioController::class, 'index'])->name('c
 | Rutas de autenticación (login, register, etc.)
 ----------------------------------------------------------------- */
 require __DIR__.'/auth.php';
+
+// Public OAuth callback de Mercado Pago
+Route::get('/mercadopago/callback', [\App\Http\Controllers\MercadoPagoController::class, 'callback'])
+    ->name('mercadopago.callback');
+
+// Endpoint para iniciar una donación (crea preference en Mercado Pago)
+Route::post('/donar', [\App\Http\Controllers\DonationController::class, 'store'])
+    ->name('donar.store');
+
+// Webhook endpoint de notificaciones de Mercado Pago 
+Route::post('/webhooks/mp', [\App\Http\Controllers\WebhookController::class, 'mp'])
+    ->name('webhooks.mp')
+    ->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class, \Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class]);
+
+// También exponer la ruta que la UI 
+Route::post('/api/mercadopago/webhook', [\App\Http\Controllers\WebhookController::class, 'mp'])
+    ->name('webhooks.mp.api')
+    ->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class, \Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class]);
+
+// simple endpoint para obtener el token CSRF 
+Route::get('/csrf-token', function () {
+    return response()->json(['csrf_token' => csrf_token()]);
+});
