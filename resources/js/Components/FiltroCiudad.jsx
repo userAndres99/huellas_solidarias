@@ -1,8 +1,13 @@
 import React, { useRef } from 'react';
 import AsyncSelect from 'react-select/async';
+import { cleanPlaceName } from '@/Services/geonamesHelpers';
 
-// API de localidades del gobierno
-const BASE_URL = 'https://apis.datos.gob.ar/georef/api/v2.0';
+// Usar GeoNames (https://www.geonames.org/export/web-services.html)
+const GEONAMES_URL = 'https://secure.geonames.org/searchJSON';
+const GEONAMES_USER = import.meta.env.VITE_GEONAMES_USER;
+const CITY_FCODES = new Set([
+  'PPL', 'PPLA', 'PPLA2', 'PPLA3', 'PPLA4', 'PPLC', 'PPLL', 'PPLR', 'PPLS',
+]);
 
 /**
  * FiltroCiudad
@@ -32,72 +37,178 @@ export default function FiltroCiudad({ onCiudadSelect, placeholder = 'Buscar ciu
     if (cache.has(qRaw)) return cache.get(qRaw);
     if (cache.has(qNorm)) return cache.get(qNorm);
 
-    // función que hace fetch a la API
+    // fetch a GeoNames 
     const fetchFor = async (q) => {
       if (abortRef.current) abortRef.current.abort();
       abortRef.current = new AbortController();
 
+      // Forzar resultados solo en Argentina (country=AR)
       const params = new URLSearchParams({
-        nombre: q,
-        max: '20',
-        campos: 'nombre,centroide,provincia',
-        formato: 'json',
+        q: q,
+        maxRows: '20',
+        username: GEONAMES_USER,
+        lang: 'es',
+        featureClass: 'P', 
+        country: 'AR',
       });
 
-      const res = await fetch(`${BASE_URL}/localidades?${params.toString()}`, {
+      const res = await fetch(`${GEONAMES_URL}?${params.toString()}`, {
         signal: abortRef.current.signal,
       });
 
       if (!res.ok) return { error: res.status };
       const data = await res.json();
-      return data.localidades || [];
+      return data.geonames || [];
+    };
+
+    const fetchByNameEquals = async (name) => {
+      if (!name) return [];
+      if (abortRef.current) abortRef.current.abort();
+      abortRef.current = new AbortController();
+
+      const params = new URLSearchParams({
+        name_equals: name,
+        maxRows: '20',
+        username: GEONAMES_USER,
+        lang: 'es',
+        featureClass: 'P',
+        country: 'AR',
+      });
+
+      const res = await fetch(`${GEONAMES_URL}?${params.toString()}`, {
+        signal: abortRef.current.signal,
+      });
+
+      if (!res.ok) return { error: res.status };
+      const data = await res.json();
+      return data.geonames || [];
+    };
+
+    // función que intenta búsqueda por prefijo 
+    const fetchByNameStartsWith = async (prefix) => {
+      if (!prefix) return [];
+      if (abortRef.current) abortRef.current.abort();
+      abortRef.current = new AbortController();
+
+      const params = new URLSearchParams({
+        name_startsWith: prefix,
+        maxRows: '20',
+        username: GEONAMES_USER,
+        lang: 'es',
+        featureClass: 'P',
+        country: 'AR',
+      });
+
+      const res = await fetch(`${GEONAMES_URL}?${params.toString()}`, {
+        signal: abortRef.current.signal,
+      });
+
+      if (!res.ok) return { error: res.status };
+      const data = await res.json();
+      return data.geonames || [];
     };
 
     try {
-      let lista = await fetchFor(qRaw);
+      // Intentar primero búsqueda exacta por nombre
+      let lista = await fetchByNameEquals(qRaw);
+      // si no hay resultados, intentar con la versión normalizada 
+      if (!lista || lista.length === 0) {
+        lista = await fetchByNameEquals(qNorm);
+      }
 
-      // si no hay resultados, pruebo con la versión normalizada
+      if (!lista || lista.length === 0) {
+        lista = await fetchFor(qRaw);
+      }
+
       if (!lista || lista.length === 0) {
         lista = await fetchFor(qNorm);
       }
 
-      // función de normalización para claves internas (minusculas, sin tildes)
+      // Si aún no hay resultados generales, intentar búsqueda por prefijo
+      if (!lista || lista.length === 0) {
+        lista = await fetchByNameStartsWith(qRaw);
+      }
+      if (!lista || lista.length === 0) {
+        lista = await fetchByNameStartsWith(qNorm);
+      }
+
+      // FILTRAR: mantener principalmente ciudades.
+      const MIN_POPULATION = 1000;
+      lista = (lista || []).filter((g) => {
+        const fcode = (g.fcode || g.featureCode || '').toString();
+        const population = g.population ? Number(g.population) : 0;
+        return CITY_FCODES.has(fcode) || population >= MIN_POPULATION;
+      });
+
       const normalize = (s) =>
         (s || '').toString().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
 
-      const getType = (loc) =>
-        loc.categoria || loc.tipo || loc.clase || loc.jurisdiccion || loc.tipo_localidad || null;
-
-      // elimina duplicados exactos 
+      // elimina duplicados exactos
       const byKey = new Map();
-      for (const loc of lista) {
-        const name = loc.nombre || '';
-        const prov = loc.provincia?.nombre || '';
-        const lat = loc.centroide?.lat !== undefined ? parseFloat(loc.centroide.lat) : null;
-        const lon = loc.centroide?.lon !== undefined ? parseFloat(loc.centroide.lon) : null;
+      for (const g of lista) {
+        const name = g.name || '';
+        const displayName = cleanPlaceName(name);
+        const admin = g.adminName1 || '';
+        const admin2 = g.adminName2 || '';
+        const country = g.countryName || '';
+        const lat = g.lat !== undefined ? parseFloat(g.lat) : null;
+        const lon = g.lng !== undefined ? parseFloat(g.lng) : null;
 
         const latR = lat !== null && !Number.isNaN(lat) ? lat.toFixed(4) : '';
         const lonR = lon !== null && !Number.isNaN(lon) ? lon.toFixed(4) : '';
-        const key = `${normalize(name)}::${normalize(prov)}::${latR}::${lonR}`;
+        const key = `${normalize(name)}::${normalize(admin)}::${latR}::${lonR}`;
 
         if (byKey.has(key)) continue;
 
-        const tipo = getType(loc);
-        const labelParts = [loc.nombre];
-        if (prov) labelParts.push(prov);
+        const labelParts = [displayName];
+        if (admin) labelParts.push(admin);
         let label = labelParts.join(' - ');
-        if (tipo) label = `${label} (${tipo})`;
 
         byKey.set(key, {
-          id: loc.id || `${name}-${prov}-${latR}-${lonR}`,
-          nombre: loc.nombre,
-          provincia: prov,
-          centroide: loc.centroide,
+          id: g.geonameId || `${name}-${admin}-${latR}-${lonR}`,
+          nombre: name,
+          provincia: admin,
+          admin2: admin2,
+          population: g.population ? Number(g.population) : 0,
+          centroide: lat !== null && lon !== null ? { lat, lon } : null,
+          fcode: (g.fcode || g.featureCode || '').toString(),
           label,
         });
       }
 
-      const processed = Array.from(byKey.values());
+      let processed = Array.from(byKey.values());
+
+      // para evitar mostrar barrios/sectores pequeños por separado. (si es un barrio muy alejado de cualquier sitio grande se conserva)
+      const MIN_POPULATION_GROUP = 1000;
+      const labelMap = new Map(); 
+        const normalizeLabel = (s) => (s || '').toString().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+
+      for (const item of processed) {
+        const pop = item.population || 0;
+        const admin2Name = item.admin2 || '';
+
+        if (pop < MIN_POPULATION_GROUP && admin2Name) {
+          const newLabel = `${admin2Name}${item.provincia ? ' - ' + item.provincia : ''}`;
+          const keyLabel = normalizeLabel(newLabel);
+          if (!labelMap.has(keyLabel)) {
+            labelMap.set(keyLabel, { value: `admin2:${admin2Name}:${item.provincia}`, label: newLabel, centroide: item.centroide || null });
+          }
+        } else {
+          const keyLabel = normalizeLabel(item.label || item.nombre || '');
+          if (!labelMap.has(keyLabel)) {
+            labelMap.set(keyLabel, { value: item.id, label: item.label, centroide: item.centroide || null });
+          }
+        }
+      }
+
+      processed = Array.from(labelMap.values()).map((it) => ({ id: it.value, nombre: it.label, provincia: '', centroide: it.centroide, label: it.label }));
+
+      // Si hay coincidencias exactas por nombre
+      const qNameNorm = normalize(qRaw || qNorm || '');
+      const exactMatches = processed.filter((p) => normalize(p.nombre) === qNameNorm);
+      if (exactMatches.length > 0) {
+        processed = exactMatches;
+      }
 
       // función que calcula distancia en metros
       const distanceMeters = (a, b) => {
@@ -173,18 +284,13 @@ export default function FiltroCiudad({ onCiudadSelect, placeholder = 'Buscar ciu
     }
   };
 
-  // cuando el usuario selecciona una opción
+  // cuando el usuario selecciona una opción: pasar la opción completa al callback
   const handleChange = (option) => {
     if (!option) {
       onCiudadSelect && onCiudadSelect(null);
       return;
     }
-    const centroide = option.data?.centroide;
-    if (centroide && typeof centroide.lat === 'number' && typeof centroide.lon === 'number') {
-      onCiudadSelect && onCiudadSelect([centroide.lat, centroide.lon]);
-    } else {
-      onCiudadSelect && onCiudadSelect(null);
-    }
+    onCiudadSelect && onCiudadSelect(option);
   };
 
   // estilos simples para react-select

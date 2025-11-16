@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import MapaInteractivo from './MapaInteractivo';
 import FiltroCiudad from './FiltroCiudad';
 import { useForm, usePage } from '@inertiajs/react';
+import { cleanPlaceName } from '@/Services/geonamesHelpers';
 
 export default function FormCasos() {
   const { data, setData, post, processing, errors } = useForm({
@@ -26,8 +27,9 @@ export default function FormCasos() {
   const [initialPosition, setInitialPosition] = useState(null);
   const [showMarkerOnSelect, setShowMarkerOnSelect] = useState(false);
 
-  // Georef API base (para obtener la etiqueta formateada igual que FiltroCiudad)
-  const GEOREF_BASE = 'https://apis.datos.gob.ar/georef/api/v2.0';
+  //GeoNames
+  const GEONAMES_REVERSE = 'https://secure.geonames.org/findNearbyPlaceNameJSON';
+  const GEONAMES_USER = import.meta.env.VITE_GEONAMES_USER;
 
   // preview para la imagen
   const [previewUrl, setPreviewUrl] = useState(null);
@@ -64,94 +66,117 @@ export default function FormCasos() {
     }
   };
 
-  const handleCiudadSelect = (value) => {
-    if (!value || !Array.isArray(value)) return;
-    const [lat, lon] = value.map(Number);
-    setData('ciudad', '');
-    setData('ciudad_id', '');
-    setData('latitud', lat);
-    setData('longitud', lon);
+  const handleCiudadSelect = (option) => {
+    if (!option) return;
+    const centroide = option.data?.centroide;
+    const lat = centroide?.lat ?? null;
+    const lon = centroide?.lon ?? null;
 
-    setMapCenter([lat, lon]);
-    setInitialPosition([lat, lon]);
-    setShowMarkerOnSelect(true);
+    // si tenemos centroide
+    if (lat !== null && lon !== null) {
+      setData('ciudad', option.label || '');
+      setData('ciudad_id', option.value || '');
+      setData('latitud', Number(lat));
+      setData('longitud', Number(lon));
+      setMapCenter([Number(lat), Number(lon)]);
+      setInitialPosition([Number(lat), Number(lon)]);
+      setShowMarkerOnSelect(true);
+    }
   };
 
   const reverseGeocodeAndSetCity = async (lat, lon) => {
     try {
-      const nominatimUrl = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${encodeURIComponent(
-        lat
-      )}&lon=${encodeURIComponent(lon)}&accept-language=es`;
-
-      const response = await fetch(nominatimUrl, {
-        headers: { 'User-Agent': 'HuellasSolidarias/1.0 (contacto@example.com)' },
+      const params = new URLSearchParams({
+        lat: String(lat),
+        lng: String(lon),
+        username: GEONAMES_USER,
+        lang: 'es',
+        radius: '30',
+        maxRows: '10',
       });
-      if (response.ok) {
-        const result = await response.json();
-        const addr = result.address || {};
-        const cityName =
-          addr.city || addr.town || addr.village || addr.municipality || addr.county || '';
-        if (cityName) {
-          // obtener la misma etiqueta que usamos en FiltroCiudad
-          try {
-            const params = new URLSearchParams({
-              nombre: cityName,
-              max: '5',
-              campos: 'nombre,centroide,provincia,id',
-              formato: 'json',
-            });
 
-            const geoRes = await fetch(`${GEOREF_BASE}/localidades?${params.toString()}`);
-            if (geoRes.ok) {
-              const geoJson = await geoRes.json();
-              const localidades = geoJson.localidades || [];
+      const url = `${GEONAMES_REVERSE}?${params.toString()}`;
+      const res = await fetch(url);
+      if (!res.ok) return;
+      const json = await res.json();
+      const list = json.geonames || [];
+      if (!list || list.length === 0) return;
 
-              // Buscar la localidad más cercana si tenemos centroide
-              let chosen = null;
-              if (localidades.length === 1) {
-                chosen = localidades[0];
-              } else if (localidades.length > 1) {
-                // Si hay varios preferir la que tenga centroide y si es posible la más cercana al punto
-                let minDist = Infinity;
-                for (const loc of localidades) {
-                  const centro = loc.centroide || {};
-                  if (centro.lat !== undefined && centro.lon !== undefined) {
-                    const d = Math.hypot(Number(centro.lat) - Number(lat), Number(centro.lon) - Number(lon));
-                    if (d < minDist) {
-                      minDist = d;
-                      chosen = loc;
-                    }
-                  }
-                }
-                // fallback si ninguno tenía centroide
-                if (!chosen) chosen = localidades[0];
-              }
+      // 1. Filtrar ciudades reales dentro de la misma respuesta
+      const cities = list.filter((g) => {
+        const fcode = (g.fcode || '').toString().toUpperCase();
+        const pop = g.population ? Number(g.population) : 0;
 
-              if (chosen) {
-                const nombre = chosen.nombre || cityName;
-                const prov = chosen.provincia?.nombre || '';
-                const labelParts = [nombre];
-                if (prov) labelParts.push(prov);
-                const label = labelParts.join(' - ');
-                setData('ciudad', label);
-                setData('ciudad_id', chosen.id || '');
-                return;
-              }
-            }
-          } catch (e) {
-            // si falla la consulta a georef
-            console.warn('Georef lookup failed:', e);
-          }
+        return (
+          g.fcl === 'P' &&
+          (
+            fcode === 'PPLA' ||
+            fcode === 'PPLA2' ||
+            fcode === 'PPLA3' ||
+            fcode === 'PPL'
+          ) &&
+          pop > 3000
+        );
+      });
 
-          // fallback sencillo usar lo que devolvió Nominatim (en caso de error en georef)
-          setData('ciudad', cityName);
-          setData('ciudad_id', '');
-        }
-      } else {
-        console.warn('Nominatim non-OK', response.status);
+      // 2. Si encontramos ciudades en la respuesta, usar la más cercana (primer elemento)
+      if (cities.length > 0) {
+        const c = cities[0];
+        const nameC = cleanPlaceName(c.name || c.toponymName || '');
+        const adminC = c.adminName1 || '';
+
+        setData('ciudad', `${nameC} - ${adminC}`);
+        setData('ciudad_id', c.geonameId || '');
+        return;
       }
+
+      // 3. Si NO hay ciudades en la respuesta -> hacemos un segundo request pidiendo solo ciudades
+      try {
+        const nearCityParams = new URLSearchParams({
+          lat: String(lat),
+          lng: String(lon),
+          username: GEONAMES_USER,
+          lang: 'es',
+          featureClass: 'P',
+          maxRows: '1',
+        });
+        // añadir featureCode múltiples veces
+        nearCityParams.append('featureCode', 'PPL');
+        nearCityParams.append('featureCode', 'PPLA');
+
+        const nearCityUrl = `https://secure.geonames.org/findNearbyPlaceNameJSON?${nearCityParams.toString()}`;
+        const cityRes = await fetch(nearCityUrl);
+
+        if (cityRes.ok) {
+          const cj = await cityRes.json();
+          const best = cj.geonames?.[0];
+
+          if (best) {
+            const nameB = cleanPlaceName(best.name || best.toponymName || '');
+            const adminB = best.adminName1 || '';
+
+            setData('ciudad', `${nameB} - ${adminB}`);
+            setData('ciudad_id', best.geonameId || '');
+            return;
+          }
+        }
+      } catch (err2) {
+        console.warn('Error buscando ciudad cercana:', err2);
+      }
+
+      // Si todo lo anterior falla, fallback al primer resultado (aunque sea barrio)
+      const chosen = list[0];
+      const name = chosen.name || chosen.toponymName || '';
+      const admin = chosen.adminName1 || '';
+      const displayName = cleanPlaceName(name);
+      const labelParts = [displayName];
+      if (admin) labelParts.push(admin);
+      const label = labelParts.join(' - ');
+
+      setData('ciudad', label);
+      setData('ciudad_id', chosen.geonameId || '');
     } catch (err) {
-      console.error('Error reverse geocoding:', err);
+      console.error('Error reverse geocoding (GeoNames):', err);
     }
   };
 

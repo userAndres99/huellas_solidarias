@@ -25,14 +25,18 @@ export default function CreateEvento({ event = null }) {
   const [initialPosition, setInitialPosition] = useState(event?.lat && event?.lng ? [Number(event.lat), Number(event.lng)] : null);
   const [showMarker, setShowMarker] = useState(!!(event?.lat && event?.lng));
 
-  const handleCiudadSelect = (value) => {
-    if (!value || !Array.isArray(value)) return;
-    const [lat, lon] = value.map(Number);
-    setData('lat', lat);
-    setData('lng', lon);
-    setMapCenter([lat, lon]);
-    setInitialPosition([lat, lon]);
-    setShowMarker(true);
+  const handleCiudadSelect = (option) => {
+    if (!option) return;
+    const centroide = option.data?.centroide;
+    const lat = centroide?.lat ?? null;
+    const lon = centroide?.lon ?? null;
+    if (lat !== null && lon !== null) {
+      setData('lat', Number(lat));
+      setData('lng', Number(lon));
+      setMapCenter([Number(lat), Number(lon)]);
+      setInitialPosition([Number(lat), Number(lon)]);
+      setShowMarker(true);
+    }
   };
 
   const handleLocationSelect = ([lat, lng]) => {

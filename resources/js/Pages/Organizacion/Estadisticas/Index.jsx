@@ -34,7 +34,6 @@ export default function Index(props) {
   const [yearly, setYearly] = useState([]);
   const [period, setPeriod] = useState('year'); // usamos 'year' | 'month' | 'day'
 
-  const GEOREF_BASE = 'https://apis.datos.gob.ar/georef/api/v2.0';
 
   const handleTipoChange = async (e) => {
     const val = e.target.value;
@@ -83,87 +82,27 @@ export default function Index(props) {
   };
 
   // recibe lat y lon desde el buscador de ciudad
-  const handleCiudadSelect = (coords) => {
-    if (coords && coords.length === 2) {
-      setCenter(coords);
-      // obtener la etiqueta de ciudad y actualizar estadisticas
-      (async () => {
-        const [lat, lon] = coords.map(Number);
-        const label = await reverseGeocodeToLabel(lat, lon);
-        setSelectedCiudad(label || '');
-        // fetch para actualizar counts
-        fetchCounts(selectedTipo, selectedSituacion, label);
-      })();
-    } else {
+  const handleCiudadSelect = (option) => {
+    if (!option) {
       setCenter([-38.9339, -67.9900]);
+      setSelectedCiudad('');
+      fetchCounts(selectedTipo, selectedSituacion, '');
+      return;
+    }
+
+    const centroide = option.data?.centroide;
+    const lat = centroide?.lat ?? null;
+    const lon = centroide?.lon ?? null;
+
+    if (lat !== null && lon !== null) {
+      const coords = [Number(lat), Number(lon)];
+      setCenter(coords);
+      const label = option.label || '';
+      setSelectedCiudad(label);
+      fetchCounts(selectedTipo, selectedSituacion, label);
     }
   };
 
-  // Geocodificación inversa para obtener la etiqueta de ciudad similar
-  const reverseGeocodeToLabel = async (lat, lon) => {
-    try {
-      const nominatimUrl = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${encodeURIComponent(
-        lat
-      )}&lon=${encodeURIComponent(lon)}&accept-language=es`;
-
-      const nomRes = await fetch(nominatimUrl, {
-        headers: { 'User-Agent': 'HuellasSolidarias/1.0 (contacto@example.com)' },
-      });
-      if (nomRes.ok) {
-        const nomJson = await nomRes.json();
-        const addr = nomJson.address || {};
-        const cityName = addr.city || addr.town || addr.village || addr.municipality || addr.county || '';
-        if (cityName) {
-          try {
-            const params = new URLSearchParams({
-              nombre: cityName,
-              max: '5',
-              campos: 'nombre,centroide,provincia,id',
-              formato: 'json',
-            });
-
-            const geoRes = await fetch(`${GEOREF_BASE}/localidades?${params.toString()}`);
-            if (geoRes.ok) {
-              const geoJson = await geoRes.json();
-              const localidades = geoJson.localidades || [];
-
-              let chosen = null;
-              if (localidades.length === 1) {
-                chosen = localidades[0];
-              } else if (localidades.length > 1) {
-                let minDist = Infinity;
-                for (const loc of localidades) {
-                  const centro = loc.centroide || {};
-                  if (centro.lat !== undefined && centro.lon !== undefined) {
-                    const d = Math.hypot(Number(centro.lat) - Number(lat), Number(centro.lon) - Number(lon));
-                    if (d < minDist) {
-                      minDist = d;
-                      chosen = loc;
-                    }
-                  }
-                }
-                if (!chosen) chosen = localidades[0];
-              }
-
-              if (chosen) {
-                const nombre = chosen.nombre || cityName;
-                const prov = chosen.provincia?.nombre || '';
-                const labelParts = [nombre];
-                if (prov) labelParts.push(prov);
-                return labelParts.join(' - ');
-              }
-            }
-          } catch (e) {
-            console.warn('Georef lookup failed:', e);
-          }
-          return cityName;
-        }
-      }
-    } catch (err) {
-      console.error('Error reverse geocoding:', err);
-    }
-    return '';
-  };
 
   // fetch counts para los filtros
   const fetchCounts = async (tipoVal, situacionVal, ciudadVal) => {
