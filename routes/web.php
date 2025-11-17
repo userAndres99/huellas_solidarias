@@ -5,12 +5,25 @@ use App\Http\Controllers\CasoController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\HistoriaController;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\ChatController;
 use App\Http\Controllers\OrganizationController;
 use App\Http\Controllers\SolicitudVerificacionController; 
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ComentarioController;
 use Inertia\Inertia;
+use App\Http\Controllers\MessageController;
+
+
+Route::middleware(['auth', 'verified'])->group(function(){
+    Route::get('/chat', [ChatController::class, 'chat'])->name('chat');
+   Route::get('user/{user}', [MessageController::class, 'byUser'])->name('chat.user');
+   Route::get('group/{group}', [MessageController::class, 'byGroup'])->name('chat.group');
+
+    Route::post('/message', [MessageController::class, 'store'])->name('message.store');
+    Route::delete('/message/{message}', [MessageController::class, 'destroy'])->name('message.destroy');
+    Route::get('/message/older/{message}', [MessageController::class, 'loadOlder'])->name('message.loadOlder');
+});
 
 /* -----------------------------------------------------------------
 | Página principal
@@ -218,6 +231,9 @@ Route::middleware('auth')->group(function(){
 
 
 Route::get('/comentarios/json', [ComentarioController::class, 'index'])->name('comentarios.json');
+
+
+
 /* -----------------------------------------------------------------
 | Rutas de autenticación (login, register, etc.)
 ----------------------------------------------------------------- */

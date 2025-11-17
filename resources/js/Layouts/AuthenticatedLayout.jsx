@@ -4,7 +4,7 @@ import NavLink from '@/Components/NavLink';
 import ResponsiveNavLink from '@/Components/ResponsiveNavLink';
 import Footer from '@/Components/Footer';
 import { Link, usePage } from '@inertiajs/react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 export default function AuthenticatedLayout({ header, children }) {
     // obtener user 
@@ -13,6 +13,11 @@ export default function AuthenticatedLayout({ header, children }) {
 
     const [showingNavigationDropdown, setShowingNavigationDropdown] =
         useState(false);
+
+
+    useEffect(()=>{
+        console.log("AuthenticatedLayout mounted")
+    })
 
     return (
         <div className="min-h-screen bg-[var(--color-bg)]">
