@@ -8,6 +8,7 @@ import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { Inertia } from '@inertiajs/inertia';
+import { EventBusProvider } from './EvenBus';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
@@ -33,11 +34,12 @@ createInertiaApp({
         const root = createRoot(el);
 
         root.render(
-        
+        <EventBusProvider>
         <QueryClientProvider client={queryClient}>
         <App {...props} />
         <ReactQueryDevtools initialIsOpen={false}/>
         </QueryClientProvider>
+        </EventBusProvider>
     
     );
     },

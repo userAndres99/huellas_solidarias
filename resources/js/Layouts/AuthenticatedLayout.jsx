@@ -5,15 +5,75 @@ import ResponsiveNavLink from '@/Components/ResponsiveNavLink';
 import Footer from '@/Components/Footer';
 import { Link, usePage } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
+import { useEventBus } from '@/EvenBus';
 
 export default function AuthenticatedLayout({ header, children }) {
     // obtener user 
-    const user = usePage().props.auth?.user;
+    const page = usePage();
+    const user = page.props.auth?.user;
+    const conversations =  page.props.conversations;
     const logoHref = user ? route('dashboard') : '/';
+    const { emit } = useEventBus();
 
     const [showingNavigationDropdown, setShowingNavigationDropdown] =
         useState(false);
 
+    useEffect(() => {
+        conversations.forEach((conversation) =>{
+                let channel = `message.group.${conversation.id}`;
+
+                if(conversation.is_user){
+                    channel = `message.user.${[
+                        parseInt(user.id),
+                        parseInt(conversation.id),
+                    ]
+                        .sort((a, b) => a - b)
+                        .join("-")}`;
+                }
+
+                Echo.private(channel)
+                    .error((error) => {
+                        console.log(error);
+                    })
+                    .listen("SocketMessage", (e)=>{
+                        console.log("SocketMessage", e);
+                        const message = e.message;
+
+                        emit("message.created", message);
+                        if (message.sender_id === user.id){
+                            return;
+                        }
+                        emit("newMessageNotification", {
+                            user: message.sender,
+                            group_id: message.group_id,
+                            message:
+                                message.message ||
+                                `Shared ${
+                                    message.attachments.length === 1
+                                        ? "an attachment"
+                                        : message.attachments.length +
+                                           " attachmnets"
+                                }`,
+                        });
+                    });
+        });
+
+        return () => {
+            conversations.forEach((conversation) => {
+                let channel = `message.group.${conversation.id}`;
+
+                if(conversation.is_user){
+                    channel = `message.user.${[
+                        parseInt(user.id),
+                        parseInt(conversation.id),
+                    ]
+                        .sort((a, b) => a - b)
+                        .join("-")}`;
+                }
+                Echo.leave(channel);
+            });
+        };
+    }, [conversations]);
 
     useEffect(()=>{
         console.log("AuthenticatedLayout mounted")
