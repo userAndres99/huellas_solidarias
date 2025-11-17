@@ -10,6 +10,9 @@ use App\Http\Controllers\SolicitudVerificacionController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ComentarioController;
+use App\Models\Donacion;
+use App\Models\Organizacion;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 
 /* -----------------------------------------------------------------
@@ -245,3 +248,35 @@ Route::post('/api/mercadopago/webhook', [\App\Http\Controllers\WebhookController
 Route::get('/csrf-token', function () {
     return response()->json(['csrf_token' => csrf_token()]);
 });
+
+// Resultado público de una donación (retorno desde Mercado Pago)
+Route::get('/donaciones/resultado', function (Request $request) {
+    // pasar todos los query params a la vista para mostrar detalles
+    $query = $request->query();
+
+    $donacion = null;
+    $organizacion = null;
+
+    // intentar resolver la donación por varios parámetros comunes (payment_id, collection_id, preference_id)
+    $paymentId = $request->query('payment_id') ?? $request->query('collection_id') ?? null;
+    $preferenceId = $request->query('preference_id') ?? null;
+
+    if ($paymentId) {
+        $donacion = Donacion::where('mp_payment_id', $paymentId)->first();
+    }
+
+    if (! $donacion && $preferenceId) {
+        // algunos webhooks guardan preference_id dentro
+        $donacion = Donacion::where('payload_crudo->preference_id', $preferenceId)->first();
+    }
+
+    if ($donacion) {
+        $organizacion = Organizacion::find($donacion->organizacion_id);
+    }
+
+    return Inertia::render('Donaciones/Resultado', [
+        'query' => $query,
+        'donacion' => $donacion ? $donacion->toArray() : null,
+        'organizacion' => $organizacion ? ['id' => $organizacion->id, 'nombre' => $organizacion->nombre] : null,
+    ]);
+})->name('donaciones.resultado');

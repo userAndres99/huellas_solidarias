@@ -22,33 +22,25 @@ export default function Index(props) {
               <table className="w-full text-sm text-left">
                 <thead>
                   <tr className="text-xs text-gray-500 uppercase bg-gray-50">
-                    <th className="px-3 py-2">ID</th>
-                    <th className="px-3 py-2">MP Payment ID</th>
-                    <th className="px-3 py-2">Monto</th>
-                    <th className="px-3 py-2">Comisión</th>
                     <th className="px-3 py-2">Moneda</th>
+                    <th className="px-3 py-2">Monto</th>
+                    <th className="px-3 py-2">Comisión otorgada a la web</th>
                     <th className="px-3 py-2">Estado</th>
-                    <th className="px-3 py-2">Fecha disponible</th>
-                    <th className="px-3 py-2">Email donante</th>
                     <th className="px-3 py-2">Creado</th>
                   </tr>
                 </thead>
                 <tbody>
                   {donaciones.length === 0 && (
                     <tr>
-                      <td colSpan="9" className="px-3 py-4 text-center text-gray-500">No hay donaciones aún.</td>
+                      <td colSpan="5" className="px-3 py-4 text-center text-gray-500">No hay donaciones aún.</td>
                     </tr>
                   )}
                   {donaciones.map((d) => (
                     <tr key={d.id} className="border-t">
-                      <td className="px-3 py-2 align-top">{d.id}</td>
-                      <td className="px-3 py-2 align-top">{d.mp_payment_id}</td>
+                      <td className="px-3 py-2 align-top">{d.moneda}</td>
                       <td className="px-3 py-2 align-top">{d.monto}</td>
                       <td className="px-3 py-2 align-top">{d.comision_marketplace}</td>
-                      <td className="px-3 py-2 align-top">{d.moneda}</td>
                       <td className="px-3 py-2 align-top">{d.estado}</td>
-                      <td className="px-3 py-2 align-top">{d.fecha_disponible ?? '-'}</td>
-                      <td className="px-3 py-2 align-top">{d.email_donante ?? '-'}</td>
                       <td className="px-3 py-2 align-top">{d.created_at}</td>
                     </tr>
                   ))}
