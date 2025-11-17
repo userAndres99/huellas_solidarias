@@ -9,7 +9,8 @@ export default function Privacy() {
       </Head>
 
       <div className="mx-auto max-w-4xl px-6 py-16">
-        <article className="prose prose-slate mx-auto">
+        <div className="bg-white p-8 rounded-2xl shadow card-surface">
+          <article className="prose prose-slate mx-auto">
           <h1>Política de privacidad</h1>
           <p>
             En Huellas Solidarias nos tomamos muy en serio la privacidad de las personas que
@@ -49,7 +50,8 @@ export default function Privacy() {
           </p>
 
           <p className="text-sm text-slate-500">Última actualización: 6 de noviembre de 2025</p>
-        </article>
+          </article>
+        </div>
       </div>
     </PublicLayout>
   );

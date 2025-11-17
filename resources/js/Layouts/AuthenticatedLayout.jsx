@@ -20,18 +20,21 @@ export default function AuthenticatedLayout({ header, children }) {
     })
 
     return (
-        <div className="min-h-screen bg-[var(--color-bg)]">
+        <div className="min-h-screen bg-[var(--color-bg)] flex flex-col">
             <nav className="border-b border-transparent bg-[var(--color-footer)] shadow-sm">
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                     <div className="flex h-16 justify-between">
                         <div className="flex">
                             <div className="flex shrink-0 items-center">
                                 <Link href={logoHref}>
-                                    <ApplicationLogo className="block h-9 w-auto fill-current text-gray-800" />
+                                    <ApplicationLogo className="block h-9 w-auto fill-current text-gray-800 icon-float" />
+                                </Link>
+                                <Link href={logoHref} className="ms-3">
+                                    <span className="text-lg font-semibold brand-hover-scale text-gradient-animated">Huellas Solidarias</span>
                                 </Link>
                             </div>
 
-                            <div className="hidden nav-container space-x-8 sm:-my-px sm:ms-10 sm:flex">
+                            <div className="hidden nav-container space-x-8 xl:-my-px xl:ms-10 xl:flex">
                                 <NavLink
                                     href={route('dashboard')}
                                     active={route().current('dashboard')}
@@ -90,7 +93,7 @@ export default function AuthenticatedLayout({ header, children }) {
                             </div>
                         </div>
 
-                        <div className="hidden sm:ms-6 sm:flex sm:items-center">
+                        <div className="hidden xl:ms-6 xl:flex xl:items-center">
                             {user ? (
                                 <div className="relative ms-3">
                                     <Dropdown>
@@ -140,14 +143,14 @@ export default function AuthenticatedLayout({ header, children }) {
                             )}
                         </div>
 
-                        <div className="-me-2 flex items-center sm:hidden">
+                        <div className="-me-2 flex items-center xl:hidden">
                             <button
                                 onClick={() =>
                                     setShowingNavigationDropdown(
                                         (previousState) => !previousState,
                                     )
                                 }
-                                className="inline-flex items-center justify-center rounded-md p-2 text-gray-400 transition duration-150 ease-in-out hover:bg-[var(--color-surface)] hover:text-gray-600 focus:bg-[var(--color-surface)] focus:text-gray-600 focus:outline-none"
+                                className="inline-flex items-center justify-center rounded-md p-2 text-gray-600 transition duration-150 ease-in-out hover:bg-[var(--color-surface)] hover:text-gray-600 focus:bg-[var(--color-surface)] focus:text-gray-600 focus:outline-none"
                             >
                                 <svg
                                     className="h-6 w-6"
@@ -186,7 +189,7 @@ export default function AuthenticatedLayout({ header, children }) {
                 <div
                     className={
                         (showingNavigationDropdown ? 'block' : 'hidden') +
-                        ' sm:hidden'
+                        ' xl:hidden'
                     }
                 >
                     <div className="space-y-1 pb-3 pt-2">
@@ -202,6 +205,10 @@ export default function AuthenticatedLayout({ header, children }) {
                             active={route().current('casos.index')}
                         >
                             Publicaciones
+                        </ResponsiveNavLink>
+
+                        <ResponsiveNavLink href="/historias">
+                            Historias de Éxito
                         </ResponsiveNavLink>
 
                         {user?.role_name === 'Organizacion' && (
@@ -288,7 +295,7 @@ export default function AuthenticatedLayout({ header, children }) {
                 </header>
             )}
 
-            <main>{children}</main>
+            <main className="flex-1">{children}</main>
 
             <Footer />
         </div>

@@ -144,7 +144,6 @@
 	}
 }
 
-
 @layer utilities {
 	.text-muted {
 		color: var(--text-muted);
@@ -192,15 +191,8 @@
 	}
 
 	@keyframes float {
-
-		0%,
-		100% {
-			transform: translateY(0)
-		}
-
-		50% {
-			transform: translateY(-6px)
-		}
+		0%, 100% { transform: translateY(0) }
+		50% { transform: translateY(-6px) }
 	}
 }
 
@@ -210,6 +202,30 @@
 		@apply relative inline-flex items-center px-2 pt-1 text-sm font-medium leading-5 transition-colors duration-200 ease-in-out;
 		color: #475569;
 	}
+}
+
+/* Texto animado visto en TikTok jajajaja */
+@layer utilities {
+	.text-gradient-animated {
+		background-image: linear-gradient(90deg, #0b5e57, #024f80, #0e8f66);
+		background-size: 200% 200%;
+		-webkit-background-clip: text;
+		background-clip: text;
+		color: transparent;
+		animation: gradientShift 5s ease infinite;
+		transition: transform 220ms ease;
+	}
+
+	.brand-hover-scale:hover {
+		transform: translateY(-2px) scale(1.03);
+	}
+
+	@keyframes gradientShift {
+		0% { background-position: 0% 50%; }
+		50% { background-position: 100% 50%; }
+		100% { background-position: 0% 50%; }
+	}
+}
 
 	@layer utilities {
 		.floating {
@@ -286,7 +302,7 @@
 	.nav-container {
 		gap: 1rem;
 	}
-}
+
 
 /* Animación para la barra de carga  */
 @layer utilities {
