@@ -62,13 +62,13 @@ class MessageController extends Controller
     {
         // Si el mensaje pertenece a un grupo
         if ($message->group_id) {
-            $message = Message::where('created_at', '<', $message->created_at) // Mensajes más antiguos que el actual
+            $messages = Message::where('created_at', '<', $message->created_at) // Mensajes más antiguos que el actual
                 ->where('group_id', $message->group_id) // Del mismo grupo
                 ->latest()
                 ->paginate(10);
         } else {
             // Si es una conversación entre dos usuarios
-            $message = Message::where('created_at', '<', $message->created_at)
+            $messages = Message::where('created_at', '<', $message->created_at)
                 ->where(function ($query) use ($message) {
                     $query->where('sender_id', $message->sender_id)
                         ->where('receiver_id', $message->receiver_id)
@@ -81,7 +81,7 @@ class MessageController extends Controller
         }
 
         // Devuelve los mensajes antiguos en formato de recurso
-        return MessageResource::collection($message);
+        return MessageResource::collection($messages);
     }
 
     /**
