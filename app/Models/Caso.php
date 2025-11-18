@@ -4,10 +4,13 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Storage;
 
 class Caso extends Model
 {
     use HasFactory;
+
+    protected $appends = ['foto_url'];
 
     protected $table = 'casos';
 
@@ -42,6 +45,11 @@ class Caso extends Model
     {
         return $this -> morphMany(Comentario::class, 'comentable')
         ->whereNull('parent_id')->with('respuesta.user');
+    }
+
+    public function getFotoUrlAttribute()
+    {
+        return $this->fotoAnimal ? Storage::url($this->fotoAnimal) : null;
     }
 
 }

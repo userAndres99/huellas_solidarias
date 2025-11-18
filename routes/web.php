@@ -6,6 +6,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\HistoriaController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\ChatController;
+use App\Http\Controllers\BuscadorUsuariosController;
 use App\Http\Controllers\OrganizationController;
 use App\Http\Controllers\SolicitudVerificacionController; 
 use Illuminate\Foundation\Application;
@@ -22,6 +23,13 @@ Route::middleware(['auth', 'verified'])->group(function(){
     Route::get('/chat', [ChatController::class, 'chat'])->name('chat');
    Route::get('user/{user}', [MessageController::class, 'byUser'])->name('chat.user');
    Route::get('group/{group}', [MessageController::class, 'byGroup'])->name('chat.group');
+
+   // Buscador de usuarios (nombre de usuario o nombre de organización)
+   Route::get('/buscador-usuarios', [BuscadorUsuariosController::class, 'search'])
+        ->name('buscador.usuarios');
+   // Página pública (para usuarios autenticados) de ver perfil
+   Route::get('/usuarios/{user}', [BuscadorUsuariosController::class, 'show'])
+       ->name('usuarios.show');
 
     Route::post('/message', [MessageController::class, 'store'])->name('message.store');
     Route::delete('/message/{message}', [MessageController::class, 'destroy'])->name('message.destroy');

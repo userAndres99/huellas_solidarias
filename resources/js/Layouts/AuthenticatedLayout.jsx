@@ -3,6 +3,7 @@ import Dropdown from '@/Components/Dropdown';
 import NavLink from '@/Components/NavLink';
 import ResponsiveNavLink from '@/Components/ResponsiveNavLink';
 import Footer from '@/Components/Footer';
+import BuscadorUsuarios from '@/Components/BuscadorUsuarios';
 import { Link, usePage } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
 import { useEventBus } from '@/EvenBus';
@@ -93,6 +94,10 @@ export default function AuthenticatedLayout({ header, children }) {
                                     <span className="text-lg font-semibold brand-hover-scale text-gradient-animated">Huellas Solidarias</span>
                                 </Link>
                             </div>
+
+                            {user && (
+                                <BuscadorUsuarios />
+                            )}
 
                             <div className="hidden nav-container space-x-8 xl:-my-px xl:ms-10 xl:flex">
                                 <NavLink
