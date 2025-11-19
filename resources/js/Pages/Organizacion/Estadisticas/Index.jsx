@@ -296,7 +296,7 @@ export default function Index(props) {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="md:col-span-2 bg-gray-50 rounded p-2">
                 <div className="w-full h-96">
-                  <MapaInteractivo center={center} />
+                  <MapaInteractivo center={center} filterTipo={selectedTipo} filterSituacion={selectedSituacion} filterCiudad={selectedCiudad} />
                 </div>
               </div>
 

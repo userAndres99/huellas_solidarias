@@ -64,12 +64,22 @@ export default function MapaInteractivo({
   marker = false,
   markerType = 'animal',
   showMarkers = true,
+  filterTipo = null,
+  filterSituacion = null,
+  filterCiudad = null,
 }) {
   const [markers, setMarkers] = useState([]);
 
   useEffect(() => {
     if (!showMarkers) return;
-    fetch('/casos/json', { headers: { Accept: 'application/json' } })
+    
+    const params = new URLSearchParams();
+    if (filterTipo) params.append('tipo', filterTipo);
+    if (filterSituacion) params.append('situacion', filterSituacion);
+    if (filterCiudad) params.append('ciudad', filterCiudad);
+    const url = params.toString() ? `/casos/json?${params.toString()}` : '/casos/json';
+
+    fetch(url, { headers: { Accept: 'application/json' } })
       .then(res => {
         if (!res.ok) throw new Error('Network response was not ok');
         return res.json();
@@ -109,7 +119,21 @@ export default function MapaInteractivo({
         {/* marcadores globales (solo si showMarkers = true) */}
         {showMarkers &&
           markers
-            .filter(m => m.latitud && m.longitud)
+            .filter(m => {
+              
+              if (!m.latitud || !m.longitud) return false;
+              
+              if (filterTipo) {
+                if (!m.tipoAnimal || String(m.tipoAnimal).toLowerCase() !== String(filterTipo).toLowerCase()) return false;
+              }
+              if (filterSituacion) {
+                if (!m.situacion || String(m.situacion).toLowerCase() !== String(filterSituacion).toLowerCase()) return false;
+              }
+              if (filterCiudad) {
+                if (!m.ciudad || String(m.ciudad).toLowerCase() !== String(filterCiudad).toLowerCase()) return false;
+              }
+              return true;
+            })
             .map((m) => (
               <Marker
                 key={m.id}
