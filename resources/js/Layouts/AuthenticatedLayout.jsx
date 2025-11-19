@@ -85,121 +85,124 @@ export default function AuthenticatedLayout({ header, children }) {
             <nav className="border-b border-transparent bg-[var(--color-footer)] shadow-sm">
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                     <div className="flex h-16 justify-between">
-                        <div className="flex">
+                        <div className="flex items-center">
                             <div className="flex shrink-0 items-center">
                                 <Link href={logoHref}>
                                     <ApplicationLogo className="block h-9 w-auto fill-current text-gray-800 icon-float" />
                                 </Link>
-                                <Link href={logoHref} className="ms-3">
-                                    <span className="text-lg font-semibold brand-hover-scale text-gradient-animated">Huellas Solidarias</span>
-                                </Link>
-                            </div>
-
-                            {user && (
-                                <BuscadorUsuarios />
-                            )}
-
-                            <div className="hidden nav-container space-x-8 xl:-my-px xl:ms-10 xl:flex">
-                                <NavLink
-                                    href={route('dashboard')}
-                                    active={route().current('dashboard')}
-                                >
-                                    Mis publicaciones
-                                </NavLink>
-
-                                <NavLink
-                                    href={route('casos.index')}
-                                    active={route().current('casos.index')}
-                                >
-                                    Publicaciones
-                                </NavLink>
-
-                                <NavLink href="/historias">
-                                    Historias de Éxito
-                                </NavLink>
-
-                                {/* Link solo visible para Organizacion */}
-                                {user?.role_name === 'Organizacion' && (
-                                    <NavLink
-                                        href={route('organizacion.index')}
-                                        active={route().current('organizacion.index')}
-                                    >
-                                        Eventos
-                                    </NavLink>
-                                )}
-
-                                {user?.role_name === 'Organizacion' && (
-                                    <NavLink
-                                        href={route('organizacion.estadisticas')}
-                                        active={route().current('organizacion.estadisticas')}
-                                    >
-                                        Estadísticas
-                                    </NavLink>
-                                )}
-
-                                {user?.role_name === 'Organizacion' && (
-                                    <NavLink
-                                        href={route('organizacion.donaciones')}
-                                        active={route().current('organizacion.donaciones')}
-                                    >
-                                        Donaciones
-                                    </NavLink>
-                                )}
-
-                                {/* Link solo visible para Admin (faltan detalles) */}
-                                {user?.role_name === 'Admin' && (
-                                    <NavLink
-                                        href={route('admin.solicitudes.index')}
-                                        active={route().current('admin.solicitudes.index')}
-                                    >
-                                        Solicitudes
-                                    </NavLink>
+                                {!user && (
+                                    <Link href={logoHref} className="ms-3">
+                                        <span className="text-lg font-semibold brand-hover-scale text-gradient-animated">Huellas Solidarias</span>
+                                    </Link>
                                 )}
                             </div>
+
                         </div>
 
                         <div className="hidden xl:ms-6 xl:flex xl:items-center">
                             {user ? (
-                                <div className="relative ms-3">
-                                    <Dropdown>
-                                        <Dropdown.Trigger>
-                                            <span className="inline-flex rounded-md">
-                                                <button
-                                                    type="button"
-                                                    className="inline-flex items-center rounded-md bg-[var(--color-surface)] px-3 py-2 text-sm font-medium leading-4 text-slate-800 transition duration-150 ease-in-out hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
-                                                >
-                                                    {user.name}
+                                <>
+                                    <div className="hidden xl:flex xl:items-center xl:me-6 xl:flex-row-reverse xl:space-x-8 xl:space-x-reverse">
+                                        <BuscadorUsuarios />
 
-                                                    <svg
-                                                        className="-me-0.5 ms-2 h-4 w-4"
-                                                        xmlns="http://www.w3.org/2000/svg"
-                                                        viewBox="0 0 20 20"
-                                                        fill="currentColor"
-                                                    >
-                                                        <path
-                                                            fillRule="evenodd"
-                                                            d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-                                                            clipRule="evenodd"
-                                                        />
-                                                    </svg>
-                                                </button>
-                                            </span>
-                                        </Dropdown.Trigger>
-
-                                        <Dropdown.Content>
-                                            <Dropdown.Link href={route('profile.edit')}>
-                                                Perfil
-                                            </Dropdown.Link>
-                                            <Dropdown.Link
-                                                href={route('logout')}
-                                                method="post"
-                                                as="button"
+                                        <div className="nav-container xl:flex xl:flex-row-reverse xl:space-x-8 xl:space-x-reverse">
+                                            <NavLink
+                                                href={route('dashboard')}
+                                                active={route().current('dashboard')}
                                             >
-                                                Cerrar sesión
-                                            </Dropdown.Link>
-                                        </Dropdown.Content>
-                                    </Dropdown>
-                                </div>
+                                                Mis publicaciones
+                                            </NavLink>
+
+                                            <NavLink
+                                                href={route('casos.index')}
+                                                active={route().current('casos.index')}
+                                            >
+                                                Publicaciones
+                                            </NavLink>
+
+                                            <NavLink href="/historias">
+                                                Historias de Éxito
+                                            </NavLink>
+
+                                            {user?.role_name === 'Organizacion' && (
+                                                <NavLink
+                                                    href={route('organizacion.index')}
+                                                    active={route().current('organizacion.index')}
+                                                >
+                                                    Eventos
+                                                </NavLink>
+                                            )}
+
+                                            {user?.role_name === 'Organizacion' && (
+                                                <NavLink
+                                                    href={route('organizacion.estadisticas')}
+                                                    active={route().current('organizacion.estadisticas')}
+                                                >
+                                                    Estadísticas
+                                                </NavLink>
+                                            )}
+
+                                            {user?.role_name === 'Organizacion' && (
+                                                <NavLink
+                                                    href={route('organizacion.donaciones')}
+                                                    active={route().current('organizacion.donaciones')}
+                                                >
+                                                    Donaciones
+                                                </NavLink>
+                                            )}
+
+                                            {user?.role_name === 'Admin' && (
+                                                <NavLink
+                                                    href={route('admin.solicitudes.index')}
+                                                    active={route().current('admin.solicitudes.index')}
+                                                >
+                                                    Solicitudes
+                                                </NavLink>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <div className="relative ms-3">
+                                        <Dropdown>
+                                            <Dropdown.Trigger>
+                                                <span className="inline-flex rounded-md">
+                                                    <button
+                                                        type="button"
+                                                        className="inline-flex items-center rounded-md bg-[var(--color-surface)] px-3 py-2 text-sm font-medium leading-4 text-slate-800 transition duration-150 ease-in-out hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
+                                                    >
+                                                        {user.name}
+
+                                                        <svg
+                                                            className="-me-0.5 ms-2 h-4 w-4"
+                                                            xmlns="http://www.w3.org/2000/svg"
+                                                            viewBox="0 0 20 20"
+                                                            fill="currentColor"
+                                                        >
+                                                            <path
+                                                                fillRule="evenodd"
+                                                                d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                                                                clipRule="evenodd"
+                                                            />
+                                                        </svg>
+                                                    </button>
+                                                </span>
+                                            </Dropdown.Trigger>
+
+                                            <Dropdown.Content>
+                                                <Dropdown.Link href={route('profile.edit')}>
+                                                    Perfil
+                                                </Dropdown.Link>
+                                                <Dropdown.Link
+                                                    href={route('logout')}
+                                                    method="post"
+                                                    as="button"
+                                                >
+                                                    Cerrar sesión
+                                                </Dropdown.Link>
+                                            </Dropdown.Content>
+                                        </Dropdown>
+                                    </div>
+                                </>
                             ) : (
                                 <div className="flex items-center gap-3">
                                     <NavLink href={route('login')}>Iniciar sesión</NavLink>
@@ -257,6 +260,9 @@ export default function AuthenticatedLayout({ header, children }) {
                         ' xl:hidden'
                     }
                 >
+                    <div className="px-4 pt-3 pb-2">
+                        {user && <BuscadorUsuarios mobile={true} />}
+                    </div>
                     <div className="space-y-1 pb-3 pt-2">
                         <ResponsiveNavLink
                             href={route('dashboard')}
