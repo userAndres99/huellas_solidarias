@@ -31,9 +31,20 @@ Route::middleware(['auth', 'verified'])->group(function(){
    Route::get('/usuarios/{user}', [BuscadorUsuariosController::class, 'show'])
        ->name('usuarios.show');
 
+   // Seguir / dejar de seguir usuarios
+   Route::post('/usuarios/{user}/seguir', [\App\Http\Controllers\SeguimientoController::class, 'store'])
+       ->name('usuarios.seguir');
+   Route::delete('/usuarios/{user}/seguir', [\App\Http\Controllers\SeguimientoController::class, 'destroy'])
+       ->name('usuarios.dejar_seguir');
+
     Route::post('/message', [MessageController::class, 'store'])->name('message.store');
     Route::delete('/message/{message}', [MessageController::class, 'destroy'])->name('message.destroy');
     Route::get('/message/older/{message}', [MessageController::class, 'loadOlder'])->name('message.loadOlder');
+
+        // Notificaciones: listar y marcar lectura
+        Route::get('/notifications', [\App\Http\Controllers\NotificationController::class, 'index'])->name('notifications.index');
+        Route::post('/notifications/{id}/read', [\App\Http\Controllers\NotificationController::class, 'markRead'])->name('notifications.read');
+        Route::post('/notifications/mark-all-read', [\App\Http\Controllers\NotificationController::class, 'markAllRead'])->name('notifications.mark_all_read');
 });
 
 /* -----------------------------------------------------------------

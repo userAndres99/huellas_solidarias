@@ -48,3 +48,11 @@ Broadcast::channel('message.group.{groupId}', function (User $user, int $groupId
         ? $user  // Si pertenece al grupo, se devuelve el usuario autenticado
         : null;  // Si no pertenece, se deniega el acceso
 });
+
+
+/**
+ * Canal privado para notificaciones de usuario.
+ */
+Broadcast::channel('App.Models.User.{id}', function (User $user, $id) {
+    return (int) $user->id === (int) $id ? $user : null;
+});

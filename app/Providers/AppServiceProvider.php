@@ -5,6 +5,7 @@ namespace App\Providers;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
+use Inertia\Inertia;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -45,5 +46,31 @@ class AppServiceProvider extends ServiceProvider
         } catch (\Throwable $e) {
             // no hacer nada si falla
         }
+
+        // Compartir notificaciones y contador 
+        Inertia::share([
+            'auth.user.unread_notifications_count' => function () {
+                try {
+                    return auth()->check() ? auth()->user()->unreadNotifications()->count() : 0;
+                } catch (\Throwable $_) {
+                    return 0;
+                }
+            },
+            'auth.user.recent_notifications' => function () {
+                try {
+                    if (!auth()->check()) return [];
+                    return auth()->user()->notifications()->latest()->limit(10)->get()->map(function ($n) {
+                        return [
+                            'id' => $n->id,
+                            'data' => $n->data,
+                            'read_at' => $n->read_at,
+                            'created_at' => $n->created_at,
+                        ];
+                    })->values();
+                } catch (\Throwable $_) {
+                    return [];
+                }
+            }
+        ]);
     }
 }

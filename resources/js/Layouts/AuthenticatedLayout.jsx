@@ -4,6 +4,7 @@ import NavLink from '@/Components/NavLink';
 import ResponsiveNavLink from '@/Components/ResponsiveNavLink';
 import Footer from '@/Components/Footer';
 import BuscadorUsuarios from '@/Components/BuscadorUsuarios';
+import NotificationBell from '@/Components/NotificationBell';
 import { Link, usePage } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
 import { useEventBus } from '@/EvenBus';
@@ -101,7 +102,7 @@ export default function AuthenticatedLayout({ header, children }) {
 
                         <div className="hidden xl:ms-6 xl:flex xl:items-center">
                             {user ? (
-                                <>
+                                <div className="flex items-center">
                                     <div className="hidden xl:flex xl:items-center xl:me-6 xl:flex-row-reverse xl:space-x-8 xl:space-x-reverse">
                                         <BuscadorUsuarios />
 
@@ -162,47 +163,50 @@ export default function AuthenticatedLayout({ header, children }) {
                                         </div>
                                     </div>
 
-                                    <div className="relative ms-3">
-                                        <Dropdown>
-                                            <Dropdown.Trigger>
-                                                <span className="inline-flex rounded-md">
-                                                    <button
-                                                        type="button"
-                                                        className="inline-flex items-center rounded-md bg-[var(--color-surface)] px-3 py-2 text-sm font-medium leading-4 text-slate-800 transition duration-150 ease-in-out hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
-                                                    >
-                                                        {user.name}
-
-                                                        <svg
-                                                            className="-me-0.5 ms-2 h-4 w-4"
-                                                            xmlns="http://www.w3.org/2000/svg"
-                                                            viewBox="0 0 20 20"
-                                                            fill="currentColor"
+                                    <div className="flex items-center gap-3">
+                                        <NotificationBell />
+                                        <div className="relative ms-3">
+                                            <Dropdown>
+                                                <Dropdown.Trigger>
+                                                    <span className="inline-flex rounded-md">
+                                                        <button
+                                                            type="button"
+                                                            className="inline-flex items-center rounded-md bg-[var(--color-surface)] px-3 py-2 text-sm font-medium leading-4 text-slate-800 transition duration-150 ease-in-out hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
                                                         >
-                                                            <path
-                                                                fillRule="evenodd"
-                                                                d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-                                                                clipRule="evenodd"
-                                                            />
-                                                        </svg>
-                                                    </button>
-                                                </span>
-                                            </Dropdown.Trigger>
+                                                            {user.name}
 
-                                            <Dropdown.Content>
-                                                <Dropdown.Link href={route('profile.edit')}>
-                                                    Perfil
-                                                </Dropdown.Link>
-                                                <Dropdown.Link
-                                                    href={route('logout')}
-                                                    method="post"
-                                                    as="button"
-                                                >
-                                                    Cerrar sesión
-                                                </Dropdown.Link>
-                                            </Dropdown.Content>
-                                        </Dropdown>
+                                                            <svg
+                                                                className="-me-0.5 ms-2 h-4 w-4"
+                                                                xmlns="http://www.w3.org/2000/svg"
+                                                                viewBox="0 0 20 20"
+                                                                fill="currentColor"
+                                                            >
+                                                                <path
+                                                                    fillRule="evenodd"
+                                                                    d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                                                                    clipRule="evenodd"
+                                                                />
+                                                            </svg>
+                                                        </button>
+                                                    </span>
+                                                </Dropdown.Trigger>
+
+                                                <Dropdown.Content>
+                                                    <Dropdown.Link href={route('profile.edit')}>
+                                                        Perfil
+                                                    </Dropdown.Link>
+                                                    <Dropdown.Link
+                                                        href={route('logout')}
+                                                        method="post"
+                                                        as="button"
+                                                    >
+                                                        Cerrar sesión
+                                                    </Dropdown.Link>
+                                                </Dropdown.Content>
+                                            </Dropdown>
+                                        </div>
                                     </div>
-                                </>
+                                </div>
                             ) : (
                                 <div className="flex items-center gap-3">
                                     <NavLink href={route('login')}>Iniciar sesión</NavLink>

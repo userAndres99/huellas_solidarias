@@ -155,6 +155,48 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->belongsToMany(Group::class, 'group_users');
     }
 
+    /**
+     * Relación: usuarios que siguen a este usuario (seguidores)
+     */
+    public function seguidores()
+    {
+        return $this->belongsToMany(
+            User::class,
+            'user_seguimientos',
+            'seguido_id',
+            'seguidor_id'
+        )->withTimestamps();
+    }
+
+    /**
+     * Relación: usuarios a los que este usuario sigue
+     */
+    public function siguiendo()
+    {
+        return $this->belongsToMany(
+            User::class,
+            'user_seguimientos',
+            'seguidor_id',
+            'seguido_id'
+        )->withTimestamps();
+    }
+
+    public function seguir(User $usuario)
+    {
+        if ($this->id === $usuario->id) return false;
+        return $this->siguiendo()->syncWithoutDetaching([$usuario->id]);
+    }
+
+    public function dejarSeguir(User $usuario)
+    {
+        return $this->siguiendo()->detach($usuario->id);
+    }
+
+    public function isFollowing(User $usuario): bool
+    {
+        return $this->siguiendo()->where('seguido_id', $usuario->id)->exists();
+    }
+
     public static function getUsersExceptUser(User $user)
     {
         // Se usa para excluir al usuario y filtrar sus conversaciones

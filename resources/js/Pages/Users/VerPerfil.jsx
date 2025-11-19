@@ -1,5 +1,6 @@
 import { Link, usePage, Head } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import { useState } from 'react';
 
 export default function VerPerfil(props){
     const page = usePage();
@@ -10,6 +11,34 @@ export default function VerPerfil(props){
     if(!usuario) return <div className="p-6">Usuario no encontrado</div>;
 
     const isSelf = authUser && authUser.id === usuario.id;
+    const initialFollowing = pageProps.is_following ?? false;
+    const [following, setFollowing] = useState(initialFollowing);
+    const [followersCount, setFollowersCount] = useState(pageProps.followers_count ?? 0);
+
+    async function toggleFollow(){
+        if(!authUser){
+            window.location = route('login');
+            return;
+        }
+
+        const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+        if(following){
+            const res = await fetch(route('usuarios.dejar_seguir', usuario.id), { method: 'DELETE', headers: {'X-Requested-With':'XMLHttpRequest','X-CSRF-TOKEN': token} });
+            if(res.ok){
+                const json = await res.json();
+                setFollowing(false);
+                setFollowersCount(json.followers_count ?? Math.max(0, followersCount-1));
+            }
+        } else {
+            const res = await fetch(route('usuarios.seguir', usuario.id), { method: 'POST', headers: {'X-Requested-With':'XMLHttpRequest','X-CSRF-TOKEN': token} });
+            if(res.ok){
+                const json = await res.json();
+                setFollowing(true);
+                setFollowersCount(json.followers_count ?? (followersCount+1));
+            }
+        }
+    }
 
     return (
         <AuthenticatedLayout {...pageProps} header={<h2 className="text-xl font-semibold leading-tight text-gray-800">Perfil de {usuario.name}</h2>}>
@@ -29,9 +58,18 @@ export default function VerPerfil(props){
                 </div>
             </div>
 
-            <div className="mt-6 flex gap-3">
+            <div className="mt-6 flex gap-3 items-center">
                 {!isSelf && (
-                    <Link href={route('chat.user', usuario.id)} className="inline-flex items-center rounded-md bg-[var(--color-primary)] px-4 py-2 text-sm font-medium text-white">Enviar mensaje</Link>
+                    <>
+                        <Link href={route('chat.user', usuario.id)} className="inline-flex items-center rounded-md bg-[var(--color-primary)] px-4 py-2 text-sm font-medium text-white">Enviar mensaje</Link>
+
+                        <button onClick={toggleFollow}
+                            className={`inline-flex items-center rounded-md px-4 py-2 text-sm font-medium ${following ? 'bg-gray-200 text-slate-800' : 'bg-[var(--color-primary)] text-white'}`}>
+                            {following ? 'Dejar de seguir' : 'Seguir'}
+                        </button>
+
+                        <div className="text-sm text-gray-600">{followersCount} seguidores</div>
+                    </>
                 )}
                 {isSelf && (
                     <Link href={route('profile.edit')} className="inline-flex items-center rounded-md border px-4 py-2 text-sm">Editar perfil</Link>

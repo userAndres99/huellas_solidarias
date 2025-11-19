@@ -11,6 +11,8 @@ use App\Jobs\UploadToNyckel;
 use Log;
 use App\Services\NyckelClient;
 use App\Services\RemoveBgClient;
+use Illuminate\Support\Facades\Notification;
+use App\Notifications\NewCasoNotification;
 
 class CasoController extends Controller
 {
@@ -78,7 +80,20 @@ class CasoController extends Controller
             'estado' => 'activo',
         ]);
 
-        $situ = strtolower($caso->situacion);
+            // Enviar notificación a los seguidores del autor 
+            try {
+                $author = $caso->usuario;
+                if ($author) {
+                    $followers = $author->seguidores()->get();
+                    if ($followers->isNotEmpty()) {
+                        Notification::send($followers, new NewCasoNotification($caso));
+                    }
+                }
+            } catch (\Throwable $e) {
+                Log::warning('Error enviando notificaciones NewCaso: ' . $e->getMessage());
+            }
+
+            $situ = strtolower($caso->situacion);
 
         // si es "abandonado" -> subir a Nyckel y llevar al dashboard
         if ($situ === 'abandonado' && $caso->fotoAnimal) {

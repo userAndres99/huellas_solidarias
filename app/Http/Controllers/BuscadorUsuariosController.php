@@ -46,7 +46,7 @@ class BuscadorUsuariosController extends Controller
     /**
      * Mostrar la página de perfil público de un usuario.
      */
-    public function show(User $user)
+    public function show(User $user, Request $request)
     {
         // Cargar organización y los últimos casos del usuario
         $user->load([
@@ -66,8 +66,14 @@ class BuscadorUsuariosController extends Controller
             return $arr;
         });
 
+        $auth = $request->user();
+        $isFollowing = $auth ? $auth->isFollowing($user) : false;
+        $followersCount = $user->seguidores()->count();
+
         return Inertia::render('Users/VerPerfil', [
             'usuario' => $user,
+            'is_following' => $isFollowing,
+            'followers_count' => $followersCount,
         ]);
     }
 }

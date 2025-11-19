@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Notification;
+use App\Notifications\NewEventoNotification;
 
 class OrganizationController extends Controller
 {
@@ -65,7 +67,18 @@ class OrganizationController extends Controller
             'image_path' => $path
         ]);
 
-        // opcional: notificar (tengo que hacerlo todavia)
+        // Notificar a los seguidores de la organización (si los hay)
+        try {
+            $author = $request->user();
+            if ($author) {
+                $followers = $author->seguidores()->get();
+                if ($followers->isNotEmpty()) {
+                    Notification::send($followers, new NewEventoNotification($evento));
+                }
+            }
+        } catch (\Throwable $e) {
+            Log::warning('Error enviando notificaciones NewEvento: ' . $e->getMessage());
+        }
 
         return redirect()->route('organizacion.index')->with('success', 'Evento creado con éxito');
     }
