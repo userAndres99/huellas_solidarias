@@ -8,6 +8,7 @@ import MessageItem from "../../Components/App/MessageItem";
 import MessageInput from "../../Components/App/MessageInput";
 import { useEventBus } from "@/EvenBus";
 import axios from "axios";
+import AttachmentPreviewModal from "@/Components/App/AttachmentPreviewModal";
 
 
 function ChatDashboard({selectedConversation =null, messages = null }) {
@@ -17,6 +18,8 @@ function ChatDashboard({selectedConversation =null, messages = null }) {
   const [scrollFromBottom, setScrollFromBottom] = useState(0);
   const loadMoreIntersect = useRef(null);
   const messagesCtrRef = useRef(null);
+  const [showAttachmentPreview, setShowAttachmentPreview] = useState(false);
+  const [previewAttachment, setPreviewAttachment] = useState({});
   const { on } = useEventBus();
 
   
@@ -69,6 +72,14 @@ function ChatDashboard({selectedConversation =null, messages = null }) {
               }); 
         });
   }, [localMessages, noMoreMessages])
+
+  const onAttachmentClick = (attachments, ind) => {
+    setPreviewAttachment({
+      attachments,
+      ind,
+    });
+    setShowAttachmentPreview(true);
+  };
 
 useEffect(() =>{
     setTimeout(() => {
@@ -163,6 +174,7 @@ useEffect(() =>{
                     <MessageItem
                       key={message.id}
                       message={message}
+                      attachmentClick={onAttachmentClick}
                     />
                   ))}
               </div>
@@ -172,9 +184,16 @@ useEffect(() =>{
         
         </>
       )}
+      {previewAttachment.attachments && (
+        <AttachmentPreviewModal
+          attachments = {previewAttachment.attachments}
+          index = {previewAttachment.ind}
+          show = {showAttachmentPreview}
+          onClose = {() => setShowAttachmentPreview(false)}
         
-    
-    
+        />
+      )}
+        
     </>
   );
  
