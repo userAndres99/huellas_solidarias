@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { Head, Link, usePage } from "@inertiajs/react";
 import MensajeFlash from '@/Components/MensajeFlash';
-import TarjetaPublicacion from '@/Components/TarjetaPublicacion';
+import TarjetaMisPublicaciones from '@/Components/TarjetaMisPublicaciones';
 
 function formatDate(dateStr) {
   if (!dateStr) return "";
@@ -102,9 +102,9 @@ export default function Dashboard({ auth, misPublicaciones }) {
 
                     return (
                       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 justify-items-center">
-                        {publicacionesActivasState.map((p, i) => (
+                            {publicacionesActivasState.map((p, i) => (
                           <div key={p.id} className={`w-full md:w-auto fade-in ${i % 3 === 0 ? 'fade-delay-1' : i % 3 === 1 ? 'fade-delay-2' : 'fade-delay-3'}`}>
-                            <TarjetaPublicacion publicacion={p} showEdit={false} onRemove={handleRemovePublicacion} />
+                            <TarjetaMisPublicaciones publicacion={p} showEdit={false} onRemove={handleRemovePublicacion} />
                           </div>
                         ))}
                       </div>

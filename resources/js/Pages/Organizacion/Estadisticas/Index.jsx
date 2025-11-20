@@ -32,7 +32,7 @@ export default function Index(props) {
   const [center, setCenter] = useState([-38.9339, -67.9900]);
   const [selectedCiudad, setSelectedCiudad] = useState('');
   const [yearly, setYearly] = useState([]);
-  const [period, setPeriod] = useState('year'); // usamos 'year' | 'month' | 'day'
+  const [period, setPeriod] = useState('year'); // usamos 'year' | 'month' | 'week'
 
 
   const handleTipoChange = async (e) => {
@@ -177,7 +177,7 @@ export default function Index(props) {
     labels: yearly.map((r) => r.period),
     datasets: [
       {
-        label: period === 'year' ? 'Casos por año' : period === 'month' ? 'Casos por mes' : period === 'week' ? 'Casos por semana' : 'Casos por día',
+        label: period === 'year' ? 'Casos por año' : period === 'month' ? 'Casos últimos 30 días' : (period === 'week' ? 'Casos últimos 7 días' : 'Casos por semana'),
         data: yearly.map((r) => r.total),
         fill: false,
         borderColor: '#3b82f6',
@@ -190,16 +190,23 @@ export default function Index(props) {
   const lineOptions = {
     plugins: {
       legend: { position: 'bottom' },
-      title: { display: true, text: period === 'year' ? 'Casos por año' : period === 'month' ? 'Casos por mes' : period === 'week' ? 'Casos por semana' : 'Casos por día' },
+      title: { display: true, text: period === 'year' ? 'Casos por año' : period === 'month' ? 'Casos últimos 30 días' : (period === 'week' ? 'Casos últimos 7 días' : 'Casos por semana') },
     },
     maintainAspectRatio: false,
     scales: {
       x: {
-        title: { display: true, text: period === 'year' ? 'Año' : period === 'month' ? 'Mes' : period === 'week' ? 'Semana (inicio)' : 'Día' },
+        title: { display: true, text: period === 'year' ? 'Año' : (period === 'month' || period === 'week') ? '' : 'Semana (inicio)' },
         ticks: {
           callback: function (value, index, ticks) {
             const label = this.getLabelForValue ? this.getLabelForValue(value) : value;
             try {
+              // Para 'month' y 'week' mostramos solo la primera y última
+              if (period === 'month' || period === 'week') {
+                if (index === 0 || index === ticks.length - 1) {
+                  return formatPeriodLabel(String(label), 'day');
+                }
+                return '';
+              }
               return formatPeriodLabel(String(label), period);
             } catch (e) {
               return String(label);
@@ -340,7 +347,6 @@ export default function Index(props) {
                     <option value="year">Año</option>
                     <option value="month">Mes</option>
                     <option value="week">Semana</option>
-                    <option value="day">Día</option>
                   </select>
                 </div>
               </div>

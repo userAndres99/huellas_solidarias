@@ -122,3 +122,38 @@ export const formatBytes = (bytes, decimals = 2) => {
 
     return parseFloat(size.toFixed(dm)) + " " + sizes[i];
 }
+
+/**
+ * Preload
+ */
+export const preloadImages = async (urls = []) => {
+    if (!Array.isArray(urls) || urls.length === 0) return;
+
+    const unique = Array.from(new Set(urls.filter(Boolean)));
+
+    await Promise.all(unique.map(src => new Promise(async resolve => {
+        try {
+            const img = new Image();
+            img.crossOrigin = 'anonymous';
+
+            const onError = () => resolve(false);
+            const onLoad = async () => {
+                try {
+                    if (typeof img.decode === 'function') {
+                        await img.decode();
+                    }
+                    resolve(true);
+                } catch (e) {
+                    
+                    resolve(true);
+                }
+            };
+
+            img.addEventListener('load', onLoad, { once: true });
+            img.addEventListener('error', onError, { once: true });
+            img.src = src;
+        } catch (e) {
+            resolve(false);
+        }
+    })));
+};

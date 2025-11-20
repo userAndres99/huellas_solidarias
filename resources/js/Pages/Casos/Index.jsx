@@ -5,6 +5,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import PublicLayout from '@/Layouts/PublicLayout';
 import EstadoBadge from '@/Components/EstadoBadge';
 import Loading from '@/Components/Loading';
+import { preloadImages } from '@/helpers';
 import Select from 'react-select';
 import debounce from 'lodash.debounce';
 import DonationModal from '@/Components/DonationModal';
@@ -294,9 +295,21 @@ export default function Index(props) {
         if (!res.ok) throw new Error('Error en la respuesta del servidor');
 
         const data = await res.json();
-        setCasos(data.data || data); // fallback si cambia estructura
-        setMeta(data);
-        setLinks(data.links || []);
+        const items = data.data || data;
+        // Preload imagen
+        try {
+          const urls = items.flatMap(i => [i.fotoAnimal, i.usuario?.profile_photo_url]).filter(Boolean);
+          setCasos(items);
+          setMeta(data);
+          setLinks(data.links || []);
+          await preloadImages(urls);
+        } catch (e) {
+          // fallback si el preload falla
+          setCasos(items);
+          setMeta(data);
+          setLinks(data.links || []);
+          console.warn('Error preloading caso images', e);
+        }
       } catch (error) {
         if (error.name !== 'AbortError') {
           console.error('Error al obtener los casos:', error);
@@ -323,7 +336,7 @@ export default function Index(props) {
     const LayoutToUse = props?.auth?.user ? AuthenticatedLayout : PublicLayout;
     return (
       <LayoutToUse {...props} header={<h2 className="text-xl font-semibold leading-tight text-gray-800">Publicaciones</h2>}>
-        <div className="container mx-auto p-4">
+        <div className="container mx-auto p-4 min-h-[60vh] flex items-center justify-center">
           <Loading variant="centered" message="Cargando publicaciones..." />
         </div>
       </LayoutToUse>

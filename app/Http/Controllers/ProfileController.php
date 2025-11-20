@@ -53,6 +53,22 @@ class ProfileController extends Controller
             return isset($input->email) && trim($input->email) !== '' && $input->email !== $user->email;
         });
 
+        // Añadir verificación extra: si el email fue modificado, comprobar que el dominio tenga registro
+        $validator->after(function ($v) use ($request, $user) {
+            if (isset($request->email) && trim($request->email) !== '' && $request->email !== $user->email) {
+                $parts = explode('@', $request->email);
+                if (count($parts) === 2) {
+                    $domain = $parts[1];
+                    // comprobar MX o A (para mayor compatibilidad)
+                    if (!function_exists('checkdnsrr') || (!checkdnsrr($domain, 'MX') && !checkdnsrr($domain, 'A'))) {
+                        $v->errors()->add('email', 'No se pudo verificar el dominio del correo electrónico. Verificá que sea correcto.');
+                    }
+                } else {
+                    $v->errors()->add('email', 'Formato de correo inválido.');
+                }
+            }
+        });
+
         // Ejecutar validación 
         $validated = $validator->validate();
 

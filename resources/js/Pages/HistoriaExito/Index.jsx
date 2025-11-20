@@ -5,6 +5,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import PublicLayout from '@/Layouts/PublicLayout';
 import { FaEye, FaPlus } from 'react-icons/fa';
 import Loading from '@/Components/Loading';
+import { preloadImages } from '@/helpers';
 
 export default function Historias() {
     const pageProps = usePage().props; // 🔹 obtenemos todas las props de la página (incluye auth, canLogin, canRegister)
@@ -26,7 +27,16 @@ export default function Historias() {
 
                 if(!res.ok) throw new Error("Error al obtener historias");
                 const data = await res.json();
-                setHistorias(data);
+                const items = data.data || data;
+                setHistorias(items);
+                // Preload images 
+                try {
+                    const urls = items.flatMap(h => [h.imagen_antes, h.imagen_despues]).filter(Boolean);
+                    await preloadImages(urls);
+                } catch (e) {
+                    // no bloquear si falla el preload
+                    console.warn('Error preloading historia images', e);
+                }
             } catch(err) {
                 if(err.name !== 'AbortError') console.error(err);
             } finally {
@@ -46,7 +56,7 @@ export default function Historias() {
          const Layout = (usePage().props?.auth?.user) ? AuthenticatedLayout : PublicLayout;
          return (
                  <Layout {...usePage().props} header={<h2 className="text-xl font-semibold leading-tight text-gray-800">Historias de Éxito</h2>}>
-                     <div className="container mx-auto p-6">
+                     <div className="container mx-auto p-6 min-h-[60vh] flex items-center justify-center">
                          <Loading variant="centered" message="Cargando historias..." />
                      </div>
                  </Layout>

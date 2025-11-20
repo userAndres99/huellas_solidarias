@@ -101,22 +101,25 @@ export default function AuthenticatedLayout({ header, children }) {
                             <div className="hidden xl:ms-6 xl:flex xl:items-center">
                                 {user ? (
                                     <div className="flex items-center">
-                                        <div className="hidden xl:flex xl:items-center xl:me-6 xl:flex-row-reverse xl:flex-wrap xl:gap-3 xl:space-x-reverse">
+                                        <div className="hidden xl:flex xl:items-center xl:me-6 xl:flex-wrap xl:gap-3">
+                                            {/* Buscar usuarios */}
                                             <BuscadorUsuarios />
 
-                                            <div className="nav-container xl:flex xl:flex-row-reverse xl:flex-wrap xl:gap-3 xl:space-x-reverse">
-                                                <NavLink
-                                                    href={route('dashboard')}
-                                                    active={route().current('dashboard')}
-                                                >
-                                                    Mis publicaciones
-                                                </NavLink>
-
+                                            <div className="nav-container xl:flex xl:flex-wrap xl:gap-3">
+                                                {/* Publicaciones (lista pública) */}
                                                 <NavLink
                                                     href={route('casos.index')}
                                                     active={route().current('casos.index')}
                                                 >
                                                     Publicaciones
+                                                </NavLink>
+
+                                                {/* Mis publicaciones (dashboard del usuario) */}
+                                                <NavLink
+                                                    href={route('dashboard')}
+                                                    active={route().current('dashboard')}
+                                                >
+                                                    Mis publicaciones
                                                 </NavLink>
 
                                                 <NavLink href="/historias">
@@ -267,17 +270,17 @@ export default function AuthenticatedLayout({ header, children }) {
                         </div>
                         <div className="space-y-1 pb-3 pt-2">
                             <ResponsiveNavLink
-                                href={route('dashboard')}
-                                active={route().current('dashboard')}
-                            >
-                                Mis publicaciones
-                            </ResponsiveNavLink>
-
-                            <ResponsiveNavLink
                                 href={route('casos.index')}
                                 active={route().current('casos.index')}
                             >
                                 Publicaciones
+                            </ResponsiveNavLink>
+
+                            <ResponsiveNavLink
+                                href={route('dashboard')}
+                                active={route().current('dashboard')}
+                            >
+                                Mis publicaciones
                             </ResponsiveNavLink>
 
                             <ResponsiveNavLink href="/historias">

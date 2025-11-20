@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Inertia } from '@inertiajs/inertia';
 import axios from 'axios';
 import { Link } from '@inertiajs/react';
 import EnlaceRequiereLogin from '@/Components/EnlaceRequiereLogin';
 import EstadoBadge from '@/Components/EstadoBadge';
 import Modal from '@/Components/Modal';
+import LoadingImagenes from '@/Components/LoadingImagenes';
 
 function formatDate(dateStr) {
   if (!dateStr) return '';
@@ -20,18 +21,23 @@ function formatDate(dateStr) {
 export default function TarjetaPublicacion({ publicacion, showEdit = true, onRemove = null }) {
   const p = publicacion;
   const [confirmModal, setConfirmModal] = useState({ open: false, type: null });
+  const [imgLoaded, setImgLoaded] = useState(false);
+
+  // reset imagen
+  useEffect(() => {
+    setImgLoaded(false);
+  }, [p?.fotoAnimal]);
 
   return (
   <div className="card-surface-alt rounded-xl overflow-hidden fade-in card-hover relative">
       {p.fotoAnimal ? (
-        <div className="w-full h-44 overflow-hidden bg-gradient-to-br from-green-50 to-blue-50 relative">
-          <img
-            src={p.fotoAnimal}
-            alt={`Foto de ${p.tipoAnimal || 'animal'}`}
-            className="w-full h-44 object-cover transform transition-transform duration-300 hover:scale-105"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/35 via-transparent to-transparent pointer-events-none" />
-        </div>
+        <LoadingImagenes
+          src={p.fotoAnimal}
+          alt={`Foto de ${p.tipoAnimal || 'animal'}`}
+          wrapperClass="w-full h-44 bg-gradient-to-br from-green-50 to-blue-50"
+          imgClass="w-full h-44 object-cover transform transition-transform duration-300 hover:scale-105"
+          placeholderText="Cargando imagen..."
+        />
       ) : (
         <div className="w-full h-44 bg-[rgba(2,132,199,0.06)] flex items-center justify-center text-slate-500">
           Sin imagen

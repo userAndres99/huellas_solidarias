@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 use App\Notifications\NewEventoNotification;
+use Carbon\Carbon;
 
 class OrganizationController extends Controller
 {
@@ -334,7 +335,12 @@ class OrganizationController extends Controller
         $tipo = $request->query('tipo');
         $situacion = $request->query('situacion');
         $ciudad = $request->query('ciudad');
-        $period = $request->query('period', 'year'); 
+        $period = $request->query('period', 'year');
+        // Aceptar solo granularidades permitidas: year, month, week
+        $allowedPeriods = ['year', 'month', 'week'];
+        if (!in_array($period, $allowedPeriods)) {
+            $period = 'year';
+        }
 
         $query = \App\Models\Caso::query();
         if (!empty($tipo)) {
@@ -359,26 +365,76 @@ class OrganizationController extends Controller
 
         // Dependiendo de la granularidad, agrupamos distinto
         if ($period === 'month') {
-            $rows = $query->selectRaw("DATE_FORMAT(created_at, '%Y-%m') as period, COUNT(*) as cnt")
-                ->groupBy('period')
-                ->orderBy('period')
-                ->get();
-        } elseif ($period === 'day') {
+            // Últimos 30 días: generamos un rango desde hace 29 días hasta hoy
+            $end = Carbon::now()->startOfDay();
+            $start = (clone $end)->subDays(29);
+
+            // Obtener counts por día dentro del rango
             $rows = $query->selectRaw("DATE(created_at) as period, COUNT(*) as cnt")
+                ->whereBetween(DB::raw('DATE(created_at)'), [$start->toDateString(), $end->toDateString()])
                 ->groupBy('period')
                 ->orderBy('period')
-                ->get();
+                ->get()
+                ->keyBy('period');
+
+            // Rellenar los días faltantes con 0
+            $filled = [];
+            $current = clone $start;
+            while ($current->lte($end)) {
+                $d = $current->toDateString();
+                $cnt = isset($rows[$d]) ? (int)$rows[$d]->cnt : 0;
+                $filled[] = (object)['period' => $d, 'cnt' => $cnt];
+                $current->addDay();
+            }
+
+            $rows = collect($filled);
         } elseif ($period === 'week') {
-            $rows = $query->selectRaw("DATE_FORMAT(created_at, '%x-W%v') as period, COUNT(*) as cnt")
+            // Últimos 7 días: generamos un rango desde hace 6 días hasta hoy
+            $end = Carbon::now()->startOfDay();
+            $start = (clone $end)->subDays(6);
+
+            // Obtener counts por día dentro del rango
+            $rows = $query->selectRaw("DATE(created_at) as period, COUNT(*) as cnt")
+                ->whereBetween(DB::raw('DATE(created_at)'), [$start->toDateString(), $end->toDateString()])
                 ->groupBy('period')
                 ->orderBy('period')
-                ->get();
+                ->get()
+                ->keyBy('period');
+
+            // Rellenar los días faltantes con 0
+            $filled = [];
+            $current = clone $start;
+            while ($current->lte($end)) {
+                $d = $current->toDateString();
+                $cnt = isset($rows[$d]) ? (int)$rows[$d]->cnt : 0;
+                $filled[] = (object)['period' => $d, 'cnt' => $cnt];
+                $current->addDay();
+            }
+
+            $rows = collect($filled);
         } else {
-            // default
-            $rows = $query->selectRaw('YEAR(created_at) as period, COUNT(*) as cnt')
+            // 'year' -> devolver últimos 12 meses (agregado por mes)
+            $end = Carbon::now()->startOfMonth();
+            $start = (clone $end)->subMonths(11)->startOfMonth();
+
+            $rows = $query->selectRaw("DATE_FORMAT(created_at, '%Y-%m') as period, COUNT(*) as cnt")
+                ->whereBetween(DB::raw('DATE(created_at)'), [$start->toDateString(), $end->endOfMonth()->toDateString()])
                 ->groupBy('period')
                 ->orderBy('period')
-                ->get();
+                ->get()
+                ->keyBy('period');
+
+            // Rellenar meses faltantes con 0
+            $filled = [];
+            $current = clone $start;
+            while ($current->lte($end)) {
+                $m = $current->format('Y-m');
+                $cnt = isset($rows[$m]) ? (int)$rows[$m]->cnt : 0;
+                $filled[] = (object)['period' => $m, 'cnt' => $cnt];
+                $current->addMonth();
+            }
+
+            $rows = collect($filled);
         }
 
         $series = $rows->map(function ($r) {

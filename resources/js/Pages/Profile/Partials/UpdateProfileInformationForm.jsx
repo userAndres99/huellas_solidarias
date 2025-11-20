@@ -15,11 +15,13 @@ export default function UpdateProfileInformation({
 }) {
     const user = usePage().props.auth.user;
 
-    const { data, setData, processing, recentlySuccessful } = useForm({
+    const { data, setData, processing, recentlySuccessful, errors } = useForm({
         name: user.name,
         email: user.email,
         photo: null,
     });
+
+    const [emailError, setEmailError] = useState(null);
 
     const [preview, setPreview] = useState(
         user.profile_photo_url ?? '/images/DefaultPerfil.jpg'
@@ -51,6 +53,17 @@ export default function UpdateProfileInformation({
     const submit = (e) => {
         e.preventDefault();
 
+        // Validación cliente: si el email fue modificado, validar formato
+        if (data.email !== undefined && data.email !== null && data.email !== user.email && String(data.email).trim() !== '') {
+            const emailVal = String(data.email).trim();
+            const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!re.test(emailVal)) {
+                setEmailError('Ingrese un correo electrónico válido.');
+                return;
+            }
+            setEmailError(null);
+        }
+
         const formData = new FormData();
         formData.append('_method', 'PATCH');
 
@@ -75,6 +88,13 @@ export default function UpdateProfileInformation({
                 window.dispatchEvent(new Event('profile-updated'));
             },
             onError: (errors) => {
+                // Mostrar error específico del servidor para el email si llega
+                try {
+                    const msg = errors?.email ?? (errors?.email?.[0] ?? null);
+                    setEmailError(msg ?? null);
+                } catch (e) {
+                    setEmailError(null);
+                }
                 console.error('Errores del servidor:', errors);
             },
         });
@@ -142,11 +162,11 @@ export default function UpdateProfileInformation({
                         type="email"
                         className="mt-1 block w-full"
                         value={data.email}
-                        onChange={(e) => setData('email', e.target.value)}
+                        onChange={(e) => { setData('email', e.target.value); setEmailError(null); }}
                         autoComplete="username"
                     />
 
-                    <InputError className="mt-2" message={null} />
+                        <InputError className="mt-2" message={emailError} />
                 </div>
 
                 {user?.role_name === 'Usuario' && (
