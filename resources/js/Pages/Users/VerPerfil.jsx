@@ -1,6 +1,7 @@
 import { Link, usePage, Head } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { useState } from 'react';
+import DonationModal from '@/Components/DonationModal';
 
 export default function VerPerfil(props){
     const page = usePage();
@@ -14,6 +15,8 @@ export default function VerPerfil(props){
     const initialFollowing = pageProps.is_following ?? false;
     const [following, setFollowing] = useState(initialFollowing);
     const [followersCount, setFollowersCount] = useState(pageProps.followers_count ?? 0);
+    const [donationModalOpen, setDonationModalOpen] = useState(false);
+    const [donationTarget, setDonationTarget] = useState(null);
 
     async function toggleFollow(){
         if(!authUser){
@@ -68,6 +71,10 @@ export default function VerPerfil(props){
                             {following ? 'Dejar de seguir' : 'Seguir'}
                         </button>
 
+                        {usuario?.organizacion && (usuario.organizacion.mp_user_id || usuario.organizacion.mp_cuenta?.mp_user_id) ? (
+                            <button onClick={() => { setDonationTarget({ id: usuario.organizacion.id, nombre: usuario.organizacion.nombre }); setDonationModalOpen(true); }} className="inline-flex items-center rounded-md px-4 py-2 text-sm font-medium bg-yellow-500 text-white">Donar</button>
+                        ) : null}
+
                         <div className="text-sm text-gray-600">{followersCount} seguidores</div>
                     </>
                 )}
@@ -77,6 +84,17 @@ export default function VerPerfil(props){
             </div>
 
             {/* Publicaciones (Casos) del usuario */}
+                        <DonationModal
+                            open={donationModalOpen}
+                            onClose={(result) => {
+                                setDonationModalOpen(false);
+                                if (result === true) {
+                                    // opcional: recargar props o mostrar toast
+                                }
+                            }}
+                            organizacion={donationTarget}
+                            userEmail={authUser?.email ?? null}
+                        />
             <div className="mt-8">
                 <h2 className="text-lg font-semibold">Publicaciones</h2>
                 {usuario.casos && usuario.casos.length > 0 ? (

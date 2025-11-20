@@ -4,11 +4,11 @@ import EnlaceRequiereLogin from '@/Components/EnlaceRequiereLogin';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import PublicLayout from '@/Layouts/PublicLayout';
 import EstadoBadge from '@/Components/EstadoBadge';
+import TarjetaPublicaciones from '@/Components/TarjetaPublicaciones';
 import Loading from '@/Components/Loading';
 import { preloadImages } from '@/helpers';
 import Select from 'react-select';
 import debounce from 'lodash.debounce';
-import DonationModal from '@/Components/DonationModal';
 
 const opcionesTipo = [
   { value: '', label: 'Todos los tipos' },
@@ -259,8 +259,7 @@ export default function Index(props) {
   const [filtros, setFiltros] = useState({ tipo: '', ciudad: '', situacion: '', ordenFecha: 'reciente', sexo: '', tamanio: '' });
   const [page, setPage] = useState(1);
   const [perPage] = useState(9);
-  const [donationModalOpen, setDonationModalOpen] = useState(false);
-  const [donationTarget, setDonationTarget] = useState(null);
+  
 
   // cuando cambian filtros, volver a la primera pagina
   useEffect(() => {
@@ -370,79 +369,10 @@ export default function Index(props) {
           />
 
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-            {casos.map(c => {
-            const usuario = c.usuario || c.user || null;
-            const userName = usuario?.name ?? 'Anónimo';
-            const userPhoto = usuario?.profile_photo_url ?? null;
-
-            const estadoKey = normalizeSituacionSimple(c.situacion);
-            return (
-              <article key={c.id} className="card-surface-alt rounded-xl overflow-hidden fade-in card-hover relative">
-                <div className="relative h-56 md:h-48 lg:h-56">
-                  {c.fotoAnimal ? (
-                    <LazyImage src={c.fotoAnimal} alt={c.tipoAnimal || 'Foto'} className="h-full w-full" priority={page === 1} />
-                  ) : (
-                    <div className="h-full w-full bg-[rgba(2,132,199,0.06)] flex items-center justify-center text-slate-500">Sin imagen</div>
-                  )}
-
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/35 via-transparent to-transparent" />
-
-                  <a href={usuario ? `/users/${usuario.id}` : '#'} className="absolute left-3 bottom-3 flex items-center gap-3 bg-white/80 backdrop-blur rounded-full px-2 py-1">
-                    {userPhoto ? (
-                      <img src={userPhoto} alt={userName} className="w-10 h-10 rounded-full object-cover border" loading="eager" decoding="async" fetchPriority="high" />
-                    ) : (
-                      <div className="w-10 h-10 rounded-full flex items-center justify-center font-semibold text-sm bg-gray-200 border">{getInitials(userName)}</div>
-                    )}
-                    <div className="text-sm">
-                      <div className="text-xs text-slate-900 font-medium">
-                        {userName}
-                        {usuario?.organizacion?.nombre ? (
-                          <span className="text-xs text-slate-600"> ({usuario.organizacion.nombre})</span>
-                        ) : null}
-                      </div>
-                      <div className="text-2xs text-slate-600">{c.ciudad || '—'}</div>
-                    </div>
-                  </a>
-
-                  {/* Donar: solo mostrar si la organización está vinculada a Mercado Pago */}
-                  {usuario?.organizacion && (usuario.organizacion.mp_user_id || usuario.organizacion.mp_cuenta?.mp_user_id) ? (
-                    <div className="absolute left-3 bottom-16">
-                      <button
-                        onClick={() => { setDonationTarget({ id: usuario.organizacion.id, nombre: usuario.organizacion.nombre }); setDonationModalOpen(true); }}
-                        className="inline-flex items-center gap-2 px-3 py-1.5 bg-yellow-500 text-white rounded-full text-sm hover:shadow"
-                      >Donar</button>
-                    </div>
-                  ) : null}
-
-                  <div className="absolute right-3 top-3 flex flex-col items-end gap-2">
-                    <span className="px-2 py-1 bg-white/90 rounded text-xs text-slate-700">{c.tipoAnimal || 'Animal'}</span>
-                  </div>
-                </div>
-
-                <div className="p-4 space-y-3">
-                  <div className="flex items-center gap-3">
-                    <p className="text-sm text-slate-600">{new Date(c.fechaPublicacion || c.created_at).toLocaleDateString()}</p>
-                    <EstadoBadge situacion={c.situacion} />
-                  </div>
-                  <h3 className="text-lg font-bold text-slate-900 line-clamp-2">{c.descripcion}</h3>
-                  <p className="text-sm text-slate-800 line-clamp-3">{c.descripcion}</p>
-
-                  <div className="flex items-center justify-between mt-2">
-                    <div className="flex items-center gap-3">
-                      <EnlaceRequiereLogin href={`/casos/${c.id}`} className="inline-flex items-center gap-2 px-3 py-1.5 bg-[var(--color-primary)] text-white rounded-full text-sm hover:shadow-md transition transform hover:-translate-y-0.5" ariaLabel={`Ver caso ${c.id}`}>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="inline-block">
-                          <path d="M12 5c-7 0-11 6-11 7s4 7 11 7 11-6 11-7-4-7-11-7zm0 11a4 4 0 110-8 4 4 0 010 8z" fill="currentColor"/>
-                          <path d="M12 9.5a2.5 2.5 0 100 5 2.5 2.5 0 000-5z" fill="white"/>
-                        </svg>
-                        Ver detalle
-                      </EnlaceRequiereLogin>
-                    </div>
-                  </div>
-                </div>
-              </article>
-            );
-          })}
-        </div>
+            {casos.map(c => (
+              <TarjetaPublicaciones key={c.id} caso={c} />
+            ))}
+          </div>
 
         {/* PAGINACIÓN ABAJO*/}
         <Pagination
@@ -456,18 +386,7 @@ export default function Index(props) {
           }}
         />
       </div>
-        {/* Modal de donación */}
-        <DonationModal
-          open={donationModalOpen}
-          onClose={(result) => {
-            setDonationModalOpen(false);
-            if (result === true) {
-              // opcionalmente mostrar un toast o recargar props
-            }
-          }}
-          organizacion={donationTarget}
-          userEmail={props?.auth?.user?.email ?? null}
-        />
+        {/* Donation modal moved to user profile view */}
       </div>
     </Layout>
   );

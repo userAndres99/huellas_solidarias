@@ -50,7 +50,7 @@ class BuscadorUsuariosController extends Controller
     {
         // Cargar organización y los últimos casos del usuario
         $user->load([
-            'organizacion',
+            'organizacion.mp_cuenta',
             'casos' => function ($q) {
                 $q->orderBy('fechaPublicacion', 'desc')->limit(12);
             },
