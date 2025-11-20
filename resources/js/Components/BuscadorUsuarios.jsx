@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from '@inertiajs/react';
 
-export default function BuscadorUsuarios({ mobile = false }){
+export default function BuscadorUsuarios({ mobile = false, autoFocus = false }){
     const [query, setQuery] = useState('');
     const [results, setResults] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -16,6 +16,12 @@ export default function BuscadorUsuarios({ mobile = false }){
             if(timer.current) clearTimeout(timer.current);
         }
     },[]);
+
+    useEffect(() => {
+        if (autoFocus) {
+            inputRef.current?.focus();
+        }
+    }, [autoFocus]);
 
     function doSearch(q){
         if(!q || q.trim() === ''){

@@ -46,11 +46,11 @@ export default function Dashboard({ auth, misPublicaciones }) {
     <AuthenticatedLayout
       header={
         <h2 className="text-xl font-semibold leading-tight text-gray-800">
-          Mis publicaciones
+          Inicio
         </h2>
       }
     >
-      <Head title="Mis publicaciones" />
+      <Head title="Inicio" />
 
       <div className="py-6">
         <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
@@ -90,29 +90,6 @@ export default function Dashboard({ auth, misPublicaciones }) {
           </div>
           </div>
 
-          {/* Mis publicaciones */}
-          <div className="mt-8">
-            <div className="mx-auto max-w-6xl card-surface shadow-lg sm:rounded-2xl p-8 fade-in">
-              <h3 className="text-2xl font-semibold mb-6 text-center">Mis publicaciones</h3>
-
-                  {(() => {
-                    const publicacionesActivas = (misPublicaciones || []).filter(p => p.estado === 'activo');
-                    if (publicacionesActivas.length === 0) {
-                      return <div className="text-gray-600 text-center py-8">No tenés publicaciones activas todavía.</div>;
-                    }
-
-                    return (
-                      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 justify-items-center">
-                            {publicacionesActivasState.map((p, i) => (
-                          <div key={p.id} className={`w-full md:w-auto fade-in ${i % 3 === 0 ? 'fade-delay-1' : i % 3 === 1 ? 'fade-delay-2' : 'fade-delay-3'}`}>
-                            <TarjetaMisPublicaciones publicacion={p} showEdit={false} onRemove={handleRemovePublicacion} />
-                          </div>
-                        ))}
-                      </div>
-                    );
-                  })()}
-            </div>
-          </div>
         </div>
       </div>
     </AuthenticatedLayout>

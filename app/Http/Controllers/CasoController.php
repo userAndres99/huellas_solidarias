@@ -336,6 +336,16 @@ class CasoController extends Controller
             $query->where('tamano', $tamano);
         }
 
+        
+        if ($request->boolean('mio')) {
+            if ($request->user()) {
+                $query->where('idUsuario', $request->user()->id);
+            } else {
+                // forzar sin resultados si no está autenticado
+                $query->whereRaw('1 = 0');
+            }
+        }
+
         // orden
         if ($ordenFecha === 'antigua') {
             $query->orderBy('fechaPublicacion', 'asc');
@@ -344,18 +354,19 @@ class CasoController extends Controller
         }
 
         // select 
-        $query->select(['id','idUsuario','tipoAnimal','descripcion','situacion','sexo','tamano','ciudad','latitud','longitud','telefonoContacto','fechaPublicacion','fotoAnimal']);
+        $query->select(['id','idUsuario','tipoAnimal','descripcion','situacion','sexo','tamano','ciudad','latitud','longitud','telefonoContacto','fechaPublicacion','fotoAnimal','estado']);
 
         // paginar
         $casos = $query->paginate($perPage);
 
         // transformar la coleccion interna 
         $casos->getCollection()->transform(function ($c) {
-            return [
+                return [
                 'id' => $c->id,
                 'tipoAnimal' => $c->tipoAnimal ?? $c->tipo_animal ?? null,
                 'descripcion' => $c->descripcion,
                 'ciudad' => $c->ciudad,
+                    'estado' => $c->estado ?? null,
                 'situacion' => $c->situacion,
                 'fechaPublicacion' => $c->fechaPublicacion ?? $c->created_at,
                 'fotoAnimal' => $c->fotoAnimal ? Storage::url($c->fotoAnimal) : null,

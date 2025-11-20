@@ -5,6 +5,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import PublicLayout from '@/Layouts/PublicLayout';
 import EstadoBadge from '@/Components/EstadoBadge';
 import TarjetaPublicaciones from '@/Components/TarjetaPublicaciones';
+import TarjetaMisPublicaciones from '@/Components/TarjetaMisPublicaciones';
 import Loading from '@/Components/Loading';
 import { preloadImages } from '@/helpers';
 import Select from 'react-select';
@@ -247,6 +248,7 @@ export default function Index(props) {
   const [filtros, setFiltros] = useState({ tipo: '', ciudad: '', situacion: '', ordenFecha: 'reciente', sexo: '', tamanio: '' });
   const [page, setPage] = useState(1);
   const [perPage] = useState(9);
+  const [viewMode, setViewMode] = useState('all'); // 'all' | 'mine'
   
 
   // cuando cambian filtros, volver a la primera pagina
@@ -272,6 +274,11 @@ export default function Index(props) {
         if (filtros.sexo) params.append('sexo', filtros.sexo);
         if (filtros.tamanio) params.append('tamano', filtros.tamanio);
         if (filtros.ordenFecha) params.append('ordenFecha', filtros.ordenFecha);
+
+        // si estamos en modo 'mine', pedimos solo los casos del usuario autenticado
+        if (viewMode === 'mine') {
+          params.append('mio', '1');
+        }
 
         const url = `/casos/json?${params.toString()}`;
 
@@ -311,7 +318,12 @@ export default function Index(props) {
 
     obtenerCasos();
     return () => controller.abort();
-  }, [page, filtros, perPage]);
+  }, [page, filtros, perPage, viewMode]);
+  
+  // cuando cambiamos el modo de vista volvemos a la primera pagina
+  useEffect(() => {
+    setPage(1);
+  }, [viewMode]);
 
   if (loading) {
     return (
@@ -322,7 +334,7 @@ export default function Index(props) {
   function LayoutPlaceholder() {
     const LayoutToUse = props?.auth?.user ? AuthenticatedLayout : PublicLayout;
     return (
-      <LayoutToUse {...props} header={<h2 className="text-xl font-semibold leading-tight text-gray-800">Publicaciones</h2>}>
+      <LayoutToUse {...props} header={<h2 className="text-xl font-semibold leading-tight text-gray-800">{viewMode === 'mine' ? 'Mis publicaciones' : 'Publicaciones'}</h2>}>
         <div className="container mx-auto p-4 min-h-[60vh] flex items-center justify-center">
           <Loading variant="centered" message="Cargando publicaciones..." />
         </div>
@@ -332,16 +344,45 @@ export default function Index(props) {
 
   const Layout = props?.auth?.user ? AuthenticatedLayout : PublicLayout;
 
+  function handleRemovePublicacion(id) {
+    setCasos(prev => prev.filter(p => p.id !== id));
+  }
+
   return (
     <Layout
       {...props}
-      header={<h2 className="text-xl font-semibold leading-tight text-gray-800">Publicaciones</h2>}
+      header={<h2 className="text-xl font-semibold leading-tight text-gray-800">{viewMode === 'mine' ? 'Mis publicaciones' : 'Publicaciones'}</h2>}
     >
       <Head title="Publicaciones" />
 
       <div className="container mx-auto p-4">
 
-        <FiltroGeneral filtros={filtros} setFiltros={setFiltros} />
+        {props?.auth?.user && (
+          <div className="mb-4 flex justify-center">
+            <div className="inline-flex rounded-md bg-[var(--color-surface)] p-1 shadow-sm">
+              <button
+                type="button"
+                onClick={() => setViewMode('all')}
+                className={`px-3 py-1 text-sm ${viewMode === 'all' ? 'bg-white rounded text-gray-900 font-semibold' : 'text-gray-700'}`}
+              >
+                Publicaciones
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode('mine')}
+                className={`px-3 py-1 text-sm ${viewMode === 'mine' ? 'bg-white rounded text-gray-900 font-semibold' : 'text-gray-700'}`}
+              >
+                Mis publicaciones
+              </button>
+            </div>
+          </div>
+        )}
+
+        {viewMode === 'all' && (
+          <div>
+            <FiltroGeneral filtros={filtros} setFiltros={setFiltros} />
+          </div>
+        )}
 
         <div className="mt-4 mx-auto max-w-6xl card-surface shadow-lg sm:rounded-2xl p-8 fade-in">
           {/* PAGINACIÓN ARRIBA */}
@@ -356,11 +397,19 @@ export default function Index(props) {
             }}
           />
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-            {casos.map(c => (
-              <TarjetaPublicaciones key={c.id} caso={c} />
-            ))}
-          </div>
+          {viewMode === 'mine' ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+              {casos.map(c => (
+                <TarjetaMisPublicaciones key={c.id} publicacion={c} showEdit={false} onRemove={handleRemovePublicacion} />
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+              {casos.map(c => (
+                <TarjetaPublicaciones key={c.id} caso={c} />
+              ))}
+            </div>
+          )}
 
         {/* PAGINACIÓN ABAJO*/}
         <Pagination
@@ -374,7 +423,6 @@ export default function Index(props) {
           }}
         />
       </div>
-        {/* Donation modal moved to user profile view */}
       </div>
     </Layout>
   );
