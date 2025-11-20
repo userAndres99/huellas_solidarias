@@ -32,6 +32,7 @@ const NewMessageInput = ({ value, onChange, onSend}) => {
 
     return(
         <textarea 
+        aria-label="Cuadro de mensaje"
         ref={input}
         value={value}
         rows="1"

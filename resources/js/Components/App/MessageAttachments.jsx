@@ -63,6 +63,7 @@ const MessageAttachments = ({ attachments, attachmentClick}) => {
 
                                     </div>
                                     <iframe
+                                        
                                         src={attachment.url}
                                         className='w-full h-full'
                                     ></iframe>
