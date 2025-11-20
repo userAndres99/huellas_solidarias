@@ -7,6 +7,7 @@ use App\Http\Controllers\HistoriaController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\BuscadorUsuariosController;
+use App\Http\Controllers\CiudadController;
 use App\Http\Controllers\OrganizationController;
 use App\Http\Controllers\SolicitudVerificacionController; 
 use Illuminate\Foundation\Application;
@@ -100,6 +101,9 @@ Route::get('/casos/json/{id}', [CasoController::class, 'show'])->name('casos.jso
 Route::get('/casos', function () {
     return Inertia::render('Casos/Index');
 })->name('casos.index');
+
+// Autocompletado de ciudades
+Route::get('/ciudades', [CiudadController::class, 'search'])->name('ciudades.search');
 
 // Vista de un caso individual
 Route::get('/casos/{id}', function ($id) {

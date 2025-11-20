@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Link } from '@inertiajs/react';
+import { Link, usePage } from '@inertiajs/react';
 import EnlaceRequiereLogin from '@/Components/EnlaceRequiereLogin';
 import EstadoBadge from '@/Components/EstadoBadge';
 import DonationModal from '@/Components/DonationModal';
@@ -71,6 +71,8 @@ export default function TarjetaPublicaciones({ caso }) {
 }
 
 function PopoverTrigger({ usuario, caso, userPhoto, userName }) {
+  const page = usePage();
+  const authUser = page.props.auth?.user ?? null;
   const [open, setOpen] = useState(false);
   const [donationModalOpen, setDonationModalOpen] = useState(false);
   const [donationTarget, setDonationTarget] = useState(null);
@@ -86,6 +88,28 @@ function PopoverTrigger({ usuario, caso, userPhoto, userName }) {
   }, []);
 
   if (!usuario) return null;
+
+  if (!authUser) {
+    return (
+      <div className="absolute left-3 bottom-3">
+        <EnlaceRequiereLogin href={`/usuarios/${usuario.id}`} className="flex items-center gap-3 bg-white/80 backdrop-blur rounded-full px-2 py-1">
+          {userPhoto ? (
+            <img src={userPhoto} alt={userName} className="w-10 h-10 rounded-full object-cover border" loading="eager" decoding="async" />
+          ) : (
+            <div className="w-10 h-10 rounded-full flex items-center justify-center font-semibold text-sm bg-gray-200 border">{getInitials(userName)}</div>
+          )}
+          <div className="text-sm">
+            <div className="text-xs text-slate-900 font-medium">
+              {userName}
+              {usuario?.organizacion?.nombre ? (
+                <span className="text-xs text-slate-600"> ({usuario.organizacion.nombre})</span>
+              ) : null}
+            </div>
+          </div>
+        </EnlaceRequiereLogin>
+      </div>
+    );
+  }
 
   const hasMp = usuario.organizacion && (usuario.organizacion.mp_user_id || usuario.organizacion.mp_cuenta?.mp_user_id);
 

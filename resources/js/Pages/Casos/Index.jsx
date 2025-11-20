@@ -9,6 +9,7 @@ import Loading from '@/Components/Loading';
 import { preloadImages } from '@/helpers';
 import Select from 'react-select';
 import debounce from 'lodash.debounce';
+import FiltroGeneral from '@/Components/FiltroGeneral';
 
 const opcionesTipo = [
   { value: '', label: 'Todos los tipos' },
@@ -42,65 +43,6 @@ const opcionesTamanio = [
   { value: 'Grande', label: 'Grande'}
 ];
 
-function Filtros({ filtros, setFiltros }) {
-  const handleCiudadChange = useMemo(
-    () =>
-      debounce(value => {
-        setFiltros(prev => ({ ...prev, ciudad: value }));
-      }, 300),
-    [setFiltros]
-  );
-
-  return (
-    <div className="flex flex-wrap gap-2 mb-4">
-      <div className="w-48">
-        <Select
-          options={opcionesTipo}
-          value={opcionesTipo.find(o => o.value === filtros.tipo)}
-          onChange={option => setFiltros(prev => ({ ...prev, tipo: option.value }))}
-        />
-      </div>
-
-      <div className="w-48">
-        <Select
-          options={opcionesSituacion} 
-          value={opcionesSituacion.find(o => o.value === filtros.situacion)}
-          onChange={option => setFiltros(prev => ({ ...prev, situacion: option.value }))}
-        />
-      </div>
-      <div className='w-48'>
-        <Select
-          options={opcionesOrden}
-          value={opcionesOrden.find(o => o.value === filtros.ordenFecha)}
-          onChange={option => setFiltros(prev => ({...prev, ordenFecha: option.value}))}
-        />
-      </div>
-
-      <div className='w-48'>
-        <Select
-        options={opcionesSexo}
-        value={opcionesSexo.find(o => o.value === filtros.sexo)}
-        onChange={option => setFiltros(prev => ({ ...prev, sexo: option.value}))}
-        />
-      </div>
-      <div className='w-48'>
-        <Select
-        options={opcionesTamanio}
-        value={opcionesTamanio.find(o => o.value === filtros.tamanio)}
-        onChange={option => setFiltros(prev => ({ ...prev, tamanio: option.value}))}
-        />
-      </div>
-
-      <input
-        type="text"
-        placeholder="Ciudad"
-        defaultValue={filtros.ciudad}
-        onChange={e => handleCiudadChange(e.target.value)}
-        className="border p-2 rounded w-48" 
-      />
-    </div>
-  );
-}
 
 function getInitials(name = '') {
   return name
@@ -146,12 +88,58 @@ function Pagination({ meta, links, onPage }) {
   for (let i = start; i <= end; i++) pages.push(i);
 
   return (
-    <div className="flex items-center justify-between mt-4 mb-4">
-      <div className="text-sm text-gray-600">
+    <div className="flex flex-col sm:flex-row items-center justify-between mt-4 mb-4 gap-3">
+      <div className="text-sm text-gray-600 text-center sm:text-left">
         Mostrando página {meta.current_page} de {meta.last_page} · {meta.total} resultados
       </div>
 
-      <div className="flex items-center gap-2">
+      
+      <div className="flex items-center gap-2 sm:hidden">
+        <button
+          onClick={() => onPage(1)}
+          disabled={current === 1}
+          className="px-2 py-1 border rounded disabled:opacity-50"
+        >
+          «
+        </button>
+
+        <button
+          onClick={() => onPage(current - 1)}
+          disabled={current === 1}
+          className="px-2 py-1 border rounded disabled:opacity-50"
+        >
+          ‹
+        </button>
+
+        <select
+          value={current}
+          onChange={e => onPage(Number(e.target.value))}
+          className="border px-2 py-1 rounded w-20 text-center"
+        >
+          {Array.from({ length: last }, (_, i) => i + 1).map(p => (
+            <option key={p} value={p}>{p}/{last}</option>
+          ))}
+        </select>
+
+        <button
+          onClick={() => onPage(current + 1)}
+          disabled={current === last}
+          className="px-2 py-1 border rounded disabled:opacity-50"
+        >
+          ›
+        </button>
+
+        <button
+          onClick={() => onPage(last)}
+          disabled={current === last}
+          className="px-2 py-1 border rounded disabled:opacity-50"
+        >
+          »
+        </button>
+      </div>
+
+     
+      <div className="hidden sm:flex items-center gap-2">
         <button
           onClick={() => onPage(1)}
           disabled={current === 1}
@@ -353,7 +341,7 @@ export default function Index(props) {
 
       <div className="container mx-auto p-4">
 
-        <Filtros filtros={filtros} setFiltros={setFiltros} />
+        <FiltroGeneral filtros={filtros} setFiltros={setFiltros} />
 
         <div className="mt-4 mx-auto max-w-6xl card-surface shadow-lg sm:rounded-2xl p-8 fade-in">
           {/* PAGINACIÓN ARRIBA */}
