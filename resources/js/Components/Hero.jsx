@@ -1,3 +1,5 @@
+import LoadingImagenes from '@/Components/LoadingImagenes';
+
 export default function Hero({
   title,
   subtitle,
@@ -20,16 +22,15 @@ export default function Hero({
       )}
 
       <div className="rounded-2xl overflow-hidden card-surface border border-transparent fade-in fade-delay-2">
-        <img
+        <LoadingImagenes
           src={heroSrc}
           alt={title ?? 'Imagen principal'}
-          className={`${imageClass} object-cover w-full h-full`}
-          width={1920}
-          height={1080}
+          wrapperClass={`w-full h-full`}
+          imgClass={`${imageClass} object-cover w-full h-full`}
+          fallback={fallback}
           loading="eager"
           fetchPriority="high"
           decoding="async"
-          onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = fallback; }}
         />
       </div>
     </section>

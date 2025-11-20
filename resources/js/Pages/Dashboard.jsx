@@ -3,6 +3,7 @@ import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { Head, Link, usePage } from "@inertiajs/react";
 import MensajeFlash from '@/Components/MensajeFlash';
 import TarjetaMisPublicaciones from '@/Components/TarjetaMisPublicaciones';
+import LoadingImagenes from '@/Components/LoadingImagenes';
 
 function formatDate(dateStr) {
   if (!dateStr) return "";
@@ -63,7 +64,7 @@ export default function Dashboard({ auth, misPublicaciones }) {
             <div className="p-6 flex items-center gap-4">
               <div className="flex-shrink-0">
                 {profileUrl ? (
-                  <img src={profileUrl} alt={auth?.user?.name ?? 'Perfil'} className="h-14 w-14 rounded-full object-cover ring-2 ring-white shadow-sm" />
+                  <LoadingImagenes src={profileUrl} alt={auth?.user?.name ?? 'Perfil'} wrapperClass="h-14 w-14 rounded-full overflow-hidden" imgClass="h-14 w-14 rounded-full object-cover ring-2 ring-white shadow-sm" avatar={true} />
                 ) : (
                   <div className="h-14 w-14 rounded-full bg-gradient-to-br from-green-400 to-blue-500 flex items-center justify-center text-white font-bold">{(auth?.user?.name || auth?.user?.email || "?").charAt(0)}</div>
                 )}

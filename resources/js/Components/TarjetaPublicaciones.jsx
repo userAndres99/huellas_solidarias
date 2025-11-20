@@ -94,7 +94,7 @@ function PopoverTrigger({ usuario, caso, userPhoto, userName }) {
       <div className="absolute left-3 bottom-3">
         <EnlaceRequiereLogin href={`/usuarios/${usuario.id}`} className="flex items-center gap-3 bg-white/80 backdrop-blur rounded-full px-2 py-1">
           {userPhoto ? (
-            <img src={userPhoto} alt={userName} className="w-10 h-10 rounded-full object-cover border" loading="eager" decoding="async" />
+            <LoadingImagenes src={userPhoto} alt={userName} wrapperClass="w-10 h-10 rounded-full overflow-hidden" imgClass="w-10 h-10 rounded-full object-cover border" placeholderText={null} avatar={true} />
           ) : (
             <div className="w-10 h-10 rounded-full flex items-center justify-center font-semibold text-sm bg-gray-200 border">{getInitials(userName)}</div>
           )}
@@ -117,7 +117,7 @@ function PopoverTrigger({ usuario, caso, userPhoto, userName }) {
     <div ref={ref} className="absolute left-3 bottom-3">
       <button type="button" aria-haspopup="true" aria-expanded={open} className="flex items-center gap-3 bg-white/80 backdrop-blur rounded-full px-2 py-1" onClick={(e) => { e.stopPropagation(); setOpen(o => !o); }}>
         {userPhoto ? (
-          <LoadingImagenes src={userPhoto} alt={userName} wrapperClass="w-10 h-10 rounded-full overflow-hidden" imgClass="w-10 h-10 rounded-full object-cover border" placeholderText={null} />
+          <LoadingImagenes src={userPhoto} alt={userName} wrapperClass="w-10 h-10 rounded-full overflow-hidden" imgClass="w-10 h-10 rounded-full object-cover border" placeholderText={null} avatar={true} />
         ) : (
           <div className="w-10 h-10 rounded-full flex items-center justify-center font-semibold text-sm bg-gray-200 border">{getInitials(userName)}</div>
         )}

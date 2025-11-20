@@ -98,7 +98,7 @@ export default function BuscadorUsuarios({ mobile = false }){
         }
     }
 
-    const containerClass = mobile ? 'relative block w-1/2 mb-3 mx-auto' : 'relative ms-6 hidden md:block w-48';
+    const containerClass = mobile ? 'relative block w-1/2 mb-3 mx-auto' : 'relative ms-6 hidden md:block w-48 flex-shrink-0';
 
     return (
         <div className={containerClass}>

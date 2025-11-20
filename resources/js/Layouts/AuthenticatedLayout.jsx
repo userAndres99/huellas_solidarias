@@ -101,17 +101,17 @@ export default function AuthenticatedLayout({ header, children }) {
                             <div className="hidden xl:ms-6 xl:flex xl:items-center">
                                 {user ? (
                                     <div className="flex items-center">
-                                        <div className="hidden xl:flex xl:items-center xl:me-6 xl:flex-wrap xl:gap-3">
+                                        <div className="hidden xl:flex xl:items-center xl:me-6 xl:gap-3">
                                             {/* Buscar usuarios */}
                                             <BuscadorUsuarios />
 
-                                            <div className="nav-container xl:flex xl:flex-wrap xl:gap-3">
+                                            <div className="nav-container xl:flex xl:items-center xl:gap-3">
                                                 {/* Publicaciones (lista pública) */}
                                                 <NavLink
                                                     href={route('casos.index')}
                                                     active={route().current('casos.index')}
                                                 >
-                                                    Publicaciones
+                                                    Ver Publicaciones
                                                 </NavLink>
 
                                                 {/* Mis publicaciones (dashboard del usuario) */}
@@ -273,7 +273,7 @@ export default function AuthenticatedLayout({ header, children }) {
                                 href={route('casos.index')}
                                 active={route().current('casos.index')}
                             >
-                                Publicaciones
+                                Ver Publicaciones
                             </ResponsiveNavLink>
 
                             <ResponsiveNavLink
