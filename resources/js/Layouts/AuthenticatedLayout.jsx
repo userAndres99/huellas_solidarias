@@ -8,12 +8,14 @@ import NotificationBell from '@/Components/NotificationBell';
 import { Link, usePage } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
 import { useEventBus } from '@/EvenBus';
+import Toast from '@/Components/App/Toast';
+import NewMessageNotification from '@/Components/App/NewMessageNotification';
 
 export default function AuthenticatedLayout({ header, children }) {
     // obtener user 
     const page = usePage();
     const user = page.props.auth?.user;
-    const conversations =  page.props.conversations;
+    const conversations = page.props.conversations;
     const logoHref = user ? route('dashboard') : '/';
     const { emit } = useEventBus();
 
@@ -21,50 +23,49 @@ export default function AuthenticatedLayout({ header, children }) {
         useState(false);
 
     useEffect(() => {
-        conversations.forEach((conversation) =>{
-                let channel = `message.group.${conversation.id}`;
+        conversations.forEach((conversation) => {
+            let channel = `message.group.${conversation.id}`;
 
-                if(conversation.is_user){
-                    channel = `message.user.${[
-                        parseInt(user.id),
-                        parseInt(conversation.id),
-                    ]
-                        .sort((a, b) => a - b)
-                        .join("-")}`;
-                }
+            if (conversation.is_user) {
+                channel = `message.user.${[
+                    parseInt(user.id),
+                    parseInt(conversation.id),
+                ]
+                    .sort((a, b) => a - b)
+                    .join("-")}`;
+            }
 
-                Echo.private(channel)
-                    .error((error) => {
-                        console.log(error);
-                    })
-                    .listen("SocketMessage", (e)=>{
-                        console.log("SocketMessage", e);
-                        const message = e.message;
+            Echo.private(channel)
+                .error((error) => {
+                    console.log(error);
+                })
+                .listen("SocketMessage", (e) => {
+                    console.log("SocketMessage", e);
+                    const message = e.message;
 
-                        emit("message.created", message);
-                        if (message.sender_id === user.id){
-                            return;
-                        }
-                        emit("newMessageNotification", {
-                            user: message.sender,
-                            group_id: message.group_id,
-                            message:
-                                message.message ||
-                                `Shared ${
-                                    message.attachments.length === 1
-                                        ? "an attachment"
-                                        : message.attachments.length +
-                                           " attachmnets"
-                                }`,
-                        });
+                    emit("message.created", message);
+                    if (message.sender_id === user.id) {
+                        return;
+                    }
+                    emit("newMessageNotification", {
+                        user: message.sender,
+                        group_id: message.group_id,
+                        message:
+                            message.message ||
+                            `Shared ${message.attachments.length === 1
+                                ? "an attachment"
+                                : message.attachments.length +
+                                " attachmnets"
+                            }`,
                     });
+                });
         });
 
         return () => {
             conversations.forEach((conversation) => {
                 let channel = `message.group.${conversation.id}`;
 
-                if(conversation.is_user){
+                if (conversation.is_user) {
                     channel = `message.user.${[
                         parseInt(user.id),
                         parseInt(conversation.id),
@@ -77,302 +78,302 @@ export default function AuthenticatedLayout({ header, children }) {
         };
     }, [conversations]);
 
-    useEffect(()=>{
-        console.log("AuthenticatedLayout mounted")
-    })
-
     return (
-        <div className="min-h-screen bg-[var(--color-bg)] flex flex-col">
-            <nav className="border-b border-transparent bg-[var(--color-footer)] shadow-sm">
-                <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                    <div className="flex h-16 justify-between">
-                        <div className="flex items-center">
-                            <div className="flex shrink-0 items-center">
-                                <Link href={logoHref}>
-                                    <ApplicationLogo className="block h-9 w-auto fill-current text-gray-800 icon-float" />
-                                </Link>
-                                {!user && (
-                                    <Link href={logoHref} className="ms-3">
-                                        <span className="text-lg font-semibold brand-hover-scale text-gradient-animated">Huellas Solidarias</span>
+        <>
+            <div className="min-h-screen bg-[var(--color-bg)] flex flex-col">
+                <nav className="border-b border-transparent bg-[var(--color-footer)] shadow-sm">
+                    <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                        <div className="flex h-16 justify-between">
+                            <div className="flex items-center">
+                                <div className="flex shrink-0 items-center">
+                                    <Link href={logoHref}>
+                                        <ApplicationLogo className="block h-9 w-auto fill-current text-gray-800 icon-float" />
                                     </Link>
+                                    {!user && (
+                                        <Link href={logoHref} className="ms-3">
+                                            <span className="text-lg font-semibold brand-hover-scale text-gradient-animated">Huellas Solidarias</span>
+                                        </Link>
+                                    )}
+                                </div>
+
+                            </div>
+
+                            <div className="hidden xl:ms-6 xl:flex xl:items-center">
+                                {user ? (
+                                    <div className="flex items-center">
+                                        <div className="hidden xl:flex xl:items-center xl:me-6 xl:flex-row-reverse xl:flex-wrap xl:gap-3 xl:space-x-reverse">
+                                            <BuscadorUsuarios />
+
+                                            <div className="nav-container xl:flex xl:flex-row-reverse xl:flex-wrap xl:gap-3 xl:space-x-reverse">
+                                                <NavLink
+                                                    href={route('dashboard')}
+                                                    active={route().current('dashboard')}
+                                                >
+                                                    Mis publicaciones
+                                                </NavLink>
+
+                                                <NavLink
+                                                    href={route('casos.index')}
+                                                    active={route().current('casos.index')}
+                                                >
+                                                    Publicaciones
+                                                </NavLink>
+
+                                                <NavLink href="/historias">
+                                                    Historias de Éxito
+                                                </NavLink>
+
+                                                {user?.role_name === 'Organizacion' && (
+                                                    <NavLink
+                                                        href={route('organizacion.index')}
+                                                        active={route().current('organizacion.index')}
+                                                    >
+                                                        Eventos
+                                                    </NavLink>
+                                                )}
+
+                                                {user?.role_name === 'Organizacion' && (
+                                                    <NavLink
+                                                        href={route('organizacion.estadisticas')}
+                                                        active={route().current('organizacion.estadisticas')}
+                                                    >
+                                                        Estadísticas
+                                                    </NavLink>
+                                                )}
+
+                                                {user?.role_name === 'Organizacion' && (
+                                                    <NavLink
+                                                        href={route('organizacion.donaciones')}
+                                                        active={route().current('organizacion.donaciones')}
+                                                    >
+                                                        Donaciones
+                                                    </NavLink>
+                                                )}
+
+                                                {user?.role_name === 'Admin' && (
+                                                    <NavLink
+                                                        href={route('admin.solicitudes.index')}
+                                                        active={route().current('admin.solicitudes.index')}
+                                                    >
+                                                        Solicitudes
+                                                    </NavLink>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-center gap-3">
+                                            <NotificationBell />
+                                            <div className="relative ms-3">
+                                                <Dropdown>
+                                                    <Dropdown.Trigger>
+                                                        <span className="inline-flex rounded-md">
+                                                            <button
+                                                                type="button"
+                                                                className="inline-flex items-center rounded-md bg-[var(--color-surface)] px-3 py-2 text-sm font-medium leading-4 text-slate-800 transition duration-150 ease-in-out hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
+                                                            >
+                                                                {user.name}
+
+                                                                <svg
+                                                                    className="-me-0.5 ms-2 h-4 w-4"
+                                                                    xmlns="http://www.w3.org/2000/svg"
+                                                                    viewBox="0 0 20 20"
+                                                                    fill="currentColor"
+                                                                >
+                                                                    <path
+                                                                        fillRule="evenodd"
+                                                                        d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                                                                        clipRule="evenodd"
+                                                                    />
+                                                                </svg>
+                                                            </button>
+                                                        </span>
+                                                    </Dropdown.Trigger>
+
+                                                    <Dropdown.Content>
+                                                        <Dropdown.Link href={route('profile.edit')}>
+                                                            Perfil
+                                                        </Dropdown.Link>
+                                                        <Dropdown.Link
+                                                            href={route('logout')}
+                                                            method="post"
+                                                            as="button"
+                                                        >
+                                                            Cerrar sesión
+                                                        </Dropdown.Link>
+                                                    </Dropdown.Content>
+                                                </Dropdown>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="flex items-center gap-3">
+                                        <NavLink href={route('login')}>Iniciar sesión</NavLink>
+                                        <NavLink href={route('register')}>Crear cuenta</NavLink>
+                                    </div>
                                 )}
                             </div>
 
+                            <div className="-me-2 flex items-center xl:hidden">
+                                <button
+                                    onClick={() =>
+                                        setShowingNavigationDropdown(
+                                            (previousState) => !previousState,
+                                        )
+                                    }
+                                    className="inline-flex items-center justify-center rounded-md p-2 text-gray-600 transition duration-150 ease-in-out hover:bg-[var(--color-surface)] hover:text-gray-600 focus:bg-[var(--color-surface)] focus:text-gray-600 focus:outline-none"
+                                >
+                                    <svg
+                                        className="h-6 w-6"
+                                        stroke="currentColor"
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <path
+                                            className={
+                                                !showingNavigationDropdown
+                                                    ? 'inline-flex'
+                                                    : 'hidden'
+                                            }
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            strokeWidth="2"
+                                            d="M4 6h16M4 12h16M4 18h16"
+                                        />
+                                        <path
+                                            className={
+                                                showingNavigationDropdown
+                                                    ? 'inline-flex'
+                                                    : 'hidden'
+                                            }
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            strokeWidth="2"
+                                            d="M6 18L18 6M6 6l12 12"
+                                        />
+                                    </svg>
+                                </button>
+                            </div>
                         </div>
+                    </div>
 
-                        <div className="hidden xl:ms-6 xl:flex xl:items-center">
-                            {user ? (
-                                <div className="flex items-center">
-                                    <div className="hidden xl:flex xl:items-center xl:me-6 xl:flex-row-reverse xl:flex-wrap xl:gap-3 xl:space-x-reverse">
-                                        <BuscadorUsuarios />
+                    <div
+                        className={
+                            (showingNavigationDropdown ? 'block' : 'hidden') +
+                            ' xl:hidden'
+                        }
+                    >
+                        <div className="px-4 pt-3 pb-2">
+                            {user && <BuscadorUsuarios mobile={true} />}
+                        </div>
+                        <div className="space-y-1 pb-3 pt-2">
+                            <ResponsiveNavLink
+                                href={route('dashboard')}
+                                active={route().current('dashboard')}
+                            >
+                                Mis publicaciones
+                            </ResponsiveNavLink>
 
-                                        <div className="nav-container xl:flex xl:flex-row-reverse xl:flex-wrap xl:gap-3 xl:space-x-reverse">
-                                            <NavLink
-                                                href={route('dashboard')}
-                                                active={route().current('dashboard')}
-                                            >
-                                                Mis publicaciones
-                                            </NavLink>
+                            <ResponsiveNavLink
+                                href={route('casos.index')}
+                                active={route().current('casos.index')}
+                            >
+                                Publicaciones
+                            </ResponsiveNavLink>
 
-                                            <NavLink
-                                                href={route('casos.index')}
-                                                active={route().current('casos.index')}
-                                            >
-                                                Publicaciones
-                                            </NavLink>
+                            <ResponsiveNavLink href="/historias">
+                                Historias de Éxito
+                            </ResponsiveNavLink>
 
-                                            <NavLink href="/historias">
-                                                Historias de Éxito
-                                            </NavLink>
+                            {user?.role_name === 'Organizacion' && (
+                                <ResponsiveNavLink
+                                    href={route('organizacion.index')}
+                                    active={route().current('organizacion.index')}
+                                >
+                                    Eventos
+                                </ResponsiveNavLink>
+                            )}
+                            {user?.role_name === 'Organizacion' && (
+                                <ResponsiveNavLink
+                                    href={route('organizacion.estadisticas')}
+                                    active={route().current('organizacion.estadisticas')}
+                                >
+                                    Estadísticas
+                                </ResponsiveNavLink>
+                            )}
 
-                                            {user?.role_name === 'Organizacion' && (
-                                                <NavLink
-                                                    href={route('organizacion.index')}
-                                                    active={route().current('organizacion.index')}
-                                                >
-                                                    Eventos
-                                                </NavLink>
-                                            )}
+                            {user?.role_name === 'Organizacion' && (
+                                <ResponsiveNavLink
+                                    href={route('organizacion.donaciones')}
+                                    active={route().current('organizacion.donaciones')}
+                                >
+                                    Donaciones
+                                </ResponsiveNavLink>
+                            )}
 
-                                            {user?.role_name === 'Organizacion' && (
-                                                <NavLink
-                                                    href={route('organizacion.estadisticas')}
-                                                    active={route().current('organizacion.estadisticas')}
-                                                >
-                                                    Estadísticas
-                                                </NavLink>
-                                            )}
-
-                                            {user?.role_name === 'Organizacion' && (
-                                                <NavLink
-                                                    href={route('organizacion.donaciones')}
-                                                    active={route().current('organizacion.donaciones')}
-                                                >
-                                                    Donaciones
-                                                </NavLink>
-                                            )}
-
-                                            {user?.role_name === 'Admin' && (
-                                                <NavLink
-                                                    href={route('admin.solicitudes.index')}
-                                                    active={route().current('admin.solicitudes.index')}
-                                                >
-                                                    Solicitudes
-                                                </NavLink>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    <div className="flex items-center gap-3">
-                                        <NotificationBell />
-                                        <div className="relative ms-3">
-                                            <Dropdown>
-                                                <Dropdown.Trigger>
-                                                    <span className="inline-flex rounded-md">
-                                                        <button
-                                                            type="button"
-                                                            className="inline-flex items-center rounded-md bg-[var(--color-surface)] px-3 py-2 text-sm font-medium leading-4 text-slate-800 transition duration-150 ease-in-out hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
-                                                        >
-                                                            {user.name}
-
-                                                            <svg
-                                                                className="-me-0.5 ms-2 h-4 w-4"
-                                                                xmlns="http://www.w3.org/2000/svg"
-                                                                viewBox="0 0 20 20"
-                                                                fill="currentColor"
-                                                            >
-                                                                <path
-                                                                    fillRule="evenodd"
-                                                                    d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-                                                                    clipRule="evenodd"
-                                                                />
-                                                            </svg>
-                                                        </button>
-                                                    </span>
-                                                </Dropdown.Trigger>
-
-                                                <Dropdown.Content>
-                                                    <Dropdown.Link href={route('profile.edit')}>
-                                                        Perfil
-                                                    </Dropdown.Link>
-                                                    <Dropdown.Link
-                                                        href={route('logout')}
-                                                        method="post"
-                                                        as="button"
-                                                    >
-                                                        Cerrar sesión
-                                                    </Dropdown.Link>
-                                                </Dropdown.Content>
-                                            </Dropdown>
-                                        </div>
-                                    </div>
-                                </div>
-                            ) : (
-                                <div className="flex items-center gap-3">
-                                    <NavLink href={route('login')}>Iniciar sesión</NavLink>
-                                    <NavLink href={route('register')}>Crear cuenta</NavLink>
-                                </div>
+                            {/* Link solo visible para Admin */}
+                            {user?.role_name === 'Admin' && (
+                                <ResponsiveNavLink
+                                    href={route('admin.solicitudes.index')}
+                                    active={route().current('admin.solicitudes.index')}
+                                >
+                                    Solicitudes
+                                </ResponsiveNavLink>
                             )}
                         </div>
-
-                        <div className="-me-2 flex items-center xl:hidden">
-                            <button
-                                onClick={() =>
-                                    setShowingNavigationDropdown(
-                                        (previousState) => !previousState,
-                                    )
-                                }
-                                className="inline-flex items-center justify-center rounded-md p-2 text-gray-600 transition duration-150 ease-in-out hover:bg-[var(--color-surface)] hover:text-gray-600 focus:bg-[var(--color-surface)] focus:text-gray-600 focus:outline-none"
-                            >
-                                <svg
-                                    className="h-6 w-6"
-                                    stroke="currentColor"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                >
-                                    <path
-                                        className={
-                                            !showingNavigationDropdown
-                                                ? 'inline-flex'
-                                                : 'hidden'
-                                        }
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth="2"
-                                        d="M4 6h16M4 12h16M4 18h16"
-                                    />
-                                    <path
-                                        className={
-                                            showingNavigationDropdown
-                                                ? 'inline-flex'
-                                                : 'hidden'
-                                        }
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth="2"
-                                        d="M6 18L18 6M6 6l12 12"
-                                    />
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <div
-                    className={
-                        (showingNavigationDropdown ? 'block' : 'hidden') +
-                        ' xl:hidden'
-                    }
-                >
-                    <div className="px-4 pt-3 pb-2">
-                        {user && <BuscadorUsuarios mobile={true} />}
-                    </div>
-                    <div className="space-y-1 pb-3 pt-2">
-                        <ResponsiveNavLink
-                            href={route('dashboard')}
-                            active={route().current('dashboard')}
-                        >
-                            Mis publicaciones
-                        </ResponsiveNavLink>
-
-                        <ResponsiveNavLink
-                            href={route('casos.index')}
-                            active={route().current('casos.index')}
-                        >
-                            Publicaciones
-                        </ResponsiveNavLink>
-
-                        <ResponsiveNavLink href="/historias">
-                            Historias de Éxito
-                        </ResponsiveNavLink>
-
-                        {user?.role_name === 'Organizacion' && (
-                            <ResponsiveNavLink
-                                href={route('organizacion.index')}
-                                active={route().current('organizacion.index')}
-                            >
-                                Eventos
-                            </ResponsiveNavLink>
-                        )}
-                        {user?.role_name === 'Organizacion' && (
-                            <ResponsiveNavLink
-                                href={route('organizacion.estadisticas')}
-                                active={route().current('organizacion.estadisticas')}
-                            >
-                                Estadísticas
-                            </ResponsiveNavLink>
-                        )}
-
-                        {user?.role_name === 'Organizacion' && (
-                            <ResponsiveNavLink
-                                href={route('organizacion.donaciones')}
-                                active={route().current('organizacion.donaciones')}
-                            >
-                                Donaciones
-                            </ResponsiveNavLink>
-                        )}
-
-                        {/* Link solo visible para Admin */}
-                        {user?.role_name === 'Admin' && (
-                            <ResponsiveNavLink
-                                href={route('admin.solicitudes.index')}
-                                active={route().current('admin.solicitudes.index')}
-                            >
-                                Solicitudes
-                            </ResponsiveNavLink>
-                        )}
-                    </div>
 
                         <div className="border-t border-gray-200 pb-1 pt-4">
-                        <div className="px-4">
-                            <div className="text-base font-medium text-gray-800">
-                                {user?.name ?? 'Invitado'}
+                            <div className="px-4">
+                                <div className="text-base font-medium text-gray-800">
+                                    {user?.name ?? 'Invitado'}
+                                </div>
+                                <div className="text-sm font-medium text-gray-500">
+                                    {user?.email ?? ''}
+                                </div>
                             </div>
-                            <div className="text-sm font-medium text-gray-500">
-                                {user?.email ?? ''}
+
+                            <div className="mt-3 space-y-1">
+                                {user ? (
+                                    <>
+                                        <ResponsiveNavLink href={route('profile.edit')}>
+                                            Perfil
+                                        </ResponsiveNavLink>
+                                        <ResponsiveNavLink
+                                            method="post"
+                                            href={route('logout')}
+                                            as="button"
+                                        >
+                                            Cerrar sesión
+                                        </ResponsiveNavLink>
+                                    </>
+                                ) : (
+                                    <>
+                                        <ResponsiveNavLink href={route('login')}>
+                                            Iniciar sesión
+                                        </ResponsiveNavLink>
+                                        <ResponsiveNavLink href={route('register')}>
+                                            Crear cuenta
+                                        </ResponsiveNavLink>
+                                    </>
+                                )}
                             </div>
                         </div>
+                    </div>
+                </nav>
 
-                        <div className="mt-3 space-y-1">
-                            {user ? (
-                                <>
-                                    <ResponsiveNavLink href={route('profile.edit')}>
-                                        Perfil
-                                    </ResponsiveNavLink>
-                                    <ResponsiveNavLink
-                                        method="post"
-                                        href={route('logout')}
-                                        as="button"
-                                    >
-                                        Cerrar sesión
-                                    </ResponsiveNavLink>
-                                </>
-                            ) : (
-                                <>
-                                    <ResponsiveNavLink href={route('login')}>
-                                        Iniciar sesión
-                                    </ResponsiveNavLink>
-                                    <ResponsiveNavLink href={route('register')}>
-                                        Crear cuenta
-                                    </ResponsiveNavLink>
-                                </>
-                            )}
+                {header && (
+                    <header className="bg-[var(--color-surface)] shadow">
+                        <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+                            {header}
                         </div>
-                    </div>
-                </div>
-            </nav>
+                    </header>
+                )}
 
-            {header && (
-                <header className="bg-[var(--color-surface)] shadow">
-                    <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-                        {header}
-                    </div>
-                </header>
-            )}
+                <main className="flex-1">{children}</main>
 
-            <main className="flex-1">{children}</main>
-
-            <Footer />
-        </div>
+                <Footer />
+            </div>
+            <Toast/>
+            <NewMessageNotification/>
+        </>
     );
 }
