@@ -25,11 +25,17 @@ Inertia.on('navigate', () => {
 });
 createInertiaApp({
     title: (title) => `${title} - ${appName}`,
-    resolve: (name) =>
-        resolvePageComponent(
-            `./Pages/${name}.jsx`,
-            import.meta.glob('./Pages/**/*.jsx'),
-        ),
+    resolve: (name) => {
+      // Fallback manual usando import.meta.glob para evitar incompatibilidades
+      const pages = import.meta.glob('./Pages/**/*.jsx');
+      const path = `./Pages/${name}.jsx`;
+      const resolver = pages[path];
+      if (!resolver) {
+        // si no existe, lanzar para que Inertia lo gestione
+        return Promise.reject(new Error(`Page not found: ${path}`));
+      }
+      return resolver().then((mod) => mod.default || mod);
+    },
     setup({ el, App, props }) {
         const root = createRoot(el);
 

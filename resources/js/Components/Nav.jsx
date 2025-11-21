@@ -36,7 +36,7 @@ export default function Nav({ auth, canLogin, canRegister }) {
 
         <Dropdown>
           <Dropdown.Trigger>
-            <button className="text-sm px-2 py-1 border rounded">Más</button>
+            <span className="text-sm px-2 py-1 border rounded" aria-hidden>Más</span>
           </Dropdown.Trigger>
           <Dropdown.Content>
             <Dropdown.Link href="/politica-privacidad">Política de privacidad</Dropdown.Link>

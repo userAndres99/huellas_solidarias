@@ -231,6 +231,10 @@ Route::middleware(['auth', 'role:Organizacion'])->group(function () {
     Route::get('/mercadopago/connect', [\App\Http\Controllers\MercadoPagoController::class, 'connect'])
         ->name('mercadopago.connect');
 
+    // Desvincular cuenta de Mercado Pago (desde perfil)
+    Route::post('/mercadopago/disconnect', [\App\Http\Controllers\MercadoPagoController::class, 'disconnect'])
+        ->name('mercadopago.disconnect');
+
     // Donaciones: listado para la organizacion autenticada
     Route::get('/organizacion/donaciones', [\App\Http\Controllers\OrganizationController::class, 'donaciones'])
         ->name('organizacion.donaciones');

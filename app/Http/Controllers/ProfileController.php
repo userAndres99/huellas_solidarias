@@ -30,7 +30,7 @@ class ProfileController extends Controller
     /**
      * Update the user's profile information.
      */
-    public function update(Request $request): RedirectResponse
+    public function update(Request $request)
     {
         $user = $request->user();
 
@@ -98,6 +98,19 @@ class ProfileController extends Controller
             //debug
             Log::info("Profile photo uploaded for user {$user->id}: path={$path}");
             Log::info("Exists on disk? " . (Storage::disk('public')->exists($path) ? 'yes' : 'no'));
+        }
+
+        // Procesar petición de eliminación de foto de perfil
+        if ($request->boolean('remove_photo')) {
+            if ($user->profile_photo_path) {
+                try {
+                    Storage::disk('public')->delete($user->profile_photo_path);
+                } catch (\Throwable $e) {
+                    Log::warning("No se pudo borrar profile_photo_path al eliminar: " . $e->getMessage());
+                }
+            }
+
+            $user->profile_photo_path = null;
         }
 
         // Actualizar name/email solo si pasaron la validación y no están vacíos

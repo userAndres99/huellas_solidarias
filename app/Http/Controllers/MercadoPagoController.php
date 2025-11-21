@@ -54,6 +54,31 @@ class MercadoPagoController extends Controller
     }
 
     /**
+     * Desvincula (elimina) la cuenta de Mercado Pago asociada
+     */
+    public function disconnect(Request $request)
+    {
+        $user = Auth::user();
+
+        if (! $user || ! $user->organizacion_id) {
+            return Redirect::route('profile.edit')->with('error', 'No perteneces a una organización válida.');
+        }
+
+        try {
+            $mpCuenta = MpCuenta::where('organizacion_id', $user->organizacion_id)->first();
+            if ($mpCuenta) {
+                $mpCuenta->delete();
+                Log::info('MpCuenta disconnected', ['organizacion_id' => $user->organizacion_id, 'mp_cuenta_id' => $mpCuenta->id]);
+            }
+
+            return Redirect::route('profile.edit')->with('success', 'Cuenta de Mercado Pago desvinculada. La organización no podrá recibir donaciones hasta que se vuelva a conectar una cuenta.');
+        } catch (\Throwable $e) {
+            Log::error('Error disconnecting MpCuenta', ['error' => $e->getMessage(), 'organizacion_id' => $user->organizacion_id ?? null]);
+            return Redirect::route('profile.edit')->with('error', 'Ocurrió un error al desvincular la cuenta de Mercado Pago.');
+        }
+    }
+
+    /**
      * Callback que recibe el 'code' y lo intercambia por tokens.
      */
     public function callback(Request $request)

@@ -163,9 +163,9 @@ export default function AuthenticatedLayout({ header, children }) {
                                                         <Dropdown>
                                                             <Dropdown.Trigger>
                                                                 <span className="inline-flex rounded-md">
-                                                                    <button
-                                                                        type="button"
+                                                                    <span
                                                                         className="inline-flex items-center rounded-md bg-blue-600 px-3 py-2 text-sm font-medium leading-4 text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
+                                                                        aria-hidden
                                                                     >
                                                                         Gestion de actividades
                                                                         <svg
@@ -180,7 +180,7 @@ export default function AuthenticatedLayout({ header, children }) {
                                                                                 clipRule="evenodd"
                                                                             />
                                                                         </svg>
-                                                                    </button>
+                                                                    </span>
                                                                 </span>
                                                             </Dropdown.Trigger>
                                                             <Dropdown.Content>
@@ -233,9 +233,9 @@ export default function AuthenticatedLayout({ header, children }) {
                                                 <Dropdown>
                                                     <Dropdown.Trigger>
                                                         <span className="inline-flex rounded-md">
-                                                            <button
-                                                                type="button"
+                                                            <span
                                                                 className="inline-flex items-center rounded-md bg-[var(--color-surface)] px-3 py-2 text-sm font-medium leading-4 text-slate-800 transition duration-150 ease-in-out hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
+                                                                aria-hidden
                                                             >
                                                                 {user.name}
 
@@ -251,7 +251,7 @@ export default function AuthenticatedLayout({ header, children }) {
                                                                         clipRule="evenodd"
                                                                     />
                                                                 </svg>
-                                                            </button>
+                                                            </span>
                                                         </span>
                                                     </Dropdown.Trigger>
 

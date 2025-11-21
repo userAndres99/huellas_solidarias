@@ -6,6 +6,7 @@ import InputLabel from '@/Components/InputLabel';
 import TextInput from '@/Components/TextInput';
 import InputError from '@/Components/InputError';
 import PrimaryButton from '@/Components/PrimaryButton';
+import Modal from '@/Components/Modal';
 
 export default function OrganizationPanel() {
     const user = usePage().props.auth?.user;
@@ -43,29 +44,110 @@ export default function OrganizationPanel() {
         setOrgData('descripcion', user?.organizacion?.descripcion ?? '');
     }, [user.organizacion]);
 
-    const submitOrganization = (e) => {
+    const submitOrganization = async (e) => {
         e.preventDefault();
 
         if (!user?.organizacion_id) return;
 
-        const formData = new FormData();
-        formData.append('_method', 'PATCH');
-        formData.append('nombre', orgData.nombre ?? '');
-        formData.append('email', orgData.email ?? '');
-        formData.append('telefono', orgData.telefono ?? '');
-        formData.append('descripcion', orgData.descripcion ?? '');
+        try {
+            const formData = new FormData();
+            formData.append('_method', 'PATCH');
+            formData.append('nombre', orgData.nombre ?? '');
+            formData.append('email', orgData.email ?? '');
+            formData.append('telefono', orgData.telefono ?? '');
+            formData.append('descripcion', orgData.descripcion ?? '');
 
-        Inertia.post(route('organizacion.update'), formData, {
-            onSuccess: () => {
-                Inertia.reload({ only: ['auth'] });
-                window.dispatchEvent(new Event('profile-updated'));
-                setOrgSaved(true);
-                setTimeout(() => setOrgSaved(false), 3000);
-            },
-            onError: (errors) => {
-                console.error('Errores al actualizar organización:', errors);
-            },
-        });
+            const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+
+            const headers = {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+                ...(token ? { 'X-CSRF-TOKEN': token } : {}),
+            };
+
+            const res = await fetch(route('organizacion.update'), {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers,
+                body: formData,
+            });
+
+            if (!res.ok) {
+                // si 419, intentar refrescar token y reintentar
+                if (res.status === 419) {
+                    try {
+                        const tResp = await fetch('/csrf-token', { credentials: 'same-origin' });
+                        if (tResp.ok) {
+                            const tjson = await tResp.json();
+                            if (tjson.csrf_token) {
+                                document.querySelectorAll('meta[name="csrf-token"]').forEach(m => m.setAttribute('content', tjson.csrf_token));
+                            }
+                        }
+                    } catch (e) {}
+
+                    const retryHeaders = {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        ...(token ? { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') } : {}),
+                    };
+
+                    const retry = await fetch(route('organizacion.update'), {
+                        method: 'POST',
+                        credentials: 'same-origin',
+                        headers: retryHeaders,
+                        body: formData,
+                    });
+                    if (retry.ok) {
+                        setOrgSaved(true);
+                        window.dispatchEvent(new Event('profile-updated'));
+                        setTimeout(() => setOrgSaved(false), 3000);
+                        return;
+                    }
+                }
+
+                // tratar errores JSON si vienen
+                try {
+                    const json = await res.json();
+                    console.error('Errores al actualizar organización:', json);
+                } catch (e) {
+                    console.error('Error al actualizar organización, status:', res.status);
+                }
+                return;
+            }
+
+            
+            setOrgSaved(true);
+            window.dispatchEvent(new Event('profile-updated'));
+            setTimeout(() => setOrgSaved(false), 3000);
+        } catch (err) {
+            console.error('Error de red al actualizar organización:', err);
+        }
+    };
+
+    const [disconnectOpen, setDisconnectOpen] = useState(false);
+
+    const doDisconnect = async () => {
+        try {
+            const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+            const res = await fetch(route('mercadopago.disconnect'), {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: token ? { 'X-CSRF-TOKEN': token, 'Accept': 'application/json' } : { 'Accept': 'application/json' },
+            });
+
+            if (!res.ok) {
+                console.error('Error al desvincular cuenta MP, status:', res.status);
+                setDisconnectOpen(false);
+                return;
+            }
+
+           
+            setDisconnectOpen(false);
+            window.dispatchEvent(new Event('profile-updated'));
+        } catch (err) {
+            console.error('Error de red al desvincular MP:', err);
+            setDisconnectOpen(false);
+        }
     };
 
     return (
@@ -120,20 +202,48 @@ export default function OrganizationPanel() {
                         <InputError className="mt-2" message={null} />
                     </div>
 
-                    <div className="flex items-center gap-4">
+                    <div className="mt-4">
+                        {hasMpAccount ? (
+                            <div className="flex items-center gap-3">
+                                <div className="inline-flex items-center gap-2 px-3 py-2 bg-green-100 text-green-800 rounded">
+                                    <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 00-1.414 0L8 12.586 4.707 9.293a1 1 0 10-1.414 1.414l4 4a1 1 0 001.414 0l8-8a1 1 0 000-1.414z" clipRule="evenodd" /></svg>
+                                    <span>Cuenta de Mercado Pago conectada</span>
+                                </div>
+
+                                <button
+                                    type="button"
+                                    onClick={() => setDisconnectOpen(true)}
+                                    className="inline-flex items-center gap-2 px-3 py-2 bg-red-600 text-white rounded hover:shadow"
+                                >
+                                    Desvincular cuenta
+                                </button>
+
+                                <Modal show={disconnectOpen} onClose={() => setDisconnectOpen(false)} maxWidth="md">
+                                    <div className="p-6">
+                                        <h3 className="text-lg font-semibold mb-2 text-gray-900">Desvincular cuenta de Mercado Pago</h3>
+                                        <p className="text-sm text-gray-600 mb-4">Si desvinculas tu cuenta no podrás recibir más donaciones hasta que vuelvas a vincular una cuenta nuevamente. ¿Deseás continuar?</p>
+
+                                        <div className="flex justify-end gap-3">
+                                            <button type="button" onClick={() => setDisconnectOpen(false)} className="px-4 py-2 rounded bg-white border text-sm">No, volver</button>
+                                            <button type="button" onClick={doDisconnect} className="px-4 py-2 rounded text-sm font-semibold bg-red-600 text-white">Sí, desvincular</button>
+                                        </div>
+                                    </div>
+                                </Modal>
+                            </div>
+                        ) : (
+                            <a href={route('mercadopago.connect')} className="inline-flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded hover:shadow">
+                                <img src="/images/mercadopagologo.png" alt="Mercado Pago" className="h-5" />
+                                <span>Conectar Mercado Pago</span>
+                            </a>
+                        )}
+
+                        <p className="mt-2 text-sm text-gray-700">Al vincular su cuenta de Mercado Pago podrá recibir donaciones de los usuarios que quieran cooperar para ayudar a su organización a seguir ayudando a los animales.</p>
+                    </div>
+
+                    <div className="flex items-center gap-4 mt-6">
                         <PrimaryButton type="submit" disabled={orgProcessing}>Guardar organización</PrimaryButton>
                         {orgSaved && (
                             <p className="text-sm text-gray-600">Guardado.</p>
-                        )}
-                    </div>
-                    <div className="mt-4">
-                        {hasMpAccount ? (
-                            <div className="inline-flex items-center gap-2 px-3 py-2 bg-green-100 text-green-800 rounded">
-                                <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 00-1.414 0L8 12.586 4.707 9.293a1 1 0 10-1.414 1.414l4 4a1 1 0 001.414 0l8-8a1 1 0 000-1.414z" clipRule="evenodd" /></svg>
-                                <span>Cuenta de Mercado Pago conectada</span>
-                            </div>
-                        ) : (
-                            <a href={route('mercadopago.connect')} className="inline-flex items-center gap-2 px-3 py-2 bg-[var(--color-primary)] text-white rounded hover:shadow">Conectar Mercado Pago</a>
                         )}
                     </div>
                 </form>
