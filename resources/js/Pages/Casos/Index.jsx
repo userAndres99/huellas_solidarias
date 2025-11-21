@@ -241,14 +241,15 @@ function LazyImage({ src, alt = '', className = '', rootMargin = '200px', thresh
 }
 
 export default function Index(props) {
-  const [casos, setCasos] = useState([]); // array de items 
+  const initialView = (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('view') === 'mine') ? 'mine' : 'all';
+  const [casos, setCasos] = useState([]); 
   const [meta, setMeta] = useState(null); 
   const [links, setLinks] = useState([]); 
   const [loading, setLoading] = useState(true);
   const [filtros, setFiltros] = useState({ tipo: '', ciudad: '', situacion: '', ordenFecha: 'reciente', sexo: '', tamanio: '' });
   const [page, setPage] = useState(1);
   const [perPage] = useState(9);
-  const [viewMode, setViewMode] = useState('all'); // 'all' | 'mine'
+  const [viewMode, setViewMode] = useState(initialView);
   
 
   // cuando cambian filtros, volver a la primera pagina
@@ -356,6 +357,13 @@ export default function Index(props) {
       <Head title="Publicaciones" />
 
       <div className="container mx-auto p-4">
+
+        {/* Mensaje flash de creación */}
+        {props?.flash?.success && viewMode === 'mine' && (
+          <div className="mb-4 p-3 rounded bg-green-50 border border-green-200 text-green-800">
+            {props.flash.success}
+          </div>
+        )}
 
         {props?.auth?.user && (
           <div className="mb-4 flex justify-center">

@@ -12,6 +12,8 @@ export default function NotificationBell() {
     const [items, setItems] = useState(initialList);
     const ref = useRef();
 
+    const STORAGE_KEY = 'hs.notifications.v1';
+
     useEffect(() => {
         function handleClick(e){
             if(ref.current && !ref.current.contains(e.target)) setOpen(false);
@@ -20,25 +22,58 @@ export default function NotificationBell() {
         return () => document.removeEventListener('click', handleClick);
     },[]);
 
+    useEffect(() => {
+        try {
+            const raw = localStorage.getItem(STORAGE_KEY);
+            if (raw) {
+                const parsed = JSON.parse(raw);
+                if (Array.isArray(parsed)) {
+                    const map = new Map();
+                    (parsed || []).forEach(i => map.set(String(i.id), i));
+                    (initialList || []).forEach(i => map.set(String(i.id), i));
+                    const merged = Array.from(map.values()).sort((a,b)=> new Date(b.created_at) - new Date(a.created_at)).slice(0,10);
+                    setItems(merged);
+                    const unreadCached = merged.filter(i => !i.read_at).length;
+                    setUnread(unreadCached || initialCount);
+                }
+            }
+        } catch (e) {
+           
+        }
+    }, []);
+
     useEffect(()=>{
         if (!user || !window.Echo) return;
         let channel = null;
         try{
             channel = Echo.private(`App.Models.User.${user.id}`);
             const handler = (n) => {
-                //try para normalizar la forma de la notificación desde broadcast
+                // normalizar la notificación 
                 try {
-                    if (!n.created_at) {
-                        n.created_at = new Date().toISOString();
-                    }
-                    
+                    if (!n.created_at) n.created_at = new Date().toISOString();
                     if (!n.data) n.data = n;
+
+                    if (!n.id) {
+                        
+                        const fallbackId = n.data?.id ?? (window.crypto && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`);
+                        n.id = String(fallbackId);
+                    }
                 } catch (err) {
                     
                 }
 
-                setItems(prev => [n, ...prev].slice(0,10));
+                setItems(prev => {
+                    
+                    const map = new Map();
+                    [n, ...prev].forEach(i => map.set(String(i.id), i));
+                    return Array.from(map.values()).slice(0,10);
+                });
+
                 setUnread(prev => prev + 1);
+
+                setTimeout(() => {
+                    refreshNotifications();
+                }, 700);
             };
             channel.notification(handler);
             
@@ -55,6 +90,50 @@ export default function NotificationBell() {
         }
     },[user]);
 
+    useEffect(() => {
+        try {
+            const serverList = page.props['auth']?.user?.recent_notifications ?? [];
+            const serverCount = page.props['auth']?.user?.unread_notifications_count ?? 0;
+
+            const normalized = (serverList || []).map(n => ({ id: n.id, data: n.data, read_at: n.read_at, created_at: n.created_at }));
+
+            const localMap = new Map(items.map(i => [String(i.id), i]));
+            normalized.forEach(n => localMap.set(String(n.id), n));
+
+            const merged = Array.from(localMap.values()).sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 10);
+
+            setItems(merged);
+            setUnread(serverCount);
+        } catch (e) {
+            
+        }
+    
+    }, [page.props.auth?.user?.recent_notifications, page.props.auth?.user?.unread_notifications_count]);
+
+    
+    useEffect(() => {
+        try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+        } catch (e) {
+            
+        }
+    }, [items]);
+
+    async function refreshNotifications() {
+        try {
+            const res = await fetch(route('notifications.index') + '?per_page=10', { headers: { Accept: 'application/json' } });
+            if (!res.ok) throw new Error('Network error');
+            const data = await res.json();
+            
+            const list = data.data || data;
+            setItems(list.map(n => ({ id: n.id, data: n.data, read_at: n.read_at, created_at: n.created_at })));
+            const unreadCount = list.filter(i => !i.read_at).length;
+            setUnread(unreadCount);
+        } catch (e) {
+            
+        }
+    }
+
     async function markRead(id, url){
         try{
             const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
@@ -62,6 +141,15 @@ export default function NotificationBell() {
             setItems(prev => prev.map(i => i.id === id ? {...i, read_at: new Date().toISOString()} : i));
             setUnread(prev => Math.max(0, prev-1));
             if (url) window.location = url;
+            
+            try {
+                const raw = localStorage.getItem(STORAGE_KEY);
+                if (raw) {
+                    const parsed = JSON.parse(raw) || [];
+                    const updated = parsed.map(i => i.id === id ? {...i, read_at: new Date().toISOString()} : i);
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+                }
+            } catch (e) {}
         }catch(e){
             console.error(e);
         }

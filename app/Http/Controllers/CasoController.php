@@ -12,6 +12,8 @@ use Log;
 use App\Services\NyckelClient;
 use App\Services\RemoveBgClient;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use App\Notifications\NewCasoNotification;
 
 class CasoController extends Controller
@@ -86,7 +88,48 @@ class CasoController extends Controller
                 if ($author) {
                     $followers = $author->seguidores()->get();
                     if ($followers->isNotEmpty()) {
-                        Notification::send($followers, new NewCasoNotification($caso));
+
+                        try {
+                            Notification::sendNow($followers, new NewCasoNotification($caso));
+
+                            try {
+                                $followerIds = $followers->pluck('id')->toArray();
+                                $dbCount = DB::table('notifications')
+                                    ->whereIn('notifiable_id', $followerIds)
+                                    ->where('type', '=', NewCasoNotification::class)
+                                    ->count();
+                                Log::info('NewCasoNotification: notifications in DB for followers: ' . $dbCount . ' (follower_count=' . count($followerIds) . ')');
+                            } catch (\Throwable $_) {
+                                Log::warning('NewCasoNotification: could not count notifications in DB: ' . $_->getMessage());
+                            }
+
+                        } catch (\Throwable $ex) {
+                            Log::warning('Notification::sendNow failed, falling back to DB insert: ' . $ex->getMessage());
+
+                            // para asegurarnos que los usuarios offline reciban la notificación.
+                            try {
+                                $notif = new NewCasoNotification($caso);
+                                $now = now();
+                                $rows = [];
+                                foreach ($followers as $f) {
+                                    $data = $notif->toArray($f);
+                                    $rows[] = [
+                                        'id' => (string) Str::uuid(),
+                                        'type' => get_class($notif),
+                                        'notifiable_type' => get_class($f),
+                                        'notifiable_id' => $f->id,
+                                        'data' => json_encode($data),
+                                        'read_at' => null,
+                                        'created_at' => $now,
+                                        'updated_at' => $now,
+                                    ];
+                                }
+                                DB::table('notifications')->insert($rows);
+                                Log::info('NewCasoNotification: fallback DB insert created ' . count($rows) . ' rows');
+                            } catch (\Throwable $inner) {
+                                Log::error('Failed to insert fallback notifications: ' . $inner->getMessage());
+                            }
+                        }
                     }
                 }
             } catch (\Throwable $e) {
@@ -95,10 +138,10 @@ class CasoController extends Controller
 
             $situ = strtolower($caso->situacion);
 
-        // si es "abandonado" -> subir a Nyckel y llevar al dashboard
+        // si es "abandonado" -> subir a Nyckel y llevar a Mis publicaciones
         if ($situ === 'abandonado' && $caso->fotoAnimal) {
             UploadToNyckel::dispatchSync($caso);
-            return redirect()->route('dashboard')->with('success', 'Caso creado exitosamente');
+            return redirect()->route('casos.index', ['view' => 'mine'])->with('success', 'Caso creado exitosamente');
         }
 
         //solo intentar buscar coincidencias si el usuario marca el check
@@ -281,7 +324,7 @@ class CasoController extends Controller
         }
 
         // fallback normal (si no pidió buscar coincidencias o no era 'perdido')
-        return redirect()->route('dashboard')->with('success', 'Caso creado exitosamente');
+        return redirect()->route('casos.index', ['view' => 'mine'])->with('success', 'Caso creado exitosamente');
     }
 
     // Devuelve JSON de un solo caso (para detalle para fetch)

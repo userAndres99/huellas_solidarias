@@ -32,12 +32,32 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        $user = $request->user();
+
+        if ($user) {
+            $userData = $user->loadMissing(['organizacion.mp_cuenta'])->toArray();
+            $userData['unread_notifications_count'] = $user->unreadNotifications()->count();
+            $userData['recent_notifications'] = $user->notifications()
+                ->latest()
+                ->take(10)
+                ->get()
+                ->map(function ($n) {
+                    return [
+                        'id' => $n->id,
+                        'data' => $n->data,
+                        'read_at' => $n->read_at,
+                        'created_at' => $n->created_at,
+                    ];
+                });
+        } else {
+            $userData = null;
+        }
+
         return [
             ...parent::share($request),
 
             'auth' => [
-                // cargamos la relacion organizacion y la cuenta de Mercado Pago vinculada
-                'user' => $request->user() ? $request->user()->loadMissing(['organizacion.mp_cuenta']) : null,
+                'user' => $userData,
             ],
 
             'conversations' => Auth::id() ? Conversation::getConversationsForSidebar(Auth::user()) : [],

@@ -27,9 +27,9 @@ export default function PerdidoResults(props) {
       <div className="container mx-auto p-4 max-w-5xl">
         {/* Mensajes flash (success / error) */}
         {flash?.success && (
-          <div className="mb-4 p-3 rounded bg-green-50 border border-green-200 text-green-800 flex items-center justify-between">
+            <div className="mb-4 p-3 rounded bg-green-50 border border-green-200 text-green-800 flex items-center justify-between">
             <div>{flash.success}</div>
-            <Link href="/dashboard" className="text-sm underline ml-4">Ir a Mis publicaciones</Link>
+            <Link href="/casos?view=mine" className="text-sm underline ml-4">Ir a Mis publicaciones</Link>
           </div>
         )}
 

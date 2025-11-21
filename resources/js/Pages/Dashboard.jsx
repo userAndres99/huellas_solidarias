@@ -54,10 +54,6 @@ export default function Dashboard({ auth, misPublicaciones }) {
 
       <div className="py-6">
         <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
-          {/* Mensaje de exito (si se publica un caso)*/}
-          {flash?.success && (
-            <MensajeFlash>{flash.success}</MensajeFlash>
-          )}
 
           {/* bienvenida  */}
           <div className="mt-6 mx-auto max-w-4xl card-surface shadow-lg rounded-2xl overflow-hidden fade-in">
