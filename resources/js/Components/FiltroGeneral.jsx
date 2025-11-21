@@ -206,7 +206,7 @@ export default function FiltroGeneral({ filtros, setFiltros }) {
       </div>
 
         <div className="flex items-center gap-2 ml-2">
-        <button type="button" onClick={() => setFiltros(local)} className="px-3 py-1 bg-[var(--color-primary)] text-white rounded">Aplicar filtros</button>
+        <button type="button" onClick={() => setFiltros(local)} className="px-3 py-1 bg-blue-600 text-white rounded">Aplicar filtros</button>
         <button type="button" onClick={() => { setLocal({ tipo: '', situacion: '', ordenFecha: '', sexo: '', tamanio: '', ciudad: '' }); setQuery(''); setSuggestions([]); setOrdenTouched(false); }} className="px-3 py-1 border border-black rounded">Limpiar</button>
       </div>
     </div>

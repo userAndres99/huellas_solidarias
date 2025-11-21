@@ -36,7 +36,7 @@ const Trigger = ({ children }) => {
     const handleKeyDown = (e) => {
         switch (e.key) {
             case 'Enter':
-            case ' ': // space
+            case ' ': 
             case 'ArrowDown':
                 e.preventDefault();
                 
@@ -118,7 +118,7 @@ const Content = ({
         }
 
         if (!open) {
-            // when closing, return focus to trigger
+            
             triggerRef?.current?.focus?.();
         }
     }, [open, triggerRef]);

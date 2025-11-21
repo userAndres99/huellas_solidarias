@@ -36,14 +36,14 @@ export default function TarjetaPublicacion({ publicacion, showEdit = true, onRem
             src={p.fotoAnimal}
             alt={`Foto de ${p.tipoAnimal || 'animal'}`}
             wrapperClass="h-full w-full"
-            imgClass="object-cover w-full h-full transform transition-transform duration-300 hover:scale-105"
+            imgClass="object-contain object-center w-full h-full transform transition-transform duration-300 hover:scale-105"
             placeholderText="Cargando imagen..."
           />
         ) : (
           <div className="h-full w-full bg-[rgba(2,132,199,0.06)] flex items-center justify-center text-slate-500">Sin imagen</div>
         )}
 
-        <div className="absolute top-3 right-3">
+        <div className="absolute top-3 right-3 z-30">
           <span className="px-2 py-1 bg-white/90 rounded text-xs text-slate-700">{p.tipoAnimal || 'Animal'}</span>
         </div>
       </div>
@@ -95,13 +95,13 @@ export default function TarjetaPublicacion({ publicacion, showEdit = true, onRem
         </div>
       </div>
 
-      <div className="absolute left-3 bottom-3">
+      <div className="absolute left-3 bottom-3 z-30">
         <EnlaceRequiereLogin
           href={`/casos/${p.id}`}
           ariaLabel={`Ver caso ${p.id}`}
-          className="text-sm inline-flex items-center gap-2 px-3 py-1 rounded bg-[var(--color-primary)] text-white font-semibold shadow-sm hover:shadow-md transition transform hover:-translate-y-0.5"
+          className="text-sm inline-flex items-center gap-2 px-3 py-1 rounded bg-blue-600 text-white font-semibold shadow-sm hover:shadow-md transition transform hover:-translate-y-0.5"
         >
-          Ver
+          Ver detalle
         </EnlaceRequiereLogin>
       </div>
 

@@ -24,7 +24,7 @@ export default function TarjetaPublicaciones({ caso }) {
     <article key={caso.id} className="card-surface-alt rounded-xl overflow-hidden fade-in card-hover relative">
       <div className="relative h-56 md:h-48 lg:h-56">
         {caso.fotoAnimal ? (
-          <LoadingImagenes src={caso.fotoAnimal} alt={caso.tipoAnimal || 'Foto'} wrapperClass="h-full w-full" imgClass="object-cover w-full h-full" placeholderText={null} />
+          <LoadingImagenes src={caso.fotoAnimal} alt={caso.tipoAnimal || 'Foto'} wrapperClass="h-full w-full" imgClass="object-contain object-center w-full h-full" placeholderText={null} />
         ) : (
           <div className="h-full w-full bg-[rgba(2,132,199,0.06)] flex items-center justify-center text-slate-500">Sin imagen</div>
         )}
@@ -33,7 +33,7 @@ export default function TarjetaPublicaciones({ caso }) {
 
         <PopoverTrigger usuario={usuario} caso={caso} userPhoto={userPhoto} userName={userName} />
 
-        <div className="absolute right-3 top-3 flex flex-col items-end gap-2">
+        <div className="absolute right-3 top-3 flex flex-col items-end gap-2 z-30">
           <span className="px-2 py-1 bg-white/90 rounded text-xs text-slate-700">{caso.tipoAnimal || 'Animal'}</span>
         </div>
       </div>
@@ -52,7 +52,7 @@ export default function TarjetaPublicaciones({ caso }) {
 
         <div className="flex items-center justify-between mt-2">
           <div className="flex items-center gap-3">
-            <EnlaceRequiereLogin href={`/casos/${caso.id}`} className="inline-flex items-center gap-2 px-3 py-1.5 bg-[var(--color-primary)] text-white rounded-full text-sm hover:shadow-md transition transform hover:-translate-y-0.5" ariaLabel={`Ver caso ${caso.id}`}>
+            <EnlaceRequiereLogin href={`/casos/${caso.id}`} className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-600 text-white rounded-full text-sm hover:shadow-md transition transform hover:-translate-y-0.5" ariaLabel={`Ver caso ${caso.id}`}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="inline-block">
                 <path d="M12 5c-7 0-11 6-11 7s4 7 11 7 11-6 11-7-4-7-11-7zm0 11a4 4 0 110-8 4 4 0 010 8z" fill="currentColor"/>
                 <path d="M12 9.5a2.5 2.5 0 100 5 2.5 2.5 0 000-5z" fill="white"/>
@@ -91,7 +91,7 @@ function PopoverTrigger({ usuario, caso, userPhoto, userName }) {
 
   if (!authUser) {
     return (
-      <div className="absolute left-3 bottom-3">
+      <div className="absolute left-3 bottom-3 z-30">
         <EnlaceRequiereLogin href={`/usuarios/${usuario.id}`} className="flex items-center gap-3 bg-white/80 backdrop-blur rounded-full px-2 py-1">
           {userPhoto ? (
             <LoadingImagenes src={userPhoto} alt={userName} wrapperClass="w-10 h-10 rounded-full overflow-hidden" imgClass="w-10 h-10 rounded-full object-cover border" placeholderText={null} avatar={true} />
@@ -114,7 +114,7 @@ function PopoverTrigger({ usuario, caso, userPhoto, userName }) {
   const hasMp = usuario.organizacion && (usuario.organizacion.mp_user_id || usuario.organizacion.mp_cuenta?.mp_user_id);
 
   return (
-    <div ref={ref} className="absolute left-3 bottom-3">
+    <div ref={ref} className="absolute left-3 bottom-3 z-30">
       <button type="button" aria-haspopup="true" aria-expanded={open} className="flex items-center gap-3 bg-white/80 backdrop-blur rounded-full px-2 py-1" onClick={(e) => { e.stopPropagation(); setOpen(o => !o); }}>
         {userPhoto ? (
           <LoadingImagenes src={userPhoto} alt={userName} wrapperClass="w-10 h-10 rounded-full overflow-hidden" imgClass="w-10 h-10 rounded-full object-cover border" placeholderText={null} avatar={true} />

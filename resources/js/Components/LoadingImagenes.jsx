@@ -20,6 +20,19 @@ export default function LoadingImagenes({ src, alt = '', imgClass = '', wrapperC
 
   return (
     <div className={wrapperClass + ' relative overflow-hidden'}>
+      
+      {!avatar && src && (
+        <div
+          aria-hidden
+          className="absolute inset-0 bg-center bg-cover blur-lg scale-105"
+          style={{ backgroundImage: `url(${src})` }}
+        />
+      )}
+
+      
+      {!avatar && src && (
+        <div aria-hidden className="absolute inset-0 bg-gray-800/30" />
+      )}
       {!loaded && (
         avatar ? (
           <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
@@ -44,7 +57,7 @@ export default function LoadingImagenes({ src, alt = '', imgClass = '', wrapperC
       <img
         src={src}
         alt={alt}
-        className={`${imgClass} transition-opacity duration-300 ${loaded ? 'opacity-100' : 'opacity-0'}`}
+        className={`${imgClass} transition-opacity duration-300 ${loaded ? 'opacity-100' : 'opacity-0'} relative z-20`}
         onLoad={async (e) => {
           try {
             if (e?.target?.decode) await e.target.decode();
