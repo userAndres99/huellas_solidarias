@@ -164,9 +164,38 @@ export default function NotificationBell() {
         }catch(e){ console.error(e); }
     }
 
+    async function clearAll(){
+        try{
+            if(!confirm('¿Borrar todas las notificaciones? Esta acción no se puede deshacer.')) return;
+            const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            const res = await fetch(route('notifications.destroy_all'), { method: 'DELETE', headers: {'X-CSRF-TOKEN': token} });
+            if (!res.ok) throw new Error('Network error');
+            setItems([]);
+            setUnread(0);
+            try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+        }catch(e){ console.error(e); }
+    }
+
+    function timeAgo(iso){
+        try{
+            const d = new Date(iso);
+            const now = new Date();
+            const sec = Math.floor((now - d) / 1000);
+            if (sec < 60) return `${sec}s`;
+            const min = Math.floor(sec/60);
+            if (min < 60) return `${min}m`;
+            const h = Math.floor(min/60);
+            if (h < 24) return `${h}h`;
+            const days = Math.floor(h/24);
+            return `${days}d`;
+        }catch(e){
+            return '';
+        }
+    }
+
     return (
         <div className="relative" ref={ref}>
-            <button onClick={() => setOpen(!open)} className="relative p-2 rounded-md hover:bg-[var(--color-surface)]">
+            <button onClick={() => setOpen(!open)} className="relative p-2 rounded-md bg-gray-100 hover:bg-gray-200">
                 <svg className="h-6 w-6 text-gray-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                 </svg>
@@ -179,19 +208,41 @@ export default function NotificationBell() {
                 <div className="absolute right-0 mt-2 w-80 bg-white rounded-md shadow-lg z-50">
                     <div className="flex items-center justify-between px-3 py-2 border-b">
                         <div className="font-medium">Notificaciones</div>
-                        <button onClick={markAll} className="text-xs text-gray-500">Marcar todas leídas</button>
+                        <div className="flex items-center gap-2">
+                            <button onClick={markAll} className="text-xs text-gray-800 bg-gray-200 border border-gray-200 px-2 py-1 rounded-md hover:bg-gray-300 transition">Marcar todas</button>
+                            <button onClick={clearAll} className="text-xs text-red-700 bg-gray-200 border border-red-100 px-2 py-1 rounded-md hover:bg-red-100 transition">Vaciar</button>
+                        </div>
                     </div>
                     <div className="max-h-72 overflow-auto">
-                        {items.length === 0 && <div className="px-3 py-2 text-sm text-gray-500">Sin notificaciones</div>}
+                        {items.length === 0 && <div className="px-3 py-6 text-center text-sm text-gray-500">🔔<div className="mt-1">No hay notificaciones</div></div>}
                         {items.map(n => (
-                            <div key={n.id} className={`px-3 py-2 hover:bg-gray-50 ${!n.read_at ? 'bg-gray-50' : ''}`}>
-                                <div className="flex items-start justify-between gap-2">
-                                    <div className="text-sm text-slate-800">{n.data?.message ?? n.data?.message}</div>
-                                    <div className="text-xs text-gray-400">{new Date(n.created_at).toLocaleString()}</div>
+                            <div
+                                key={n.id}
+                                onClick={() => markRead(n.id, n.data?.url)}
+                                role="button"
+                                tabIndex={0}
+                                onKeyDown={(e) => { if(e.key === 'Enter') markRead(n.id, n.data?.url); }}
+                                className={`cursor-pointer px-3 py-3 hover:bg-gray-50 transition flex items-start gap-3 ${!n.read_at ? 'bg-indigo-50' : ''}`}
+                            >
+                                <div className="flex-shrink-0 relative">
+                                    {n.data?.author_avatar ? (
+                                        <img src={n.data.author_avatar} alt="avatar" className="h-9 w-9 rounded-full object-cover" />
+                                    ) : (
+                                        <div className="h-9 w-9 rounded-full bg-gray-200 flex items-center justify-center text-gray-600">🔔</div>
+                                    )}
+                                    {!n.read_at && (
+                                        <span className="absolute -top-0.5 -right-0.5 block h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-white" />
+                                    )}
                                 </div>
-                                <div className="mt-2 flex items-center gap-2">
-                                    <button onClick={() => markRead(n.id, n.data?.url)} className="text-xs text-[var(--color-primary)]">Abrir</button>
-                                    {!n.read_at && <button onClick={() => markRead(n.id, null)} className="text-xs text-gray-500">Marcar leída</button>}
+                                <div className="flex-1">
+                                    <div className="flex items-start justify-between gap-2">
+                                        <div className={`text-sm ${!n.read_at ? 'font-semibold text-slate-800' : 'text-slate-700'}`}>{n.data?.message ?? ''}</div>
+                                        <div className="text-xs text-gray-400">{timeAgo(n.created_at)}</div>
+                                    </div>
+                                    <div className="mt-2 flex items-center gap-3">
+                                        <button onClick={(e) => { e.stopPropagation(); markRead(n.id, n.data?.url); }} className="text-xs font-semibold text-white bg-green-600 hover:bg-green-700 px-2 py-1 rounded-md shadow-sm transition">Abrir</button>
+                                        {!n.read_at && <button onClick={(e) => { e.stopPropagation(); markRead(n.id, null); }} className="text-xs text-gray-800 bg-gray-200 px-2 py-1 rounded-md hover:bg-gray-300 transition ring-1 ring-gray-200">Marcar leída</button>}
+                                    </div>
                                 </div>
                             </div>
                         ))}

@@ -27,4 +27,15 @@ class NotificationController extends Controller
         $u->unreadNotifications->markAsRead();
         return response()->json(['ok' => true]);
     }
+
+    /**
+     * borrar todas las notificaciones del usuario
+     */
+    public function destroyAll(Request $request)
+    {
+        $user = $request->user();
+        // delete all notifications (read and unread)
+        $user->notifications()->delete();
+        return response()->json(['ok' => true]);
+    }
 }

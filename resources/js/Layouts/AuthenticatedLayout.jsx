@@ -330,8 +330,14 @@ export default function AuthenticatedLayout({ header, children }) {
                         }
                     >
                         <div className="px-4 pt-3 pb-2">
-                            {user && <BuscadorUsuarios mobile={true} />}
-                        </div>
+                                {user && <BuscadorUsuarios mobile={true} />}
+                            </div>
+
+                            {user && (
+                                <div className="px-4 mt-2 mb-2 flex items-center">
+                                    <NotificationBell />
+                                </div>
+                            )}
                         <div className="space-y-1 pb-3 pt-2">
                             {user && (
                                 <div className="px-4">
