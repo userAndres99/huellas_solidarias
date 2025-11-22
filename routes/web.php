@@ -24,6 +24,9 @@ Route::middleware(['auth', 'verified'])->group(function(){
     Route::get('/chat', [ChatController::class, 'chat'])->name('chat');
    Route::get('user/{user}', [MessageController::class, 'byUser'])->name('chat.user');
    Route::get('group/{group}', [MessageController::class, 'byGroup'])->name('chat.group');
+    // Endpoints JSON para el mini-widget de chat
+    Route::get('/messages/user/{user}', [MessageController::class, 'messagesByUserJson'])->name('message.user.json');
+    Route::get('/messages/group/{group}', [MessageController::class, 'messagesByGroupJson'])->name('message.group.json');
 
    // Buscador de usuarios (nombre de usuario o nombre de organización)
    Route::get('/buscador-usuarios', [BuscadorUsuariosController::class, 'search'])

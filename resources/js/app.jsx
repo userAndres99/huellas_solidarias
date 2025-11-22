@@ -6,7 +6,6 @@ import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { createRoot } from 'react-dom/client';
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { Inertia } from '@inertiajs/inertia';
 import { EventBusProvider } from './EvenBus';
 
@@ -43,7 +42,6 @@ createInertiaApp({
         <EventBusProvider>
         <QueryClientProvider client={queryClient}>
         <App {...props} />
-        <ReactQueryDevtools initialIsOpen={false}/>
         </QueryClientProvider>
         </EventBusProvider>
     

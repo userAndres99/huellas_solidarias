@@ -85,6 +85,35 @@ class MessageController extends Controller
     }
 
     /**
+     * Devuelve mensajes de una conversación con otro usuario 
+     */
+    public function messagesByUserJson(User $user)
+    {
+        $messages = Message::where(function ($query) use ($user) {
+            $query->where('sender_id', auth()->id())
+                ->where('receiver_id', $user->id);
+
+        })->orWhere(function ($query) use ($user) {
+            $query->where('sender_id', $user->id)
+                ->where('receiver_id', auth()->id());
+        })->latest()->paginate(25);
+
+        return MessageResource::collection($messages);
+    }
+
+    /**
+     * Devuelve mensajes de un grupo 
+     */
+    public function messagesByGroupJson(Group $group)
+    {
+        $messages = Message::where('group_id', $group->id)
+            ->latest()
+            ->paginate(25);
+
+        return MessageResource::collection($messages);
+    }
+
+    /**
      * Guardar un nuevo mensaje (con o sin archivos adjuntos).
      */
     public function store(StoreMessageRequest $request)

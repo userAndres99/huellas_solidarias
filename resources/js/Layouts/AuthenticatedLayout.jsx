@@ -10,6 +10,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useEventBus } from '@/EvenBus';
 import Toast from '@/Components/App/Toast';
 import NewMessageNotification from '@/Components/App/NewMessageNotification';
+import ChatWidget from '@/Components/ChatWidget';
 
 export default function AuthenticatedLayout({ header, children }) {
     // obtener user 
@@ -330,14 +331,17 @@ export default function AuthenticatedLayout({ header, children }) {
                         }
                     >
                         <div className="px-4 pt-3 pb-2">
-                                {user && <BuscadorUsuarios mobile={true} />}
-                            </div>
-
                             {user && (
-                                <div className="px-4 mt-2 mb-2 flex items-center">
-                                    <NotificationBell />
+                                <div className="flex items-center justify-between gap-3">
+                                    <div className="w-[65%] max-w-[320px]">
+                                        <BuscadorUsuarios mobile={true} />
+                                    </div>
+                                    <div className="flex-shrink-0">
+                                        <NotificationBell />
+                                    </div>
                                 </div>
                             )}
+                        </div>
                         <div className="space-y-1 pb-3 pt-2">
                             {user && (
                                 <div className="px-4">
@@ -482,6 +486,7 @@ export default function AuthenticatedLayout({ header, children }) {
             </div>
             <Toast/>
             <NewMessageNotification/>
+            {user && <ChatWidget />}
         </>
     );
 }
