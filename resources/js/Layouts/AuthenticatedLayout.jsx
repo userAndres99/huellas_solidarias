@@ -21,6 +21,7 @@ export default function AuthenticatedLayout({ header, children }) {
 
     const [showingNavigationDropdown, setShowingNavigationDropdown] =
         useState(false);
+    const [mobileOrgOpen, setMobileOrgOpen] = useState(false);
     const [showSearch, setShowSearch] = useState(false);
     const searchContainerRef = useRef(null);
 
@@ -332,6 +333,17 @@ export default function AuthenticatedLayout({ header, children }) {
                             {user && <BuscadorUsuarios mobile={true} />}
                         </div>
                         <div className="space-y-1 pb-3 pt-2">
+                            {user && (
+                                <div className="px-4">
+                                    <Link
+                                        href={route('casos.create')}
+                                        className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg text-sm font-semibold shadow-md transition w-[65%] max-w-[320px] mx-auto justify-center"
+                                    >
+                                        <span className="text-base">+</span>
+                                        <span>Publicar nuevo caso</span>
+                                    </Link>
+                                </div>
+                            )}
                             <ResponsiveNavLink
                                 href={route('dashboard')}
                                 active={route().current('dashboard')}
@@ -369,25 +381,42 @@ export default function AuthenticatedLayout({ header, children }) {
 
                             {user?.role_name === 'Organizacion' && (
                                 <>
-                                    <div className="px-3 py-2 text-xs font-semibold text-white bg-blue-600 rounded-md inline-block">Gestion de actividades</div>
-                                    <ResponsiveNavLink
-                                        href={route('organizacion.index')}
-                                        active={route().current('organizacion.index')}
-                                    >
-                                        Eventos
-                                    </ResponsiveNavLink>
-                                    <ResponsiveNavLink
-                                        href={route('organizacion.estadisticas')}
-                                        active={route().current('organizacion.estadisticas')}
-                                    >
-                                        Estadísticas
-                                    </ResponsiveNavLink>
-                                    <ResponsiveNavLink
-                                        href={route('organizacion.donaciones')}
-                                        active={route().current('organizacion.donaciones')}
-                                    >
-                                        Donaciones
-                                    </ResponsiveNavLink>
+                                    <div className="">
+                                        <button
+                                            type="button"
+                                            onClick={() => setMobileOrgOpen(v => !v)}
+                                            className="w-full text-left px-3 py-2 text-xs font-semibold text-white bg-blue-600 rounded-md inline-flex items-center justify-between"
+                                        >
+                                            <span>Gestion de actividades</span>
+                                            <svg
+                                                className={`${mobileOrgOpen ? 'rotate-180' : ''} h-4 w-4 transition-transform ms-2`} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                                <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 011.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                                            </svg>
+                                        </button>
+
+                                        {mobileOrgOpen && (
+                                            <div className="mt-2 space-y-1">
+                                                <ResponsiveNavLink
+                                                    href={route('organizacion.index')}
+                                                    active={route().current('organizacion.index')}
+                                                >
+                                                    Eventos
+                                                </ResponsiveNavLink>
+                                                <ResponsiveNavLink
+                                                    href={route('organizacion.estadisticas')}
+                                                    active={route().current('organizacion.estadisticas')}
+                                                >
+                                                    Estadísticas
+                                                </ResponsiveNavLink>
+                                                <ResponsiveNavLink
+                                                    href={route('organizacion.donaciones')}
+                                                    active={route().current('organizacion.donaciones')}
+                                                >
+                                                    Donaciones
+                                                </ResponsiveNavLink>
+                                            </div>
+                                        )}
+                                    </div>
                                 </>
                             )}
 

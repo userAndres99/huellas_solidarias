@@ -244,7 +244,7 @@ class CasoController extends Controller
                 }
 
                 // aplicar en porcentaje 
-                $thresholdPct = 94;
+                $thresholdPct = 90;
                 $filtered = array_filter($matches, function ($m) use ($thresholdPct) {
                     return isset($m['similarity']) && $m['similarity'] >= $thresholdPct;
                 });
