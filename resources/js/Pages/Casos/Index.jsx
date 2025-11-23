@@ -8,41 +8,9 @@ import TarjetaPublicaciones from '@/Components/TarjetaPublicaciones';
 import TarjetaMisPublicaciones from '@/Components/TarjetaMisPublicaciones';
 import Loading from '@/Components/Loading';
 import { preloadImages } from '@/helpers';
-import Select from 'react-select';
-import debounce from 'lodash.debounce';
 import FiltroGeneral from '@/Components/FiltroGeneral';
+import Paginacion from '@/Components/Paginacion';
 
-const opcionesTipo = [
-  { value: '', label: 'Todos los tipos' },
-  { value: 'Perro', label: 'Perro' },
-  { value: 'Gato', label: 'Gato' },
-  { value: 'Otro', label: 'Otro' },
-];
-
-const opcionesSituacion = [
-  { value: '', label: 'Todas las situaciones' },
-  { value: 'Perdido', label: 'Perdido' },
-  { value: 'Abandonado', label: 'Abandonado' },
-  { value: 'Adopcion', label: 'Adopcion' },
-];
-
-const opcionesOrden = [
-  { value: 'reciente', label: 'Más reciente'},
-  { value: 'antigua', label: 'Fecha más antigua'}
-];
-
-const opcionesSexo  = [
-  { value: '', label: 'Cualquier sexo'},
-  { value: 'Macho', label: 'Macho'},
-  { value: 'Hembra', label: 'Hembra'}
-];
-
-const opcionesTamanio = [
-  { value: '', label: 'Cualquier tamaño'},
-  { value: 'Chico', label: 'Chico'},
-  { value: 'Mediano', label: 'Mediano'},
-  { value: 'Grande', label: 'Grande'}
-];
 
 
 function getInitials(name = '') {
@@ -71,174 +39,6 @@ function normalizeSituacionSimple(s) {
   }
 }
 
-function Pagination({ meta, links, onPage }) {
-  if (!meta) return null;
-
-  const current = meta.current_page;
-  const last = meta.last_page;
-
-  // rango de paginas a mostrar 
-  const delta = 2;
-  let start = Math.max(1, current - delta);
-  let end = Math.min(last, current + delta);
-
-  if (current <= 2) end = Math.min(last, 5);
-  if (current >= last - 1) start = Math.max(1, last - 4);
-
-  const pages = [];
-  for (let i = start; i <= end; i++) pages.push(i);
-
-  return (
-    <div className="flex flex-col sm:flex-row items-center justify-between mt-4 mb-4 gap-3">
-      <div className="text-sm text-gray-600 text-center sm:text-left">
-        Mostrando página {meta.current_page} de {meta.last_page} · {meta.total} resultados
-      </div>
-
-      
-      <div className="flex items-center gap-2 sm:hidden">
-        <button
-          onClick={() => onPage(1)}
-          disabled={current === 1}
-          className="px-2 py-1 border rounded disabled:opacity-50"
-        >
-          «
-        </button>
-
-        <button
-          onClick={() => onPage(current - 1)}
-          disabled={current === 1}
-          className="px-2 py-1 border rounded disabled:opacity-50"
-        >
-          ‹
-        </button>
-
-        <select
-          value={current}
-          onChange={e => onPage(Number(e.target.value))}
-          className="border px-2 py-1 rounded w-20 text-center"
-        >
-          {Array.from({ length: last }, (_, i) => i + 1).map(p => (
-            <option key={p} value={p}>{p}/{last}</option>
-          ))}
-        </select>
-
-        <button
-          onClick={() => onPage(current + 1)}
-          disabled={current === last}
-          className="px-2 py-1 border rounded disabled:opacity-50"
-        >
-          ›
-        </button>
-
-        <button
-          onClick={() => onPage(last)}
-          disabled={current === last}
-          className="px-2 py-1 border rounded disabled:opacity-50"
-        >
-          »
-        </button>
-      </div>
-
-     
-      <div className="hidden sm:flex items-center gap-2">
-        <button
-          onClick={() => onPage(1)}
-          disabled={current === 1}
-          className="px-2 py-1 border rounded disabled:opacity-50"
-        >
-          « Primero
-        </button>
-
-        <button
-          onClick={() => onPage(current - 1)}
-          disabled={current === 1}
-          className="px-2 py-1 border rounded disabled:opacity-50"
-        >
-          ‹ Anterior
-        </button>
-
-        {pages[0] > 1 && <span className="px-2">…</span>}
-
-        {pages.map(p => (
-          <button
-            key={p}
-            onClick={() => onPage(p)}
-            className={`px-3 py-1 border rounded ${p === current ? 'bg-gray-200 font-semibold' : ''}`}
-          >
-            {p}
-          </button>
-        ))}
-
-        {pages[pages.length -1] < last && <span className="px-2">…</span>}
-
-        <button
-          onClick={() => onPage(current + 1)}
-          disabled={current === last}
-          className="px-2 py-1 border rounded disabled:opacity-50"
-        >
-          Siguiente ›
-        </button>
-
-        <button
-          onClick={() => onPage(last)}
-          disabled={current === last}
-          className="px-2 py-1 border rounded disabled:opacity-50"
-        >
-          Último »
-        </button>
-      </div>
-    </div>
-  );
-}
-
-// Componente LazyImage: (evita usar "loading=\"lazy\"" nativo y controla cuando renderizar la imagen)
-// despues lo separamos en un componente aparte para que no haya tanto codigo aca
-function LazyImage({ src, alt = '', className = '', rootMargin = '200px', threshold = 0.01, priority = false }) {
-  const ref = useRef(null);
-  const [inView, setInView] = useState(false);
-
-  useEffect(() => {
-    if (!ref.current) return;
-    if (typeof IntersectionObserver === 'undefined') {
-      setInView(true);
-      return;
-    }
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach(entry => {
-          if (entry.isIntersecting) {
-            setInView(true);
-            observer.disconnect();
-          }
-        });
-      },
-      { root: null, rootMargin, threshold }
-    );
-
-    observer.observe(ref.current);
-
-    return () => observer.disconnect();
-  }, [rootMargin, threshold]);
-
-  return (
-    <div ref={ref} className={`w-full h-full ${className}`}>
-      {inView ? (
-        // cargamos la imagen con loading="eager" cuando sabemos que está en pantalla
-        <img
-          src={src}
-          alt={alt}
-          className="object-cover w-full h-full"
-          loading="eager"
-          decoding="async"
-          {...(priority ? { fetchPriority: 'high' } : {})}
-        />
-      ) : (
-        <div className="bg-gray-100 w-full h-full" />
-      )}
-    </div>
-  );
-}
 
 export default function Index(props) {
   const initialView = (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('view') === 'mine') ? 'mine' : 'all';
@@ -367,18 +167,23 @@ export default function Index(props) {
 
         {props?.auth?.user && (
           <div className="mb-4 flex justify-center">
-            <div className="inline-flex rounded-md bg-[var(--color-surface)] p-1 shadow-sm">
+            <div className="inline-flex rounded-md bg-[var(--color-surface)] p-1 shadow-sm" role="tablist" aria-label="Ver publicaciones">
               <button
                 type="button"
+                role="tab"
+                aria-pressed={viewMode === 'all'}
                 onClick={() => setViewMode('all')}
-                className={`px-3 py-1 text-sm ${viewMode === 'all' ? 'bg-white rounded text-gray-900 font-semibold' : 'text-gray-700'}`}
+                className={`px-3 py-1 text-sm transition-transform duration-150 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] rounded-full ${viewMode === 'all' ? 'bg-[#C8E7F5] text-black font-semibold shadow-md border border-black scale-105' : 'text-gray-700 bg-transparent border border-transparent hover:bg-[#EAF8FF] hover:shadow-sm'}`}
               >
                 Publicaciones
               </button>
+
               <button
                 type="button"
+                role="tab"
+                aria-pressed={viewMode === 'mine'}
                 onClick={() => setViewMode('mine')}
-                className={`px-3 py-1 text-sm ${viewMode === 'mine' ? 'bg-white rounded text-gray-900 font-semibold' : 'text-gray-700'}`}
+                className={`px-3 py-1 text-sm transition-transform duration-150 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] rounded-full ${viewMode === 'mine' ? 'bg-[#C8E7F5] text-black font-semibold shadow-md border border-black scale-105' : 'text-gray-700 bg-transparent border border-transparent hover:bg-[#EAF8FF] hover:shadow-sm'}`}
               >
                 Mis publicaciones
               </button>
@@ -394,7 +199,7 @@ export default function Index(props) {
 
         <div className="mt-4 mx-auto max-w-6xl card-surface shadow-lg sm:rounded-2xl p-8 fade-in">
           {/* PAGINACIÓN ARRIBA */}
-          <Pagination
+          <Paginacion
             meta={meta}
             links={links}
             onPage={(p) => {
@@ -420,7 +225,7 @@ export default function Index(props) {
           )}
 
         {/* PAGINACIÓN ABAJO*/}
-        <Pagination
+        <Paginacion
           meta={meta}
           links={links}
           onPage={(p) => {

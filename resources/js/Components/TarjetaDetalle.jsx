@@ -1,5 +1,6 @@
 import React from 'react';
 import MapaInteractivo from '@/Components/MapaInteractivo';
+import LoadingImagenes from '@/Components/LoadingImagenes';
 
 export default function TarjetaDetalle({ caso }) {
   if (!caso) return null;
@@ -8,7 +9,13 @@ export default function TarjetaDetalle({ caso }) {
     <article className="bg-white rounded-2xl shadow-lg overflow-hidden">
       <div className="relative h-96 md:h-[520px] bg-gray-100">
         {caso.fotoAnimal ? (
-          <img src={caso.fotoAnimal} alt={caso.tipoAnimal} className="w-full h-full object-cover" />
+          <LoadingImagenes
+            src={caso.fotoAnimal}
+            alt={caso.tipoAnimal || 'Foto'}
+            wrapperClass="w-full h-full"
+            imgClass="object-cover w-full h-full"
+            placeholderText={null}
+          />
         ) : (
           <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-50 flex items-center justify-center text-gray-500">Sin imagen</div>
         )}
