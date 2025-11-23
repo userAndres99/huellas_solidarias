@@ -199,8 +199,11 @@
 /* Estilos de navegacion */
 @layer components {
 	.nav-link {
-		@apply relative inline-flex items-center px-2 pt-1 text-sm font-medium leading-5 transition-colors duration-200 ease-in-out;
-		color: #475569;
+		@apply relative inline-flex items-center px-3 pt-1 text-sm font-semibold leading-5 transition-colors duration-200 ease-in-out;
+		color: #052236; 
+		letter-spacing: 0.2px;
+		padding-left: .5rem;
+		padding-right: .5rem;
 	}
 }
 
@@ -282,7 +285,7 @@
 	}
 
 	.nav-link.active {
-		color: #0f172a;
+		color: #041826;
 	}
 
 	.nav-link.active::before {
@@ -292,7 +295,7 @@
 		right: -6px;
 		top: 0;
 		bottom: -6px;
-		background: linear-gradient(180deg, rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0.4));
+		background: linear-gradient(180deg, rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.75));
 		border-radius: 9999px;
 		z-index: -1;
 		box-shadow: 0 6px 16px rgba(7, 22, 28, 0.04);
@@ -301,7 +304,17 @@
 
 	.nav-container {
 		gap: 1rem;
+		align-items: center;
 	}
+
+@layer components {
+	.header-search-btn {
+		@apply inline-flex items-center justify-center h-9 w-9 rounded-md bg-white/95 border border-black/10 shadow-sm text-slate-700 transition-shadow duration-150;
+	}
+	.header-search-btn:hover {
+		@apply shadow-md;
+	}
+}
 
 
 /* Animación para la barra de carga  */

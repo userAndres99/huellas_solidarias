@@ -9,9 +9,9 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 export default function Index({ events }) {
   return (
     <AuthenticatedLayout
-      header={<h2 className="text-xl font-semibold leading-tight text-gray-800">Panel de organización</h2>}
+      header={<h2 className="text-xl font-semibold leading-tight text-gray-800">Eventos</h2>}
     >
-      <Head title="Panel de organización" />
+      <Head title="Eventos" />
 
       <div className="py-6">
         <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">

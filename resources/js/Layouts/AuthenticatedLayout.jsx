@@ -122,9 +122,10 @@ export default function AuthenticatedLayout({ header, children }) {
                                             <div className="relative">
                                                 <button
                                                     type="button"
+                                                    title="Buscar"
                                                     aria-label="Abrir buscador"
                                                     onClick={() => setShowSearch(s => !s)}
-                                                    className="inline-flex items-center justify-center h-9 w-9 rounded-md hover:bg-[var(--color-surface)] text-gray-700"
+                                                    className="header-search-btn"
                                                 >
                                                     <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                         <circle cx="11" cy="11" r="6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
