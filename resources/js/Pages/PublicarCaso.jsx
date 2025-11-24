@@ -10,11 +10,9 @@ export default function PublicarCaso() {
     >
       <Head title="Publicar Caso" />
 
-      <div className="py-10 bg-gray-50 min-h-screen">
+      <div className="py-10 bg-[#C9E8F6] min-h-screen">
         <div className="mx-auto max-w-4xl sm:px-6 lg:px-8">
-          <div className="bg-white shadow-md sm:rounded-lg p-8">
-            <FormCasos />
-          </div>
+          <FormCasos />
         </div>
       </div>
     </AuthenticatedLayout>

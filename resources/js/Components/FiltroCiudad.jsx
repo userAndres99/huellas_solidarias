@@ -303,6 +303,7 @@ export default function FiltroCiudad({ onCiudadSelect, placeholder = 'Buscar ciu
       minHeight: '40px',
     }),
     menu: (provided) => ({ ...provided, zIndex: 9999 }),
+    menuPortal: (base) => ({ ...base, zIndex: 99999 }),
   };
 
   return (
@@ -317,6 +318,8 @@ export default function FiltroCiudad({ onCiudadSelect, placeholder = 'Buscar ciu
         className="react-select-container"
         classNamePrefix="react-select"
         isClearable
+        menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
+        menuPosition="fixed"
       />
     </div>
   );
