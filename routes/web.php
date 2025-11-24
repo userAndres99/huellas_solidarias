@@ -13,6 +13,7 @@ use App\Http\Controllers\SolicitudVerificacionController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ComentarioController;
+use App\Http\Controllers\GroupController;
 use App\Models\Donacion;
 use App\Models\Organizacion;
 use Illuminate\Http\Request;
@@ -41,6 +42,12 @@ Route::middleware(['auth', 'verified'])->group(function(){
     Route::post('/message', [MessageController::class, 'store'])->name('message.store');
     Route::delete('/message/{message}', [MessageController::class, 'destroy'])->name('message.destroy');
     Route::get('/message/older/{message}', [MessageController::class, 'loadOlder'])->name('message.loadOlder');
+
+    
+
+    Route::post('/group', [GroupController::class, 'store'])->name('group.store');
+    Route::put('/group/{group}', [GroupController::class, 'update'])->name('group.update');
+    Route::delete('/group/{group}', [GroupController::class, 'destroy'])->name('group.destroy');
 
         // Notificaciones: listar y marcar lectura
         Route::get('/notifications', [\App\Http\Controllers\NotificationController::class, 'index'])->name('notifications.index');

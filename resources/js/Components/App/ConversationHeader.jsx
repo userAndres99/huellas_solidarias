@@ -1,46 +1,111 @@
-import { Link } from "@inertiajs/react";
-import { ArrowLeftIcon } from "@heroicons/react/24/solid";
+import { Link, usePage } from "@inertiajs/react";
+import { ArrowLeftIcon, PencilSquareIcon, TrashIcon } from "@heroicons/react/24/solid";
 import UserAvatar from "./UserAvatar";
 import GroupAvatar from "./GroupAvatar";
+import axios from "axios";
+import GroupDescriptionPopover from "./GroupDescriptionPopover";
+import GroupUsersPopover from "./GroupUsersPopover";
+import { useEventBus } from "@/EvenBus";
 
 const ConversationHeader = ({ selectedConversation }) => {
-  if (!selectedConversation) return null;
+    const authUser = usePage().props.auth.user;
+
+    const {emit} = useEventBus()
+
+    console.log("selectedConversation:" ,selectedConversation);
+
+    const onDeleteGroup = () => {
+      if (!window.confirm("¿Estas seguro de que quiere eliminar este grupo?")){
+          return;
+      }
+
+      axios.delete(route("group.destroy", selectedConversation.id))
+      .then((res) => {
+        console.log(res)
+        emit("toast.show", res.data.message);
+        console.log(res);
+      }).catch((err) => {
+        console.log(err);
+      })
+
+
+
+    }
+
 
   return (
-    <div className="flex items-center justify-between p-4 border-b border-slate-700 bg-slate-900">
-      {/* Botón de volver (solo en móvil) */}
-      <Link
-        href={route("dashboard")}
-        className="sm:hidden flex items-center justify-center w-10 h-10 rounded-full hover:bg-slate-800 transition"
-      >
-        <ArrowLeftIcon className="w-5 h-5 text-white" />
-      </Link>
+    <>
+      {selectedConversation && (
+        <div className="p-3 flex justify-between items-center border-b border-slate-700 bg-slate-900">
+          <div className="flex items-center gap-3">
+            <Link
+              href={route("dashboard")}
+              className="inline-block sm:hidden"
+            >
+              <ArrowLeftIcon className="w-6" />
+            </Link>
+            {selectedConversation.is_user && (
+              <UserAvatar user={selectedConversation} />
+            )}
+            {selectedConversation.is_group && <GroupAvatar />}
+            <div>
+              <h3 className="text-white text-lg font-semibold truncate">
+                {selectedConversation.name}
+              </h3>
+              {selectedConversation.is_group && (
+                <p className="text-xs text-gray-500">
+                  {selectedConversation.user_ids.length} members
+                </p>
+              )}
+            </div>
+          </div>
+              {selectedConversation.is_group &&(
+                <div className="flex gap-3">
+                    <GroupDescriptionPopover
+                      description = {selectedConversation.description}
+                    />
+                    <GroupUsersPopover
+                      users = {selectedConversation.users}
+                    />
+                    {selectedConversation.owner_id == authUser.id && (
+                      <>
+                        <div
+                          className="tooltip tooltip-left"
+                          data-tip = "Edit Group"
+                        >
+                          <button
+                            onClick={(ev) => 
+                              emit(
+                                "GroupModal.show",
+                                selectedConversation
+                              )
+                            }
+                            className="text-gray-400 hover:text-gray-200"
 
-      {/* Avatar y nombre */}
-      <div className="flex items-center gap-3 flex-1 overflow-hidden">
-        {selectedConversation.is_user && (
-          <UserAvatar user={selectedConversation} className="w-12 h-12" />
-        )}
-        {selectedConversation.is_group && (
-          <GroupAvatar className="w-12 h-12" />
-        )}
-        <div className="overflow-hidden">
-          <h3 className="text-white text-lg font-semibold truncate">
-            {selectedConversation.name}
-          </h3>
-          {selectedConversation.is_group && (
-            <p className="text-gray-400 text-sm truncate">
-              {selectedConversation.user_ids.length} members
-            </p>
-          )}
+                          >
+                            <PencilSquareIcon className="w-4" />
+                          </button>
+                        </div>
+                        <div
+                          className="tooltip tooltip-left"
+                          data-tip ="Delete Group"
+                        >
+                          <button
+                            onClick={onDeleteGroup}
+                            className="text-gray-400 hover:text-gray-200"
+                          >
+                            <TrashIcon className="w-4"/>
+                          </button>
+
+                        </div>
+                      
+                      </>
+                    )}
+                </div>
+              )}
         </div>
-      </div>
-
-      {/* Espacio adicional o botones futuros */}
-      <div className="flex items-center gap-2">
-        {/* Aquí podrías agregar botones de opciones, llamada, etc. */}
-      </div>
-    </div>
+      )}
+    </>
   );
 };
 
