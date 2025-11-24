@@ -74,6 +74,17 @@ export default function AuthenticatedLayout({ header, children }) {
                             }`,
                     });
                 });
+
+            if (conversation.is_group) {
+                Echo.private(`group.deleted.${conversation.id}`)
+                    .listen("GroupDeleted", (e) => {
+                        emit("group.deleted", {id: e.id, name: e.name}) ;
+                    })
+                     .error((err) => {
+                        console.log(err);
+                    });
+            }
+
         });
 
         return () => {
@@ -89,6 +100,10 @@ export default function AuthenticatedLayout({ header, children }) {
                         .join("-")}`;
                 }
                 Echo.leave(channel);
+
+                if (conversation.is_group) {
+                    Echo.leave(`group.deleted.${conversation.id}`);
+                }
             });
         };
     }, [conversations]);
@@ -111,14 +126,14 @@ export default function AuthenticatedLayout({ header, children }) {
                                     )}
                                 </div>
 
-                                
+
                             </div>
 
                             <div className="hidden xl:ms-12 xl:flex xl:items-center">
                                 {user ? (
                                     <div className="flex items-center">
                                         <div className="hidden xl:flex xl:items-center xl:me-6 xl:gap-3">
-                                            
+
                                             <div className="relative">
                                                 <button
                                                     type="button"
@@ -207,7 +222,7 @@ export default function AuthenticatedLayout({ header, children }) {
                                                     </div>
                                                 )}
 
-                                                
+
 
                                                 {user?.role_name === 'Admin' && (
                                                     <NavLink
@@ -221,7 +236,7 @@ export default function AuthenticatedLayout({ header, children }) {
                                         </div>
 
                                         <div className="flex items-center gap-3">
-                                            
+
                                             {user && (
                                                 <Link
                                                     href={route('casos.create')}
@@ -332,6 +347,7 @@ export default function AuthenticatedLayout({ header, children }) {
                         }
                     >
                         <div className="px-4 pt-3 pb-2">
+
                             {user && (
                                 <div className="flex items-center justify-between gap-3">
                                     <div className="w-[65%] max-w-[320px]">
@@ -343,6 +359,7 @@ export default function AuthenticatedLayout({ header, children }) {
                                 </div>
                             )}
                         </div>
+
                         <div className="space-y-1 pb-3 pt-2">
                             {user && (
                                 <div className="px-4">
@@ -431,7 +448,7 @@ export default function AuthenticatedLayout({ header, children }) {
                                 </>
                             )}
 
-                            
+
                         </div>
 
                         <div className="border-t border-gray-200 pb-1 pt-4">
@@ -485,9 +502,11 @@ export default function AuthenticatedLayout({ header, children }) {
 
                 <Footer />
             </div>
+
             <Toast/>
             <NewMessageNotification/>
             {user && <ChatWidget />}
+
         </>
     );
 }
