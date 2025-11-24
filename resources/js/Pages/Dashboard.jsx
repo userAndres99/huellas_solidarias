@@ -22,6 +22,7 @@ export default function Dashboard({ auth, misPublicaciones }) {
   const [profileUrl, setProfileUrl] = useState(null);
   const [scrapedItems, setScrapedItems] = useState([]);
   const [loadingScraped, setLoadingScraped] = useState(true);
+  const [currentSiteIndex, setCurrentSiteIndex] = useState(0);
 
   //useEffect para manejar la URL de la foto de perfil
   useEffect(() => {
@@ -45,13 +46,14 @@ export default function Dashboard({ auth, misPublicaciones }) {
   }
 
   useEffect(() => {
-    // rotate between sites and fetch 3 random items from the current site.
+    // rotaciona entre sitios y obtiene 3 items aleatorios del sitio actual.
     const sites = ['mapfre', 'ocean', 'feliway'];
     let mounted = true;
     let idx = 0;
 
     const fetchSite = (i) => {
       const site = sites[i % sites.length];
+      setCurrentSiteIndex(i % sites.length);
       setLoadingScraped(true);
       fetch(`/scraped-items?site=${site}&count=3`)
         .then(res => res.json())
@@ -69,10 +71,8 @@ export default function Dashboard({ auth, misPublicaciones }) {
         });
     };
 
-    // initial fetch
     fetchSite(idx);
 
-    // rotate every 60s
     const interval = setInterval(() => {
       idx = (idx + 1) % sites.length;
       fetchSite(idx);
@@ -80,6 +80,17 @@ export default function Dashboard({ auth, misPublicaciones }) {
 
     return () => { mounted = false; clearInterval(interval); };
   }, []);
+
+  function forceRefresh() {
+    const sites = ['mapfre', 'ocean', 'feliway'];
+    const site = sites[currentSiteIndex % sites.length];
+    setLoadingScraped(true);
+    fetch(`/scraped-items?site=${site}&count=3&refresh=1`)
+      .then(res => res.json())
+      .then(data => setScrapedItems(Array.isArray(data) ? data : []))
+      .catch(() => setScrapedItems([]))
+      .finally(() => setLoadingScraped(false));
+  }
 
 
   return (
@@ -116,8 +127,16 @@ export default function Dashboard({ auth, misPublicaciones }) {
           <div className="mt-6 mx-auto max-w-7xl sm:px-6 lg:px-8">
             <div className="card-surface shadow-lg rounded-2xl p-6">
               <h3 className="text-lg font-semibold mb-4">Artículos recomendados</h3>
-              <div className="mb-4">
+              <div className="flex items-center justify-between mb-4">
                 <div className="text-sm text-gray-600">Recomendaciones de 3 sitios</div>
+                <div>
+                  <button onClick={forceRefresh} disabled={loadingScraped} className={`inline-flex items-center gap-2 text-xs px-3 py-1 rounded ${loadingScraped ? 'bg-gray-200 text-gray-600' : 'bg-blue-500 text-white'}`}>
+                    {loadingScraped ? (
+                      <svg className="w-3 h-3 animate-spin" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeOpacity="0.15" /></svg>
+                    ) : null}
+                    Actualizar
+                  </button>
+                </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {loadingScraped ? (
