@@ -6,17 +6,59 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use App\Services\MapfreScraper;
 use App\Services\OceanScraper;
-use App\Services\FeliwayScraper;
 
 class ScrapedItemsController extends Controller
 {
     /**
-     * retorna un artículo aleatorio por sitio configurado.
+     * Return random items. Supports querying by `site` (mapfre|ocean|feliway) and `count`.
+     * If `site` is omitted, preserves previous behaviour (one per site).
+     * Results are cached per-site for 60s unless `refresh=1` is provided.
      */
     public function index(Request $request)
     {
+        $site = $request->query('site');
+        $count = (int) max(1, $request->query('count', 3));
+        $refresh = (bool) $request->query('refresh');
+
+        // If a site is provided, return $count random items for that site
+        if ($site) {
+            $allowed = ['mapfre', 'ocean', 'feliway'];
+            if (!in_array($site, $allowed)) {
+                return response()->json(['error' => 'site not supported'], 400);
+            }
+
+            $cacheKey = "scraped.items.site.{$site}.count.{$count}";
+            if (!$refresh && Cache::has($cacheKey)) {
+                return response()->json(Cache::get($cacheKey));
+            }
+
+            $items = [];
+            try {
+                if ($site === 'mapfre') {
+                    $svc = new MapfreScraper();
+                    $items = $svc->getRandomItems($count);
+                } elseif ($site === 'ocean') {
+                    $svc = new OceanScraper();
+                    $items = $svc->getRandomItems($count);
+                } elseif ($site === 'feliway') {
+                    $svc = new FeliwayScraper();
+                    $items = $svc->getRandomItems($count, 88);
+                }
+            } catch (\Throwable $_) {
+                $items = [];
+            }
+
+            // attach source
+            foreach ($items as &$it) { $it['source'] = $site; }
+            unset($it);
+
+            Cache::put($cacheKey, $items, now()->addSeconds(60));
+            return response()->json($items);
+        }
+
+        // No site provided: previous behaviour (one item per site)
         $cached = Cache::get('scraped.items');
-        if ($cached && is_array($cached) && count($cached) > 0 && !$request->query('refresh')) {
+        if ($cached && is_array($cached) && count($cached) > 0 && !$refresh) {
             return response()->json($cached);
         }
 
@@ -60,10 +102,8 @@ class ScrapedItemsController extends Controller
         }
 
         $items = array_values($unique);
-
-        // para que se actualice con frecuencia (60 sec)
         Cache::put('scraped.items', $items, now()->addSeconds(60));
-
         return response()->json($items);
     }
+
 }

@@ -45,24 +45,40 @@ export default function Dashboard({ auth, misPublicaciones }) {
   }
 
   useEffect(() => {
+    // rotate between sites and fetch 3 random items from the current site.
+    const sites = ['mapfre', 'ocean', 'feliway'];
     let mounted = true;
-    setLoadingScraped(true);
-    fetch('/scraped-items')
-      .then(res => res.json())
-      .then(data => {
-        if (!mounted) return;
-        setScrapedItems(Array.isArray(data) ? data : []);
-      })
-      .catch(() => {
-        if (!mounted) return;
-        setScrapedItems([]);
-      })
-      .finally(() => {
-        if (!mounted) return;
-        setLoadingScraped(false);
-      });
+    let idx = 0;
 
-    return () => { mounted = false; };
+    const fetchSite = (i) => {
+      const site = sites[i % sites.length];
+      setLoadingScraped(true);
+      fetch(`/scraped-items?site=${site}&count=3`)
+        .then(res => res.json())
+        .then(data => {
+          if (!mounted) return;
+          setScrapedItems(Array.isArray(data) ? data : []);
+        })
+        .catch(() => {
+          if (!mounted) return;
+          setScrapedItems([]);
+        })
+        .finally(() => {
+          if (!mounted) return;
+          setLoadingScraped(false);
+        });
+    };
+
+    // initial fetch
+    fetchSite(idx);
+
+    // rotate every 60s
+    const interval = setInterval(() => {
+      idx = (idx + 1) % sites.length;
+      fetchSite(idx);
+    }, 60000);
+
+    return () => { mounted = false; clearInterval(interval); };
   }, []);
 
 
