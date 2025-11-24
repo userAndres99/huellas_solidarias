@@ -20,6 +20,8 @@ function formatDate(dateStr) {
 export default function Dashboard({ auth, misPublicaciones }) {
   const { flash } = usePage().props;
   const [profileUrl, setProfileUrl] = useState(null);
+  const [scrapedItems, setScrapedItems] = useState([]);
+  const [loadingScraped, setLoadingScraped] = useState(true);
 
   //useEffect para manejar la URL de la foto de perfil
   useEffect(() => {
@@ -41,6 +43,28 @@ export default function Dashboard({ auth, misPublicaciones }) {
   function handleRemovePublicacion(id) {
     setPublicacionesActivasState(prev => prev.filter(p => p.id !== id));
   }
+
+  useEffect(() => {
+    let mounted = true;
+    setLoadingScraped(true);
+    fetch('/scraped-items')
+      .then(res => res.json())
+      .then(data => {
+        if (!mounted) return;
+        setScrapedItems(Array.isArray(data) ? data : []);
+      })
+      .catch(() => {
+        if (!mounted) return;
+        setScrapedItems([]);
+      })
+      .finally(() => {
+        if (!mounted) return;
+        setLoadingScraped(false);
+      });
+
+    return () => { mounted = false; };
+  }, []);
+
 
   return (
     <AuthenticatedLayout
@@ -69,6 +93,49 @@ export default function Dashboard({ auth, misPublicaciones }) {
                 <p className="text-gray-900 text-lg font-semibold">Bienvenido, {auth?.user?.name ?? auth?.user?.email}!</p>
                 <p className="text-sm text-gray-500">Aquí podés ver y gestionar tus publicaciones.</p>
               </div>
+            </div>
+          </div>
+
+          {/* Sección: Items scrapeados */}
+          <div className="mt-6 mx-auto max-w-7xl sm:px-6 lg:px-8">
+            <div className="card-surface shadow-lg rounded-2xl p-6">
+              <h3 className="text-lg font-semibold mb-4">Artículos recomendados</h3>
+              <div className="mb-4">
+                <div className="text-sm text-gray-600">Recomendaciones de 3 sitios</div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {loadingScraped ? (
+                  
+                  [0,1,2].map(i => (
+                    <div key={i} className="bg-white rounded-lg overflow-hidden shadow-sm">
+                      <LoadingImagenes forceLoading={true} wrapperClass="w-full h-40" />
+                      <div className="p-4">
+                        <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                        <div className="h-3 bg-gray-100 rounded w-1/2"></div>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  scrapedItems && scrapedItems.length > 0 ? (
+                    scrapedItems.map((item, idx) => (
+                      <div key={idx} className="bg-white rounded-lg overflow-hidden shadow-sm">
+                        {item.image ? (
+                          <img src={item.image} alt={item.title} className="w-full h-40 object-cover" />
+                        ) : (
+                          <div className="w-full h-40 bg-gray-100 flex items-center justify-center text-gray-400">Sin imagen</div>
+                        )}
+                        <div className="p-4">
+                          <a href={item.link} target="_blank" rel="noreferrer" className="font-semibold text-sm block mb-2 text-gray-800 hover:underline">{item.title}</a>
+                          <p className="text-xs text-gray-600">{item.excerpt ? item.excerpt.substring(0, 140) + (item.excerpt.length > 140 ? '…' : '') : ''}</p>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="col-span-3 text-sm text-gray-500">No se encontraron artículos.</div>
+                  )
+                )}
+              </div>
+              <p className="text-xs text-gray-500 mt-4">Fuente: artículos aleatorios — actualiza cada vez que cargas (o hasta 60s de caché).</p>
             </div>
           </div>
 

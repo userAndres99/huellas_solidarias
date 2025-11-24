@@ -73,6 +73,11 @@ Route::get('/dashboard', [DashboardController::class, 'index'])
     ->middleware(['auth', 'verified'])
     ->name('dashboard');
 
+// Endpoint para obtener items scrapados 
+Route::get('/scraped-items', [\App\Http\Controllers\ScrapedItemsController::class, 'index'])
+    ->middleware(['auth', 'verified'])
+    ->name('scraped.items');
+
 /* -----------------------------------------------------------------
 | Perfil de usuario
 ----------------------------------------------------------------- */

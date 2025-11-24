@@ -7,6 +7,10 @@ use Illuminate\Http\Request;
 use App\Models\Caso;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Cache;
+use App\Services\FeliwayScraper;
+use App\Services\MapfreScraper;
+use App\Services\OceanScraper;
 
 class DashboardController extends Controller
 {
@@ -22,9 +26,11 @@ class DashboardController extends Controller
                 return $c;
             });
 
-        // Inertia automáticamente trae flash messages 
+        $cached = [];
+
         return Inertia::render('Dashboard', [
             'misPublicaciones' => $misPublicaciones,
+            'scrapedItems' => $cached,
         ]);
     }
 }
