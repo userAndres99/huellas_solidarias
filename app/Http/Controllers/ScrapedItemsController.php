@@ -6,13 +6,12 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use App\Services\MapfreScraper;
 use App\Services\OceanScraper;
+use App\Services\FeliwayScraper;
 
 class ScrapedItemsController extends Controller
 {
     /**
-     * Return random items. Supports querying by `site` (mapfre|ocean|feliway) and `count`.
-     * If `site` is omitted, preserves previous behaviour (one per site).
-     * Results are cached per-site for 60s unless `refresh=1` is provided.
+     * retorna items scrapeados de los diferentes sitios.
      */
     public function index(Request $request)
     {
@@ -20,7 +19,7 @@ class ScrapedItemsController extends Controller
         $count = (int) max(1, $request->query('count', 3));
         $refresh = (bool) $request->query('refresh');
 
-        // If a site is provided, return $count random items for that site
+        // si un sitio es proporcionado, retorna $count items aleatorios para ese sitio
         if ($site) {
             $allowed = ['mapfre', 'ocean', 'feliway'];
             if (!in_array($site, $allowed)) {
@@ -48,7 +47,6 @@ class ScrapedItemsController extends Controller
                 $items = [];
             }
 
-            // attach source
             foreach ($items as &$it) { $it['source'] = $site; }
             unset($it);
 
@@ -56,7 +54,6 @@ class ScrapedItemsController extends Controller
             return response()->json($items);
         }
 
-        // No site provided: previous behaviour (one item per site)
         $cached = Cache::get('scraped.items');
         if ($cached && is_array($cached) && count($cached) > 0 && !$refresh) {
             return response()->json($cached);

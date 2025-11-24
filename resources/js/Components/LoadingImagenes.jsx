@@ -18,6 +18,20 @@ export default function LoadingImagenes({ src, alt = '', imgClass = '', wrapperC
     );
   }
 
+  // Cuando se fuerza el loading, centramos el cargando
+  if (forceLoading) {
+    return (
+      <div className={`${wrapperClass} flex items-center justify-center bg-gray-100`}>
+        <div className="flex flex-col items-center gap-2">
+          <svg className="w-10 h-10 text-blue-500 animate-spin" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" strokeOpacity="0.15" />
+            <path d="M22 12a10 10 0 00-10-10" stroke="currentColor" strokeWidth="4" strokeLinecap="round" />
+          </svg>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={wrapperClass + ' relative overflow-hidden'}>
       
@@ -63,7 +77,7 @@ export default function LoadingImagenes({ src, alt = '', imgClass = '', wrapperC
             try {
               if (e?.target?.decode) await e.target.decode();
             } catch (err) {
-              // ignore
+              
             } finally {
               setLoaded(true);
               if (typeof onLoad === 'function') onLoad(e);
@@ -77,7 +91,7 @@ export default function LoadingImagenes({ src, alt = '', imgClass = '', wrapperC
                 return;
               }
             } catch (err) {
-              // ignore
+              
             }
 
             setLoaded(true);

@@ -39,6 +39,15 @@ export default function Dashboard({ auth, misPublicaciones }) {
     }
   }, [auth?.user?.profile_photo_url]);
 
+  // sitios que rotan 
+  const SITES = ['mapfre', 'ocean', 'feliway'];
+  const SITE_NAMES = {
+    mapfre: 'Mapfre',
+    ocean: 'Ocean Petfood',
+    feliway: 'Feliway'
+  };
+  const [activeTab, setActiveTab] = useState('consejos');
+
   const [publicacionesActivasState, setPublicacionesActivasState] = useState(() => (misPublicaciones || []).filter(p => p.estado === 'activo'));
 
   function handleRemovePublicacion(id) {
@@ -46,14 +55,13 @@ export default function Dashboard({ auth, misPublicaciones }) {
   }
 
   useEffect(() => {
-    // rotaciona entre sitios y obtiene 3 items aleatorios del sitio actual.
-    const sites = ['mapfre', 'ocean', 'feliway'];
+    // rotaciona entre sitios y obtiene 3 items randoms
     let mounted = true;
     let idx = 0;
 
     const fetchSite = (i) => {
-      const site = sites[i % sites.length];
-      setCurrentSiteIndex(i % sites.length);
+      const site = SITES[i % SITES.length];
+      setCurrentSiteIndex(i % SITES.length);
       setLoadingScraped(true);
       fetch(`/scraped-items?site=${site}&count=3`)
         .then(res => res.json())
@@ -74,23 +82,14 @@ export default function Dashboard({ auth, misPublicaciones }) {
     fetchSite(idx);
 
     const interval = setInterval(() => {
-      idx = (idx + 1) % sites.length;
+      idx = (idx + 1) % SITES.length;
       fetchSite(idx);
     }, 60000);
 
     return () => { mounted = false; clearInterval(interval); };
   }, []);
 
-  function forceRefresh() {
-    const sites = ['mapfre', 'ocean', 'feliway'];
-    const site = sites[currentSiteIndex % sites.length];
-    setLoadingScraped(true);
-    fetch(`/scraped-items?site=${site}&count=3&refresh=1`)
-      .then(res => res.json())
-      .then(data => setScrapedItems(Array.isArray(data) ? data : []))
-      .catch(() => setScrapedItems([]))
-      .finally(() => setLoadingScraped(false));
-  }
+  
 
 
   return (
@@ -117,77 +116,103 @@ export default function Dashboard({ auth, misPublicaciones }) {
                 )}
               </div>
               <div>
-                <p className="text-gray-900 text-lg font-semibold">Bienvenido, {auth?.user?.name ?? auth?.user?.email}!</p>
-                <p className="text-sm text-gray-500">Aquí podés ver y gestionar tus publicaciones.</p>
+                <p className="text-gray-900 text-lg font-semibold">Bienvenido a Huellas Solidarias, {auth?.user?.name ?? auth?.user?.email}!</p>
+                <p className="text-sm text-gray-500">
+                  En la pantalla de inicio, a tu derecha, vas a encontrar accesos rápidos a información relevante (<strong>Consejos</strong>) y a tus notificaciones (<strong>Notificaciones</strong>).
+                  Para explorar el contenido de la plataforma, ingresá a la sección <strong>Ver Publicaciones</strong> en la parte superior. Allí vas a encontrar dos opciones:
+                </p>
+                <ul className="text-sm text-gray-500 mt-2 list-disc list-inside">
+                  <li><strong>Publicaciones</strong>, donde podés ver todas las publicaciones disponibles.</li>
+                  <li><strong>Mis publicaciones</strong>, donde podés consultar y gestionar tus propias publicaciones.</li>
+                </ul>
               </div>
             </div>
           </div>
 
-          {/* Sección: Items scrapeados */}
+          {/* Sección: Items scrapeados  */}
           <div className="mt-6 mx-auto max-w-7xl sm:px-6 lg:px-8">
-            <div className="card-surface shadow-lg rounded-2xl p-6">
-              <h3 className="text-lg font-semibold mb-4">Artículos recomendados</h3>
-              <div className="flex items-center justify-between mb-4">
-                <div className="text-sm text-gray-600">Recomendaciones de 3 sitios</div>
-                <div>
-                  <button onClick={forceRefresh} disabled={loadingScraped} className={`inline-flex items-center gap-2 text-xs px-3 py-1 rounded ${loadingScraped ? 'bg-gray-200 text-gray-600' : 'bg-blue-500 text-white'}`}>
-                    {loadingScraped ? (
-                      <svg className="w-3 h-3 animate-spin" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeOpacity="0.15" /></svg>
-                    ) : null}
-                    Actualizar
-                  </button>
+            <div className="flex items-center justify-end mb-4">
+              {auth?.user ? (
+                <div className="mb-4 flex justify-center">
+                  <div className="inline-flex rounded-md bg-[var(--color-surface)] p-1 shadow-sm" role="tablist" aria-label="Ver recomendaciones">
+                    <button
+                      type="button"
+                      role="tab"
+                      aria-pressed={activeTab === 'consejos'}
+                      onClick={() => setActiveTab('consejos')}
+                      className={`px-3 py-1 text-sm transition-transform duration-150 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] rounded-full ${activeTab === 'consejos' ? 'bg-[#C8E7F5] text-black font-semibold shadow-md border border-black scale-105' : 'text-gray-700 bg-transparent border border-transparent hover:bg-[#EAF8FF] hover:shadow-sm'}`}
+                    >
+                      Consejos
+                    </button>
+
+                    <button
+                      type="button"
+                      role="tab"
+                      aria-pressed={activeTab === 'notificaciones'}
+                      onClick={() => setActiveTab('notificaciones')}
+                      className={`px-3 py-1 text-sm transition-transform duration-150 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] rounded-full ${activeTab === 'notificaciones' ? 'bg-[#C8E7F5] text-black font-semibold shadow-md border border-black scale-105' : 'text-gray-700 bg-transparent border border-transparent hover:bg-[#EAF8FF] hover:shadow-sm'}`}
+                    >
+                      Notificaciones
+                    </button>
+                  </div>
                 </div>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {loadingScraped ? (
-                  
-                  [0,1,2].map(i => (
-                    <div key={i} className="bg-white rounded-lg overflow-hidden shadow-sm">
-                      <LoadingImagenes forceLoading={true} wrapperClass="w-full h-40" />
-                      <div className="p-4">
-                        <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-                        <div className="h-3 bg-gray-100 rounded w-1/2"></div>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  scrapedItems && scrapedItems.length > 0 ? (
-                    scrapedItems.map((item, idx) => (
-                      <div key={idx} className="bg-white rounded-lg overflow-hidden shadow-sm">
-                        {item.image ? (
-                          <img src={item.image} alt={item.title} className="w-full h-40 object-cover" />
-                        ) : (
-                          <div className="w-full h-40 bg-gray-100 flex items-center justify-center text-gray-400">Sin imagen</div>
-                        )}
-                        <div className="p-4">
-                          <a href={item.link} target="_blank" rel="noreferrer" className="font-semibold text-sm block mb-2 text-gray-800 hover:underline">{item.title}</a>
-                          <p className="text-xs text-gray-600">{item.excerpt ? item.excerpt.substring(0, 140) + (item.excerpt.length > 140 ? '…' : '') : ''}</p>
-                        </div>
-                      </div>
-                    ))
                   ) : (
-                    <div className="col-span-3 text-sm text-gray-500">No se encontraron artículos.</div>
-                  )
-                )}
-              </div>
-              <p className="text-xs text-gray-500 mt-4">Fuente: artículos aleatorios — actualiza cada vez que cargas (o hasta 60s de caché).</p>
+                <div className="inline-flex rounded-md bg-gray-100 p-1">
+                  <button onClick={() => setActiveTab('consejos')} className={`px-3 py-1 text-sm rounded-md ${activeTab === 'consejos' ? 'bg-white shadow text-gray-900' : 'text-gray-600'}`}>Consejos</button>
+                  <button onClick={() => setActiveTab('notificaciones')} className={`px-3 py-1 text-sm rounded-md ${activeTab === 'notificaciones' ? 'bg-white shadow text-gray-900' : 'text-gray-600'}`}>Notificaciones</button>
+                </div>
+              )}
+            </div>
+
+            <div className="card-surface shadow-lg rounded-2xl p-6">
+              <h3 className="text-lg font-semibold mb-4">Información que podría interesarte</h3>
+              {activeTab === 'consejos' ? (
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {loadingScraped ? (
+                      [0,1,2].map(i => (
+                        <div key={i} className="bg-white rounded-lg overflow-hidden shadow-sm h-56 flex items-center justify-center">
+                          <div className="flex flex-col items-center gap-3 p-6">
+                            <svg className="w-12 h-12 text-blue-500 animate-spin" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                              <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" strokeOpacity="0.15" />
+                              <path d="M22 12a10 10 0 00-10-10" stroke="currentColor" strokeWidth="4" strokeLinecap="round" />
+                            </svg>
+                            <div className="text-xs text-slate-500">Cargando recomendaciones...</div>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      scrapedItems && scrapedItems.length > 0 ? (
+                        scrapedItems.map((item, idx) => (
+                          <div key={idx} className="bg-white rounded-lg overflow-hidden shadow-sm">
+                            {item.image ? (
+                              <img src={item.image} alt={item.title} className="w-full h-40 object-cover" />
+                            ) : (
+                              <div className="w-full h-40 bg-gray-100 flex items-center justify-center text-gray-400">Sin imagen</div>
+                            )}
+                            <div className="p-4">
+                              <a href={item.link} target="_blank" rel="noreferrer" className="font-semibold text-sm block mb-2 text-gray-800 hover:underline">{item.title}</a>
+                              <p className="text-xs text-gray-600">{item.excerpt ? item.excerpt.substring(0, 140) + (item.excerpt.length > 140 ? '…' : '') : ''}</p>
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="col-span-3 text-sm text-gray-500">No se encontraron artículos.</div>
+                      )
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-500 mt-4">Fuente: {SITE_NAMES[SITES[currentSiteIndex] || SITES[0]]}</p>
+                </>
+              ) : (
+                
+                <div className="bg-white rounded-lg overflow-hidden shadow-sm p-6">
+                  {/* Sección: Notificaciones */}
+                  <h4 className="font-semibold mb-2">Notificaciones</h4>
+                  <div className="text-sm text-gray-600">Aún no hay notificaciones. Aquí aparecerán avisos y novedades relevantes.</div>
+                </div>
+              )}
             </div>
           </div>
-
-          {/* Acciones rapidas centradas */}
-          <div className="mt-6">
-          <div className="flex justify-center">
-            <div className="inline-flex items-center gap-3 bg-[var(--color-surface)] p-3 rounded-xl shadow-sm card-hover">
-              <Link
-                href={route('casos.create')}
-                className="inline-flex items-center gap-2 btn-gradient btn-animate-gradient text-white px-4 py-2 rounded-lg hover:opacity-95 transition transform hover:-translate-y-0.5"
-              >
-                Publicar nuevo caso
-              </Link>
-            </div>
-          </div>
-          </div>
-
         </div>
       </div>
     </AuthenticatedLayout>
