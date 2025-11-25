@@ -7,7 +7,7 @@ import GuestLayout from '@/Layouts/GuestLayout';
 import ApplicationLogo from '@/Components/ApplicationLogo';
 import { Head, Link, useForm } from '@inertiajs/react';
 
-export default function Login({ status, canResetPassword, auth, canLogin, canRegister }) {
+export default function Login({ status,errorMessage, canResetPassword, auth, canLogin, canRegister }) {
   const { data, setData, post, processing, errors, reset } = useForm({
     email: '',
     password: '',
@@ -52,6 +52,7 @@ export default function Login({ status, canResetPassword, auth, canLogin, canReg
               </div>
 
               {status && <div className="mb-4 text-sm font-medium text-green-600">{status}</div>}
+              {errorMessage && <div className="mb-4 text-sm font-medium text-red-600">{errorMessage}</div>}
 
               <form onSubmit={submit}>
                 <div className="floating">

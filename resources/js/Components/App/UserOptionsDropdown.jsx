@@ -10,9 +10,12 @@ import {
     UserIcon,
 } from "@heroicons/react/24/solid";
 import ConversationItem from "./ConversationItem";
+import { EmojiStyle } from "emoji-picker-react";
+import { useEventBus } from "@/EvenBus";
 
 export default function UserOptionsDropdown({ conversation}){
 
+    const { emit } = useEventBus();
 
     const changeUserRole = () => {
         console.log("Change user role");
@@ -23,6 +26,7 @@ export default function UserOptionsDropdown({ conversation}){
         axios
             .post(route("user.changeRole", conversation.id))
             .then((res)=>{
+                emit("toast.show", res.data.message)
                 console.log(res.data);
             })
             .catch((err) => {
@@ -40,6 +44,7 @@ export default function UserOptionsDropdown({ conversation}){
         axios
             .post(route("user.blockUnblock", conversation.id))
             .then((res) => {
+                emit("toast.show", res.data.message)
                 console.log(res.data);
             })
             .catch((err) => {

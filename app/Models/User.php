@@ -241,6 +241,7 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return [
             'id' => $this->id,
+            'avatar_url' => $this->profile_photo_path ? Storage::url($this->profile_photo_path) : null, 
             'name' => $this->name,
             'is_group' => false,
             'is_user' => true,

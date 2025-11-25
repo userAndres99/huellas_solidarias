@@ -11,6 +11,9 @@ import { useEventBus } from '@/EvenBus';
 import Toast from '@/Components/App/Toast';
 import NewMessageNotification from '@/Components/App/NewMessageNotification';
 import ChatWidget from '@/Components/ChatWidget';
+import PrimaryButton from '@/Components/PrimaryButton';
+import { UserPlusIcon } from '@heroicons/react/24/solid';
+import NewUserModal from '@/Components/App/NewUserModal';
 
 export default function AuthenticatedLayout({ header, children }) {
     // obtener user 
@@ -25,6 +28,7 @@ export default function AuthenticatedLayout({ header, children }) {
     const [mobileOrgOpen, setMobileOrgOpen] = useState(false);
     const [showSearch, setShowSearch] = useState(false);
     const searchContainerRef = useRef(null);
+    const [showNewUserModal, setShowNewUserModal] = useState(false);
 
     useEffect(() => {
         function handleOutside(e) {
@@ -247,7 +251,17 @@ export default function AuthenticatedLayout({ header, children }) {
                                                 </Link>
                                             )}
                                             <NotificationBell />
-                                            <div className="relative ms-3">
+                                            <div className="flex relative ms-3">
+                                                {user.is_admin && (
+                                                    <PrimaryButton 
+                                                        onClick={(ev) => 
+                                                            setShowNewUserModal(true)
+                                                            }
+                                                        >
+                                                        <UserPlusIcon className='h-5 w-5 mr-2' />
+                                                        Añadir Nuevo Usuario
+                                                    </PrimaryButton>
+                                                )}
                                                 <Dropdown>
                                                     <Dropdown.Trigger>
                                                         <span className="inline-flex rounded-md">
@@ -506,6 +520,7 @@ export default function AuthenticatedLayout({ header, children }) {
             <Toast/>
             <NewMessageNotification/>
             {user && <ChatWidget />}
+            <NewUserModal show={showNewUserModal} onClose={(ev) => setShowNewUserModal(false)} />
 
         </>
     );
