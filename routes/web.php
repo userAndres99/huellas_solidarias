@@ -19,9 +19,9 @@ use App\Models\Organizacion;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use App\Http\Controllers\MessageController;
+use App\Http\Controllers\UserController;
 
-
-Route::middleware(['auth', 'verified'])->group(function(){
+Route::middleware(['auth', 'verified', 'active'])->group(function(){
     Route::get('/chat', [ChatController::class, 'chat'])->name('chat');
    Route::get('user/{user}', [MessageController::class, 'byUser'])->name('chat.user');
    Route::get('group/{group}', [MessageController::class, 'byGroup'])->name('chat.group');
@@ -51,6 +51,14 @@ Route::middleware(['auth', 'verified'])->group(function(){
     Route::post('/group', [GroupController::class, 'store'])->name('group.store');
     Route::put('/group/{group}', [GroupController::class, 'update'])->name('group.update');
     Route::delete('/group/{group}', [GroupController::class, 'destroy'])->name('group.destroy');
+
+    Route::middleware(['admin'])->group(function(){
+        Route::post('/user',[UserController::class,'store'])->name('user.name');
+        Route::post('/user/change-role/{user}', [UserController::class,'changeRole'])->name('user.changeRole');
+        Route::post('/user/block-unblock/{user}', [UserController::class, 'blockUnblock'])->name('user.blockUnblock');
+    });
+
+
 
         // Notificaciones: listar y marcar lectura
         Route::get('/notifications', [\App\Http\Controllers\NotificationController::class, 'index'])->name('notifications.index');

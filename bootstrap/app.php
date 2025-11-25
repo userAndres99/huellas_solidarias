@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Middleware\ActiveUser;
+use App\Http\Middleware\AdminUser;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -21,6 +23,11 @@ return Application::configure(basePath: dirname(__DIR__))
         //alias de middleware de ruta para usar ->middleware('role:Admin')
         $middleware->alias([
             'role' => \App\Http\Middleware\RoleMiddleware::class,
+        ]);
+
+        $middleware->alias([
+            'admin' => AdminUser::class,
+            'active' => ActiveUser::class,
         ]);
 
         //
