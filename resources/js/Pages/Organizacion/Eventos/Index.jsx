@@ -22,7 +22,10 @@ export default function Index({ events }) {
                   </div>
 
                   <div className="flex items-center gap-3">
-                    <Link href={route('organizacion.eventos.create')} className="px-3 py-1.5 bg-blue-600 text-white rounded-md">Nuevo evento</Link>
+                    <Link href={route('organizacion.eventos.create')} className="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg text-sm font-semibold shadow-md transition hover:-translate-y-0.5">
+                      <span className="text-base">+</span>
+                      <span>Nuevo evento</span>
+                    </Link>
                   </div>
                 </div>
 

@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { useForm, Head } from '@inertiajs/react';
+import { useForm, Head, usePage } from '@inertiajs/react';
 import { Inertia } from '@inertiajs/inertia';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import FiltroCiudad from '@/Components/FiltroCiudad';
 import MapaInteractivo from '@/Components/MapaInteractivo';
+import '@/../css/components/form3D.css';
 
 export default function CreateEvento({ event = null }) {
   const initial = {
@@ -122,143 +123,235 @@ export default function CreateEvento({ event = null }) {
       setData('remove_image', 0);
     }
   }, [event]);
+  const page = usePage();
+  const user = page.props.auth?.user ?? {};
+  const avatarUrl = user?.profile_photo_url ?? '/images/DefaultPerfil.jpg';
+  const userName = user?.name ?? '';
+
+  const openPicker = (id) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (typeof el.showPicker === 'function') {
+      try {
+        el.showPicker();
+        return;
+      } catch (e) {
+        
+      }
+    }
+    try {
+      el.focus();
+      el.click();
+    } catch (_) {
+      
+    }
+  };
+
+  const removePromoImage = () => {
+    try {
+      if (preview && typeof preview === 'string' && preview.startsWith('blob:')) {
+        URL.revokeObjectURL(preview);
+      }
+    } catch (e) {}
+    setPreview(null);
+    setData('image', null);
+    setData('remove_image', 1);
+    try {
+      const input = document.getElementById('promoImage');
+      if (input) input.value = '';
+    } catch (e) {}
+  };
 
   return (
     <AuthenticatedLayout header={<h2 className="text-xl font-semibold">{event ? 'Editar evento' : 'Nuevo evento'}</h2>}>
       <Head title={event ? 'Editar evento' : 'Crear evento'} />
 
-      <div className="max-w-3xl mx-auto p-4">
-        <form onSubmit={submit} encType="multipart/form-data" className="space-y-4">
-          {/* Imagen */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Imagen promocional</label>
-            <div className="flex items-center gap-3">
-              <label className="relative inline-flex items-center p-2 border rounded bg-white hover:bg-gray-50 cursor-pointer">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V7M16 3v4M8 3v4m-5 4h18M8 11l2 2 4-4 6 6" />
-                </svg>
-                <input name="image" type="file" accept="image/*" onChange={e => {
-                    const file = e.target.files[0] || null;
-                    setData('image', file);
-                    // limpiar cualquier solicitud de eliminación pendiente cuando el usuario selecciona un nuevo archivo
-                    setData('remove_image', 0);
-                  }} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
-              </label>
+      <div className="relative max-w-4xl mx-auto mt-8 mb-8 pt-20 pb-6 px-6 border border-gray-100 shadow-lg rounded-2xl w-full" style={{ backgroundColor: '#16A34A' }}>
+        <div className="card-3d-container">
+            <div className="inner p-6">
 
-              <div className="flex-1">
-                <div className="text-sm text-gray-700">Sube una imagen para promocionar tu evento.</div>
-                <div className="text-xs text-gray-400">PNG/JPG, máx. 4MB</div>
+            <form onSubmit={submit} encType="multipart/form-data" className="space-y-4">
+              <div className="absolute top-4 right-4 z-50 pointer-events-auto flex items-center gap-2 bg-white/75 backdrop-blur-sm px-2 py-1 rounded-full shadow-sm">
+                <img src={avatarUrl} alt="avatar" className="w-8 h-8 rounded-full object-cover border" />
+                <span className="hidden sm:inline text-sm font-medium text-gray-700 truncate max-w-[6.5rem] sm:max-w-[14rem]">
+                  <span className="align-middle">{userName}</span>
+                  {user?.organizacion?.nombre ? (
+                    <span className="text-xs text-gray-500 align-middle"> ({user.organizacion.nombre})</span>
+                  ) : null}
+                </span>
               </div>
-            </div>
+              {/* Imagen */}
+              <div className="card-3d-container">
+                <div className="card-3d p-4 bg-transparent">
+                  <div className="inner">
+                    <label className="block text-sm font-medium text-white mb-1">Imagen promocional</label>
 
-            {errors.image && <div className="text-red-600 mt-2">{errors.image}</div>}
+                    {preview ? (
+                      <div className="mt-2 mb-3">
+                        <div className="mx-auto w-full max-w-md h-36 overflow-hidden rounded-lg border">
+                          <img src={preview} alt="Preview" className="w-full h-full object-contain" />
+                        </div>
+                        <div className="flex justify-center">
+                          <button type="button" onClick={removePromoImage} className="mt-2 text-sm text-red-600">Quitar imagen</button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="mb-3 flex justify-center">
+                        <div className="inline-flex flex-col items-center text-xs text-white/80 w-full max-w-xs">
+                          <div>Aún no seleccionaste una imagen</div>
+                        </div>
+                      </div>
+                    )}
 
-            {preview && (
-              <div className="mt-3">
-                <div className="mx-auto w-full max-w-md h-36 overflow-hidden rounded-lg border">
-                  <img src={preview} alt="Preview" className="w-full h-full object-contain" />
+                    <div className="inner">
+                      <input
+                        id="promoImage"
+                        name="image"
+                        type="file"
+                        accept="image/*"
+                        onChange={e => {
+                          const file = e.target.files[0] || null;
+                          setData('image', file);
+                          setData('remove_image', 0);
+                          if (file) {
+                            try {
+                              if (preview && typeof preview === 'string' && preview.startsWith('blob:')) URL.revokeObjectURL(preview);
+                            } catch (e) {}
+                            setPreview(URL.createObjectURL(file));
+                          } else {
+                            try { if (preview && typeof preview === 'string' && preview.startsWith('blob:')) URL.revokeObjectURL(preview); } catch (e) {}
+                            setPreview(null);
+                          }
+                        }}
+                        className="hidden"
+                      />
+
+                      <label htmlFor="promoImage" className="flex items-center justify-center w-full">
+                        <div
+                          className="inline-flex flex-col items-center p-3 border-2 border-dashed rounded-lg cursor-pointer text-sm text-white hover:border-blue-300 transition w-full max-w-xs"
+                          style={{ borderColor: '#16A34A', background: 'linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01))' }}
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-white mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7M12 3v18" />
+                          </svg>
+                          <div className="text-xs text-white">{data.image ? 'Cambiar foto' : 'hace click para subir una imagen'}</div>
+                          {data.image ? (
+                            <div className="mt-2 text-sm text-white truncate max-w-full">{data.image.name}</div>
+                          ) : (
+                            <div className="mt-2 text-sm text-white/80">Sin archivo seleccionado</div>
+                          )}
+                        </div>
+                      </label>
+
+                      {errors.image && <div className="text-red-600 mt-2">{errors.image}</div>}
+                    </div>
+                  </div>
                 </div>
-                <div className="flex justify-center">
-                  <button type="button" onClick={() => {
-                      // marcar para eliminación del lado del servidor y limpiar vista previa
-                      setData('image', null);
-                      setData('remove_image', 1);
-                      setPreview(null);
-                    }} className="mt-2 text-sm text-red-600">Quitar imagen</button>
+              </div>
+
+              {/* Título, Tipo y Descripción */}
+              <div className="card-3d-container">
+                <div className="card-3d p-4 bg-transparent">
+                  <div className="inner">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-white mb-1">Título</label>
+                        <input name="titulo" value={data.titulo} onChange={e => setData('titulo', e.target.value)} placeholder="Ej: Jornada de Vacunación gratuita" className="w-full rounded-md border border-[#0f3a2f] p-2 focus:outline-none focus:ring-2 focus:ring-blue-200 text-white placeholder-white/80" style={{ backgroundColor: '#15803D' }} />
+                        {errors.titulo && <div className="text-red-600 mt-1">{errors.titulo}</div>}
+                      </div>
+
+                      <div className="md:col-span-1">
+                        <label className="block text-sm font-medium text-white mb-1">Tipo de jornada</label>
+                        <input name="tipo" value={data.tipo} onChange={e => setData('tipo', e.target.value)} placeholder="Vacunacion, Castracion" className="w-full rounded-md border border-[#0f3a2f] p-2 focus:outline-none focus:ring-2 focus:ring-blue-200 text-white placeholder-white/80" style={{ backgroundColor: '#15803D' }} />
+                      </div>
+                    </div>
+
+                    <div className="mt-4">
+                      <label className="block text-sm font-medium text-white mb-1">Descripción</label>
+                      <textarea name="descripcion" value={data.descripcion} onChange={e => setData('descripcion', e.target.value)} placeholder="Describa el motivo o situación de la publicación" className="w-full rounded-md border border-[#0f3a2f] p-2 min-h-[120px] focus:outline-none focus:ring-2 focus:ring-blue-200 text-white placeholder-white/80" style={{ backgroundColor: '#15803D' }} />
+                    </div>
+                  </div>
                 </div>
               </div>
-            )}
-          </div>
 
-          {/* Título, Tipo y Descripción */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Título</label>
-              <input name="titulo" value={data.titulo} onChange={e => setData('titulo', e.target.value)} className="w-full border rounded-md p-2 focus:ring-1 focus:ring-blue-500" />
-              {errors.titulo && <div className="text-red-600 mt-1">{errors.titulo}</div>}
-            </div>
+              {/* Fechas */}
+              <div className="card-3d-container">
+                <div className="card-3d p-4 bg-transparent">
+                  <div className="inner">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-white mb-1">Fecha y hora inicio</label>
+                        <label className="flex items-center gap-3">
+                          <div onClick={() => openPicker('starts_at')} className="inline-flex items-center p-2 border rounded bg-white text-gray-700 cursor-pointer">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                          </div>
+                          <input name="starts_at" id="starts_at" type="datetime-local" value={data.starts_at || ''} onChange={e => setData('starts_at', e.target.value)} className="w-full rounded-md border border-[#0f3a2f] px-3 py-2 text-white" style={{ backgroundColor: '#15803D' }} aria-label="Seleccionar fecha y hora de inicio" />
+                        </label>
+                        <div className="mt-2">
+                          <span className="text-sm text-white">{data.starts_at ? new Date(data.starts_at).toLocaleString() : 'No seleccionado'}</span>
+                        </div>
+                        {errors.starts_at && <div className="text-red-600 mt-1">{errors.starts_at}</div>}
+                      </div>
 
-            <div className="md:col-span-1">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Tipo de jornada</label>
-              <input name="tipo" value={data.tipo} onChange={e => setData('tipo', e.target.value)} className="w-full border rounded-md p-2 focus:ring-1 focus:ring-blue-500" />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
-            <textarea name="descripcion" value={data.descripcion} onChange={e => setData('descripcion', e.target.value)} className="w-full border rounded-md p-2 min-h-[120px] focus:ring-1 focus:ring-blue-500" />
-          </div>
-
-          {/* Fechas */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Fecha y hora inicio</label>
-              <div className="flex items-center gap-3">
-                <label className="relative inline-flex items-center p-2 border rounded bg-white hover:bg-gray-50 cursor-pointer">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                  <input name="starts_at" type="datetime-local" value={data.starts_at || ''} onChange={e => setData('starts_at', e.target.value)} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" aria-label="Seleccionar fecha y hora de inicio" />
-                </label>
-
-                <span className="text-sm text-gray-700">{data.starts_at ? new Date(data.starts_at).toLocaleString() : 'No seleccionado'}</span>
+                      <div>
+                        <label className="block text-sm font-medium text-white mb-1">Fecha y hora fin (opcional)</label>
+                        <label className="flex items-center gap-3">
+                          <div onClick={() => openPicker('ends_at')} className="inline-flex items-center p-2 border rounded bg-white text-gray-700 cursor-pointer">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                          </div>
+                          <input name="ends_at" id="ends_at" type="datetime-local" value={data.ends_at || ''} onChange={e => setData('ends_at', e.target.value)} className="w-full rounded-md border border-[#0f3a2f] px-3 py-2 text-white" style={{ backgroundColor: '#15803D' }} aria-label="Seleccionar fecha y hora de fin" />
+                        </label>
+                        <div className="mt-2">
+                          <span className="text-sm text-white">{data.ends_at ? new Date(data.ends_at).toLocaleString() : 'No seleccionado'}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
-              {errors.starts_at && <div className="text-red-600 mt-1">{errors.starts_at}</div>}
-            </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Fecha y hora fin (opcional)</label>
-              <div className="flex items-center gap-3">
-                <label className="relative inline-flex items-center p-2 border rounded bg-white hover:bg-gray-50 cursor-pointer">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                  <input name="ends_at" type="datetime-local" value={data.ends_at || ''} onChange={e => setData('ends_at', e.target.value)} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" aria-label="Seleccionar fecha y hora de fin" />
-                </label>
+              {/* Ubicación */}
+              <div className="card-3d-container">
+                <div className="card-3d p-4 bg-transparent">
+                  <div className="inner">
+                    <label className="block text-sm font-medium text-white mb-1">Seleccione la ubicación del evento (opcional)</label>
+                    <div className="mt-2">
+                      <FiltroCiudad onCiudadSelect={handleCiudadSelect} />
+                    </div>
 
-                <span className="text-sm text-gray-700">{data.ends_at ? new Date(data.ends_at).toLocaleString() : 'No seleccionado'}</span>
+                    <div className="mt-3 h-64 w-full rounded-md overflow-hidden border border-gray-200">
+                      <MapaInteractivo onLocationSelect={handleLocationSelect} tipoAnimal={null} showMarkers={false} markerType="org" center={mapCenter} initialPosition={initialPosition} marker={showMarker} />
+                    </div>
+
+                    <div className="text-sm text-white/80 mt-2">
+                      <span className="font-medium">Lat:</span> {data.lat ?? '-'}{' '}
+                      <span className="mx-2">|</span>
+                      <span className="font-medium">Lng:</span> {data.lng ?? '-'}
+                    </div>
+                  </div>
+                </div>
               </div>
-            </div>
+
+              <div className="mt-4 flex justify-end items-center gap-3">
+                {event && (
+                  <button type="button" onClick={() => { window.location.href = route('organizacion.eventos.show', event.id); }} className="px-4 py-2 rounded-md border border-gray-300 text-gray-700 bg-white hover:bg-gray-50 transition">Cancelar</button>
+                )}
+
+                <div className="btn-3d-container">
+                  <div className="btn-3d">
+                    <button type="submit" disabled={processing} className="inner-btn">
+                      {processing ? (event ? 'Guardando...' : 'Publicando...') : (event ? 'Editar evento' : 'Publicar evento')}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </form>
           </div>
-
-          {/* Ubicación */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Seleccione la ubicación del evento (opcional)</label>
-            <div className="mt-2">
-              <FiltroCiudad onCiudadSelect={handleCiudadSelect} />
-            </div>
-
-            <div className="mt-3 h-64 w-full rounded-md overflow-hidden border border-gray-200">
-              <MapaInteractivo onLocationSelect={handleLocationSelect} tipoAnimal={null} showMarkers={false} markerType="org" center={mapCenter} initialPosition={initialPosition} marker={showMarker} />
-            </div>
-
-            <div className="text-sm text-gray-600 mt-2">
-              <span className="font-medium">Lat:</span> {data.lat ?? '-'}{' '}
-              <span className="mx-2">|</span>
-              <span className="font-medium">Lng:</span> {data.lng ?? '-'}
-            </div>
-          </div>
-
-          <div className="mt-4 flex gap-2 justify-end">
-            {event ? (
-              <>
-                <button type="button" onClick={() => { window.location.href = route('organizacion.eventos.show', event.id); }} className="px-4 py-2 rounded-md border border-gray-300 text-gray-700 bg-white hover:bg-gray-50 transition">Cancelar</button>
-              </>
-            ) : (
-              <button type="button" onClick={() => reset()} className="px-4 py-2 rounded-md border border-gray-300 text-gray-700 bg-white hover:bg-gray-50 transition">Limpiar</button>
-            )}
-
-            <button type="submit" disabled={processing} className="px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition flex items-center justify-center gap-2">
-              {processing && (
-                <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
-                </svg>
-              )}
-        <span>{event ? 'Editar' : 'Publicar'}</span>
-            </button>
-          </div>
-        </form>
+        </div>
       </div>
     </AuthenticatedLayout>
   );
