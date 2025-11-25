@@ -183,17 +183,17 @@ Route::middleware(['auth'])->group(function () {
 // Página con el formulario (solo usuarios con rol Usuario)
 Route::get('/profile/solicitud-verificacion', [SolicitudVerificacionController::class, 'create'])
     ->name('profile.solicitud_form')
-    ->middleware(['auth', 'role:Usuario']);
+    ->middleware(['auth', \App\Http\Middleware\RoleMiddleware::class . ':Usuario']);
 
 // Guardar solicitud (solo usuarios autenticados con rol Usuario)
 Route::post('/profile/request-verification', [SolicitudVerificacionController::class, 'store'])
     ->name('profile.request_verification')
-    ->middleware(['auth', 'role:Usuario']);
+    ->middleware(['auth', \App\Http\Middleware\RoleMiddleware::class . ':Usuario']);
 
 /* -----------------------------------------------------------------
 | Rutas para administradores 
 ----------------------------------------------------------------- */
-Route::middleware(['auth', 'role:Admin'])->group(function () {
+Route::middleware(['auth', \App\Http\Middleware\RoleMiddleware::class . ':Admin'])->group(function () {
     Route::get('/admin', [AdminController::class, 'index'])->name('admin.index');
 
     // listado de solicitudes gestionado por controller
@@ -214,7 +214,7 @@ Route::middleware(['auth', 'role:Admin'])->group(function () {
 /* -----------------------------------------------------------------
 | Rutas para organizaciones 
 ----------------------------------------------------------------- */
-Route::middleware(['auth', 'role:Organizacion'])->group(function () {
+Route::middleware(['auth', \App\Http\Middleware\RoleMiddleware::class . ':Organizacion'])->group(function () {
     Route::get('/organizacion', [OrganizationController::class, 'index'])->name('organizacion.index');
 
     // ruta para mostrar el formulario "Crear evento"
@@ -251,17 +251,6 @@ Route::middleware(['auth', 'role:Organizacion'])->group(function () {
     Route::get('/organizacion/estadisticas/years', [OrganizationController::class, 'estadisticasYearsData'])
         ->name('organizacion.estadisticas.years');
 
-    // Mercado Pago: OAuth connect (organizaciones)
-    Route::get('/mercadopago/connect', [\App\Http\Controllers\MercadoPagoController::class, 'connect'])
-        ->name('mercadopago.connect');
-
-    // Desvincular cuenta de Mercado Pago (desde perfil)
-    Route::post('/mercadopago/disconnect', [\App\Http\Controllers\MercadoPagoController::class, 'disconnect'])
-        ->name('mercadopago.disconnect');
-
-    // Donaciones: listado para la organizacion autenticada
-    Route::get('/organizacion/donaciones', [\App\Http\Controllers\OrganizationController::class, 'donaciones'])
-        ->name('organizacion.donaciones');
 });
 
    Route::prefix('comentarios')
@@ -296,6 +285,20 @@ require __DIR__.'/auth.php';
 // Public OAuth callback de Mercado Pago
 Route::get('/mercadopago/callback', [\App\Http\Controllers\MercadoPagoController::class, 'callback'])
     ->name('mercadopago.callback');
+
+// Rutas Mercado Pago (connect/disconnect)
+Route::get('/mercadopago/connect', [\App\Http\Controllers\MercadoPagoController::class, 'connect'])
+    ->name('mercadopago.connect')
+    ->middleware(['auth', \App\Http\Middleware\RoleMiddleware::class . ':Organizacion']);
+
+Route::post('/mercadopago/disconnect', [\App\Http\Controllers\MercadoPagoController::class, 'disconnect'])
+    ->name('mercadopago.disconnect')
+    ->middleware(['auth', \App\Http\Middleware\RoleMiddleware::class . ':Organizacion']);
+
+// Donaciones: listado para la organizacion autenticada 
+Route::get('/organizacion/donaciones', [\App\Http\Controllers\OrganizationController::class, 'donaciones'])
+    ->name('organizacion.donaciones')
+    ->middleware(['auth', \App\Http\Middleware\RoleMiddleware::class . ':Organizacion']);
 
 // Endpoint para iniciar una donación (crea preference en Mercado Pago)
 Route::post('/donar', [\App\Http\Controllers\DonationController::class, 'store'])

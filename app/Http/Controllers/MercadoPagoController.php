@@ -61,6 +61,10 @@ class MercadoPagoController extends Controller
         $user = Auth::user();
 
         if (! $user || ! $user->organizacion_id) {
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json(['success' => false, 'message' => 'No perteneces a una organización válida.'], 403);
+            }
+
             return Redirect::route('profile.edit')->with('error', 'No perteneces a una organización válida.');
         }
 
@@ -71,9 +75,17 @@ class MercadoPagoController extends Controller
                 Log::info('MpCuenta disconnected', ['organizacion_id' => $user->organizacion_id, 'mp_cuenta_id' => $mpCuenta->id]);
             }
 
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json(['success' => true, 'message' => 'Cuenta de Mercado Pago desvinculada. La organización no podrá recibir donaciones hasta que se vuelva a conectar una cuenta.']);
+            }
+
             return Redirect::route('profile.edit')->with('success', 'Cuenta de Mercado Pago desvinculada. La organización no podrá recibir donaciones hasta que se vuelva a conectar una cuenta.');
         } catch (\Throwable $e) {
             Log::error('Error disconnecting MpCuenta', ['error' => $e->getMessage(), 'organizacion_id' => $user->organizacion_id ?? null]);
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json(['success' => false, 'message' => 'Ocurrió un error al desvincular la cuenta de Mercado Pago.'], 500);
+            }
+
             return Redirect::route('profile.edit')->with('error', 'Ocurrió un error al desvincular la cuenta de Mercado Pago.');
         }
     }

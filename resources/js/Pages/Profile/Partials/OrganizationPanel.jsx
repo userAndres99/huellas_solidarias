@@ -7,6 +7,7 @@ import TextInput from '@/Components/TextInput';
 import InputError from '@/Components/InputError';
 import PrimaryButton from '@/Components/PrimaryButton';
 import Modal from '@/Components/Modal';
+import axios from 'axios';
 
 export default function OrganizationPanel() {
     const user = usePage().props.auth?.user;
@@ -129,23 +130,16 @@ export default function OrganizationPanel() {
     const doDisconnect = async () => {
         try {
             const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-            const res = await fetch(route('mercadopago.disconnect'), {
-                method: 'POST',
-                credentials: 'same-origin',
-                headers: token ? { 'X-CSRF-TOKEN': token, 'Accept': 'application/json' } : { 'Accept': 'application/json' },
-            });
-
-            if (!res.ok) {
-                console.error('Error al desvincular cuenta MP, status:', res.status);
-                setDisconnectOpen(false);
-                return;
+            if (token) {
+                axios.defaults.headers.common['X-CSRF-TOKEN'] = token;
             }
 
-           
+            await axios.post(route('mercadopago.disconnect'));
+
             setDisconnectOpen(false);
             window.dispatchEvent(new Event('profile-updated'));
         } catch (err) {
-            console.error('Error de red al desvincular MP:', err);
+            console.error('Error al desvincular cuenta MP:', err);
             setDisconnectOpen(false);
         }
     };

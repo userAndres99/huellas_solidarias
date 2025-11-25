@@ -5,7 +5,7 @@ import ResponsiveNavLink from '@/Components/ResponsiveNavLink';
 import Footer from '@/Components/Footer';
 import BuscadorUsuarios from '@/Components/BuscadorUsuarios';
 import NotificationBell from '@/Components/NotificationBell';
-import { Link, usePage } from '@inertiajs/react';
+import { Link, usePage, router } from '@inertiajs/react';
 import { useEffect, useState, useRef } from 'react';
 import { useEventBus } from '@/EvenBus';
 import Toast from '@/Components/App/Toast';
@@ -31,6 +31,18 @@ export default function AuthenticatedLayout({ header, children }) {
     const [showNewUserModal, setShowNewUserModal] = useState(false);
 
     useEffect(() => {
+
+        function handleProfileUpdated() {
+            // Recargar solo los props 'auth' para que la información del usuario.
+            try {
+                router.reload({ only: ['auth'] });
+            } catch (e) {
+                // Fallback a reload del navegador si Inertia falla
+                window.location.reload();
+            }
+        }
+
+        window.addEventListener('profile-updated', handleProfileUpdated);
         function handleOutside(e) {
             if (!showSearch) return;
             if (searchContainerRef.current && !searchContainerRef.current.contains(e.target)) {
@@ -38,7 +50,10 @@ export default function AuthenticatedLayout({ header, children }) {
             }
         }
         document.addEventListener('mousedown', handleOutside);
-        return () => document.removeEventListener('mousedown', handleOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleOutside);
+            window.removeEventListener('profile-updated', handleProfileUpdated);
+        };
     }, [showSearch]);
 
     useEffect(() => {
@@ -252,7 +267,7 @@ export default function AuthenticatedLayout({ header, children }) {
                                             )}
                                             <NotificationBell />
                                             <div className="flex relative ms-3">
-                                                {user.is_admin && (
+                                                {!!user.is_admin && (
                                                     <PrimaryButton 
                                                         onClick={(ev) => 
                                                             setShowNewUserModal(true)
