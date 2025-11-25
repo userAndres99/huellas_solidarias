@@ -128,3 +128,54 @@
   outline: none;
   box-shadow: 0 0 0 4px rgba(37,99,235,0.18);
 }
+
+/* Flash sms */
+.flash-3d {
+  position: relative;
+  border-radius: 12px;
+  color: white;
+  isolation: isolate;
+  overflow: visible;
+  border: 1px solid rgba(0,0,0,0.08);
+  box-shadow: 0 20px 40px rgba(0,0,0,0.45), 0 8px 18px rgba(0,0,0,0.28), inset 0 2px 0 rgba(255,255,255,0.03);
+  display: inline-block;
+  margin-left: auto;
+  margin-right: auto;
+  max-width: 90%;
+  padding: 0; 
+}
+.flash-3d::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: -1;
+  background: radial-gradient(circle at 20% 10%, rgba(255,255,255,0.06), transparent 45%);
+}
+.flash-3d::after {
+  content: "";
+  position: absolute;
+  left: -8px;
+  right: -8px;
+  top: 18%;
+  bottom: -18px;
+  border-radius: 18px;
+  pointer-events: none;
+  z-index: -2;
+  background: rgba(0,0,0,0.5);
+  filter: blur(36px);
+  opacity: 0.9;
+}
+
+.flash-inner { position: relative; z-index: 2; display:flex; gap:0.75rem; align-items:flex-start; }
+.flash-icon { flex: 0 0 auto; display:flex; align-items:center; justify-content:center; width:1.5rem; height:1.5rem; }
+.flash-content { flex:1 1 auto; }
+
+.flash-success { background: linear-gradient(180deg,#16A34A 0%, #15803D 100%); border-color: rgba(0,0,0,0.12); }
+.flash-error { background: linear-gradient(180deg,#DC2626 0%, #B91C1C 100%); border-color: rgba(0,0,0,0.12); }
+.flash-info { background: linear-gradient(180deg,#2563EB 0%, #1E40AF 100%); border-color: rgba(0,0,0,0.12); }
+
+.flash-3d p, .flash-3d span { color: white; }
+
+@media (prefers-reduced-motion: reduce) { .flash-3d { transition: none; } }

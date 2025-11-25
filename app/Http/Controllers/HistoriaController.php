@@ -28,7 +28,7 @@ class HistoriaController extends Controller
 
 
     public function create(){
-        return Inertia::render('HistoriaExito/FormHistoria');
+        return Inertia::render('PublicarHistoria');
     }
 
 

@@ -96,11 +96,11 @@ export default function TarjetaPublicacion({ publicacion, showEdit = true, onRem
       </div>
 
       <div className="absolute left-3 bottom-3 z-30">
-        <EnlaceRequiereLogin
-          href={`/casos/${p.id}`}
-          ariaLabel={`Ver caso ${p.id}`}
-          className="text-sm inline-flex items-center gap-2 px-3 py-1 rounded bg-blue-600 text-white font-semibold shadow-sm hover:shadow-md transition transform hover:-translate-y-0.5"
-        >
+        <EnlaceRequiereLogin href={`/casos/${p.id}`} className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-600 text-white rounded-full text-sm hover:shadow-md transition transform hover:-translate-y-0.5" ariaLabel={`Ver caso ${p.id}`}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="inline-block">
+            <path d="M12 5c-7 0-11 6-11 7s4 7 11 7 11-6 11-7-4-7-11-7zm0 11a4 4 0 110-8 4 4 0 010 8z" fill="currentColor"/>
+            <path d="M12 9.5a2.5 2.5 0 100 5 2.5 2.5 0 000-5z" fill="white"/>
+          </svg>
           Ver detalle
         </EnlaceRequiereLogin>
       </div>

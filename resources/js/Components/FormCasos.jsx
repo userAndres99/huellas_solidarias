@@ -285,7 +285,7 @@ export default function FormCasos() {
                     <button
                       type="button"
                       onClick={removePhoto}
-                      className="text-xs text-white underline opacity-90 hover:opacity-100"
+                      className="text-xs text-red-300 hover:text-red-400 underline"
                     >
                       Eliminar foto
                     </button>
@@ -398,7 +398,7 @@ export default function FormCasos() {
                 onChange={handleChange}
                 required
                 placeholder="Describa el motivo o situación de la publicación"
-                className="w-full rounded-md border border-[#0f3a2f] px-3 py-2 h-32 resize-y focus:outline-none focus:ring-2 focus:ring-blue-200 text-white"
+                className="w-full rounded-md border border-[#0f3a2f] px-3 py-2 h-32 resize-y focus:outline-none focus:ring-2 focus:ring-blue-200 text-white placeholder-white/80"
                 style={{ backgroundColor: '#15803D' }}
               />
               {errors.descripcion && <div className="text-red-600 text-sm mt-1">{errors.descripcion}</div>}
@@ -416,7 +416,7 @@ export default function FormCasos() {
                 name="telefonoContacto"
                 value={data.telefonoContacto}
                 onChange={handleChange}
-                className="w-full rounded-md border border-[#0f3a2f] px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200 text-white"
+                className="w-full rounded-md border border-[#0f3a2f] px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200 text-white placeholder-white/80"
                 style={{ backgroundColor: '#15803D' }}
                 placeholder="Ej: +54 9 11 1234-5678"
               />

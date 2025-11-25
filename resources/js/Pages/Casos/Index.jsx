@@ -7,6 +7,7 @@ import EstadoBadge from '@/Components/EstadoBadge';
 import TarjetaPublicaciones from '@/Components/TarjetaPublicaciones';
 import TarjetaMisPublicaciones from '@/Components/TarjetaMisPublicaciones';
 import Loading from '@/Components/Loading';
+import MensajeFlash from '@/Components/MensajeFlash';
 import { preloadImages } from '@/helpers';
 import FiltroGeneral from '@/Components/FiltroGeneral';
 import Paginacion from '@/Components/Paginacion';
@@ -160,9 +161,7 @@ export default function Index(props) {
 
         {/* Mensaje flash de creación */}
         {props?.flash?.success && viewMode === 'mine' && (
-          <div className="mb-4 p-3 rounded bg-green-50 border border-green-200 text-green-800">
-            {props.flash.success}
-          </div>
+          <MensajeFlash tipo="success">{props.flash.success}</MensajeFlash>
         )}
 
         {props?.auth?.user && (
