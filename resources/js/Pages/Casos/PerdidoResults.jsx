@@ -4,6 +4,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import MensajeFlash from '@/Components/MensajeFlash';
 import TarjetaPublicaciones from '@/Components/TarjetaPublicaciones';
 import TarjetaMisPublicaciones from '@/Components/TarjetaMisPublicaciones';
+import LoadingImagenes from '@/Components/LoadingImagenes';
 
 function makeImageUrl(path) {
   if (!path) return null;
@@ -16,6 +17,7 @@ function makeImageUrl(path) {
 export default function PerdidoResults(props) {
   const { caso, matches, error } = props;
   const safeMatches = Array.isArray(matches) ? matches : [];
+  const titleText = caso && String(caso.id || '').startsWith('tmp') ? 'Tu imagen' : 'Tu publicación';
 
   // flash 
   const { flash } = usePage().props;
@@ -48,7 +50,7 @@ export default function PerdidoResults(props) {
           <div className="mb-4">
             <div className="inline-flex items-center gap-3 bg-cyan-100 border border-cyan-300 px-4 py-2 rounded-lg shadow-sm">
               <span className="w-1.5 h-6 bg-cyan-700 rounded" />
-              <h2 className="text-xl font-semibold text-slate-900 m-0">Tu publicación</h2>
+              <h2 className="text-xl font-semibold text-slate-900 m-0">{titleText}</h2>
             </div>
           </div>
 
@@ -58,7 +60,22 @@ export default function PerdidoResults(props) {
           {/* Resumen del caso buscado */}
           {caso && (
             <div className="mb-4 max-w-xl mx-auto">
-              <TarjetaMisPublicaciones publicacion={caso} showEdit={false} onRemove={() => {}} />
+              {String(caso.id || '').startsWith('tmp') ? (
+                <div className="card-surface-alt rounded-xl overflow-hidden">
+                  <div className="relative h-56 md:h-64">
+                    <LoadingImagenes
+                      src={makeImageUrl(caso.fotoAnimal)}
+                      alt="Imagen subida para búsqueda"
+                      wrapperClass="h-full w-full"
+                      imgClass="object-contain object-center w-full h-full"
+                      placeholderText="Cargando imagen..."
+                    />
+                  </div>
+                  <div className="p-3 text-sm text-slate-600">Imagen utilizada para la búsqueda</div>
+                </div>
+              ) : (
+                <TarjetaMisPublicaciones publicacion={caso} showEdit={false} onRemove={() => {}} />
+              )}
             </div>
           )}
 
@@ -73,7 +90,7 @@ export default function PerdidoResults(props) {
           {safeMatches.length === 0 ? (
             <div className="p-4 bg-yellow-100 rounded">
               <h4 className="text-base font-medium">No se encontraron coincidencias similares</h4>
-              {caso && (
+              {caso && !String(caso.id || '').startsWith('tmp') && (
                 <div className="mt-2">
                   <Link href={`/casos/${caso.id}`} className="text-blue-600 underline text-sm">
                     Ver detalle del caso enviado

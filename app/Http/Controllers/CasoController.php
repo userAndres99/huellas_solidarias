@@ -243,6 +243,31 @@ class CasoController extends Controller
                     ];
                 }
 
+                // Si el usuario indicó `tipoAnimal` o `ciudad` en el formulario de publicación,
+                // filtrar coincidencias para que coincidan con esos valores 
+                $requestedTipo = $caso->tipoAnimal ? trim(mb_strtolower($caso->tipoAnimal)) : null;
+                $requestedCiudad = $caso->ciudad ? trim(mb_strtolower($caso->ciudad)) : null;
+
+                if ($requestedTipo || $requestedCiudad) {
+                    $matches = array_values(array_filter($matches, function ($m) use ($requestedTipo, $requestedCiudad) {
+                        // solo considerar matches que apunten a un caso local (ya que ahí tenemos tipo/ciudad)
+                        if (empty($m['localCaso'])) return false;
+
+                        if ($requestedTipo) {
+                            $matchTipo = isset($m['localCaso']['tipoAnimal']) ? trim(mb_strtolower($m['localCaso']['tipoAnimal'])) : '';
+                            if ($matchTipo !== $requestedTipo) return false;
+                        }
+
+                        if ($requestedCiudad) {
+                            $matchCiudad = isset($m['localCaso']['ciudad']) ? trim(mb_strtolower($m['localCaso']['ciudad'])) : '';
+                            // permitir coincidencias si la ciudad del match contiene la ciudad solicitada 
+                            if (mb_strpos($matchCiudad, $requestedCiudad) === false) return false;
+                        }
+
+                        return true;
+                    }));
+                }
+
                 // aplicar en porcentaje 
                 $thresholdPct = 90;
                 $filtered = array_filter($matches, function ($m) use ($thresholdPct) {
@@ -452,5 +477,177 @@ class CasoController extends Controller
         $caso->save();
 
         return response()->json(['success' => true, 'estado' => $caso->estado]);
+    }
+
+    /**
+     * Buscar coincidencias a partir de una imagen subida (desde Dashboard).
+     * No crea un caso, solo procesa la imagen temporalmente y renderiza la vista de resultados.
+     */
+    public function searchByImage(Request $request)
+    {
+        $request->validate([
+            'fotoAnimal' => 'required|image|max:10240',
+        ]);
+
+        $file = $request->file('fotoAnimal');
+        if (! $file) {
+            return redirect()->back()->with('error', 'No se seleccionó ninguna imagen.');
+        }
+
+        // Guardar temporalmente en storage/public/tmp_search
+        $relPath = $file->store('tmp_search', 'public');
+        $fullPath = storage_path('app/public/' . $relPath);
+
+        // construir un objeto 'caso' temporal para la vista
+        $caso = (object) [
+            'id' => 'tmp',
+            'fotoAnimal' => $relPath ? Storage::url($relPath) : null,
+            'descripcion' => 'Búsqueda por imagen',
+            'situacion' => 'perdido',
+            'fechaPublicacion' => now(),
+            'tipoAnimal' => null,
+        ];
+
+        $noBgTempPath = null;
+        try {
+            $ny = app(NyckelClient::class);
+            $rm = app(RemoveBgClient::class);
+
+            // Intentar generar versión sin fondo
+            try {
+                $noBgFullPath = $rm->removeBackgroundFromFile($fullPath);
+            } catch (\Throwable $e) {
+                Log::warning('RemoveBgClient threw in searchByImage: ' . $e->getMessage());
+                $noBgFullPath = null;
+            }
+
+            if ($noBgFullPath && file_exists($noBgFullPath)) {
+                $fileToSearch = $noBgFullPath;
+                $noBgTempPath = $noBgFullPath;
+            } else {
+                $fileToSearch = $fullPath;
+            }
+
+            $raw = $ny->searchByImageBytes($fileToSearch, 100, true);
+
+            $rawMatches = $raw;
+            if (isset($raw['results'])) $rawMatches = $raw['results'];
+            if (isset($raw['matches'])) $rawMatches = $raw['matches'];
+
+            $matches = [];
+            foreach ($rawMatches as $r) {
+                $sampleId = $r['sampleId'] ?? $r['id'] ?? null;
+                $external = $r['externalId'] ?? $r['external_id'] ?? null;
+                $distance = isset($r['distance']) ? (float)$r['distance'] : null;
+                $rawScore = isset($r['score']) ? (float)$r['score'] : null;
+                $rawSimilarity = isset($r['similarity']) ? (float)$r['similarity'] : null;
+                $data = $r['data'] ?? null;
+
+                $score = null;
+                if ($rawSimilarity !== null) {
+                    $score = max(0.0, min(100.0, $rawSimilarity)) / 100.0;
+                } elseif ($rawScore !== null) {
+                    if ($rawScore > 1.0) {
+                        $score = max(0.0, min(100.0, $rawScore)) / 100.0;
+                    } else {
+                        $score = max(0.0, min(1.0, $rawScore));
+                    }
+                } elseif ($distance !== null) {
+                    if ($distance <= 1.0) {
+                        $score = max(0.0, min(1.0, 1.0 - $distance));
+                    } else {
+                        $score = max(0.0, min(1.0, 1.0 - ($distance / 4.0)));
+                    }
+                }
+
+                $similarityPct = $score !== null ? ($score * 100.0) : ($rawSimilarity ?? null);
+
+                $localCasoData = null;
+                if ($external && preg_match('/caso_(\d+)/', $external, $m)) {
+                    $found = Caso::find((int)$m[1]);
+                    if ($found) {
+                        $localCasoData = [
+                            'id' => $found->id,
+                            'descripcion' => $found->descripcion,
+                            'ciudad' => $found->ciudad,
+                            'situacion' => $found->situacion,
+                            'fotoAnimal' => $found->fotoAnimal ? Storage::url($found->fotoAnimal) : null,
+                            'latitud' => $found->latitud,
+                            'longitud' => $found->longitud,
+                            'fechaPublicacion' => $found->fechaPublicacion,
+                            'tipoAnimal' => $found->tipoAnimal,
+                        ];
+                    }
+                }
+
+                $matches[] = [
+                    'sampleId' => $sampleId,
+                    'externalId' => $external,
+                    'distance' => $distance,
+                    'score' => $score,
+                    'similarity' => $similarityPct,
+                    'data' => $data,
+                    'localCaso' => $localCasoData,
+                ];
+            }
+
+            // Si se pasaron filtros opcionales en la petición (tipoAnimal / ciudad), aplicarlos
+            $requestedTipo = $request->input('tipoAnimal') ? trim(mb_strtolower($request->input('tipoAnimal'))) : null;
+            $requestedCiudad = $request->input('ciudad') ? trim(mb_strtolower($request->input('ciudad'))) : null;
+
+            if ($requestedTipo || $requestedCiudad) {
+                $matches = array_values(array_filter($matches, function ($m) use ($requestedTipo, $requestedCiudad) {
+                    if (empty($m['localCaso'])) return false;
+
+                    if ($requestedTipo) {
+                        $matchTipo = isset($m['localCaso']['tipoAnimal']) ? trim(mb_strtolower($m['localCaso']['tipoAnimal'])) : '';
+                        if ($matchTipo !== $requestedTipo) return false;
+                    }
+
+                    if ($requestedCiudad) {
+                        $matchCiudad = isset($m['localCaso']['ciudad']) ? trim(mb_strtolower($m['localCaso']['ciudad'])) : '';
+                        if (mb_strpos($matchCiudad, $requestedCiudad) === false) return false;
+                    }
+
+                    return true;
+                }));
+            }
+
+            $thresholdPct = 90;
+            $filtered = array_filter($matches, function ($m) use ($thresholdPct) {
+                return isset($m['similarity']) && $m['similarity'] >= $thresholdPct;
+            });
+
+            usort($filtered, function ($a, $b) {
+                $sa = $a['score'] ?? -1;
+                $sb = $b['score'] ?? -1;
+                return ($sb <=> $sa);
+            });
+
+            // eliminar temporal no-bg y original tmp si corresponde
+            try {
+                if (!empty($noBgTempPath) && file_exists($noBgTempPath)) {
+                    $rel = str_replace(storage_path('app/public/'), '', $noBgTempPath);
+                    if ($rel) Storage::disk('public')->delete($rel);
+                }
+            } catch (\Throwable $_) {}
+
+            return Inertia::render('Casos/PerdidoResults', [
+                'caso' => $caso,
+                'matches' => array_values($filtered),
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error en searchByImage: ' . $e->getMessage());
+            try {
+                if (!empty($relPath)) Storage::disk('public')->delete($relPath);
+            } catch (\Throwable $_) {}
+
+            return Inertia::render('Casos/PerdidoResults', [
+                'caso' => $caso,
+                'matches' => [],
+                'error' => 'No se pudieron obtener coincidencias (error externo).',
+            ]);
+        }
     }
 }

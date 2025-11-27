@@ -4,6 +4,7 @@ import { Head, Link, usePage } from "@inertiajs/react";
 import MensajeFlash from '@/Components/MensajeFlash';
 import TarjetaMisPublicaciones from '@/Components/TarjetaMisPublicaciones';
 import LoadingImagenes from '@/Components/LoadingImagenes';
+import ImageSearchModal from '@/Components/ImageSearchModal';
 
 function formatDate(dateStr) {
   if (!dateStr) return "";
@@ -49,6 +50,7 @@ export default function Dashboard({ auth, misPublicaciones }) {
   const [activeTab, setActiveTab] = useState('consejos');
 
   const [publicacionesActivasState, setPublicacionesActivasState] = useState(() => (misPublicaciones || []).filter(p => p.estado === 'activo'));
+  const [showImageModal, setShowImageModal] = useState(false);
 
   function handleRemovePublicacion(id) {
     setPublicacionesActivasState(prev => prev.filter(p => p.id !== id));
@@ -88,10 +90,7 @@ export default function Dashboard({ auth, misPublicaciones }) {
 
     return () => { mounted = false; clearInterval(interval); };
   }, []);
-
   
-
-
   return (
     <AuthenticatedLayout
       header={
@@ -128,6 +127,20 @@ export default function Dashboard({ auth, misPublicaciones }) {
               </div>
             </div>
           </div>
+
+          {/* Acceso rápido: Buscar por imagen (modal) */}
+          <div className="mt-6 mx-auto max-w-4xl">
+            <div className="card-surface shadow-lg rounded-2xl p-6">
+              <h3 className="text-lg font-semibold mb-3">Buscá tu mascota</h3>
+              <p className="text-sm text-gray-600 mb-4">¿Perdiste a tu mascota? Subí una foto y nuestro sistema buscará coincidencias por imagen para decirte si fue reportada en nuestra web.</p>
+
+              <div className="flex items-center gap-3">
+                <button onClick={() => setShowImageModal(true)} className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md">Buscar por imagen</button>
+              </div>
+            </div>
+          </div>
+
+          <ImageSearchModal show={showImageModal} onClose={() => setShowImageModal(false)} />
 
           {/* Sección: Items scrapeados  */}
           <div className="mt-6 mx-auto max-w-7xl sm:px-6 lg:px-8">

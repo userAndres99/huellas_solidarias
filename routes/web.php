@@ -108,6 +108,9 @@ Route::middleware('auth')->group(function () {
     // Cambiar estado de un caso (finalizar / cancelar) por su autor
     Route::post('/casos/{id}/status', [\App\Http\Controllers\CasoController::class, 'updateStatus'])
         ->name('casos.update_status');
+    // Buscar coincidencias por imagen sin crear un caso
+    Route::post('/casos/search-image', [\App\Http\Controllers\CasoController::class, 'searchByImage'])
+        ->name('casos.search_image');
 });
 
 /* -----------------------------------------------------------------
