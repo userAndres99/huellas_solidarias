@@ -11,15 +11,16 @@ export default function MessageOptionsDropdown({ message }) {
     const {emit} = useEventBus();
 
     const onMessageDelete = () => {
-        console.log("Delete menssage");
+        console.log("Delete menssage", );
 
         axios
             .delete(route("message.destroy", message.id))
             .then((res) => {
 
-                console.log(res.data);
+                console.log("Mensaje anterior:",res.data.message);
                 emit('message.deleted', 
-                    {message, 
+                    {
+                    deletedMessage: message, 
                     prevMessage: res.data.message,
 
                 });

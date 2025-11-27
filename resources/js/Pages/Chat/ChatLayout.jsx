@@ -1,6 +1,6 @@
 import TextInput from "@/Components/TextInput";
-import {router,usePage } from "@inertiajs/react";
-import { useEffect, useState } from "react";
+import { router, usePage } from "@inertiajs/react";
+import { useEffect, useState, useRef } from "react";
 import { PencilSquareIcon } from "@heroicons/react/24/outline";
 import ConversationItem from "../../Components/App/ConversationItem";
 import { useEventBus } from "@/EvenBus";
@@ -8,12 +8,20 @@ import GroupModal from "@/Components/App/GroupModal";
 
 const ChatLayouts = ({ children }) => {
     const page = usePage();
-    const { conversations, selectedConversation } = page.props;
+    const conversations = page.props.conversations;
+    const selectedConversation = page.props.selectedConversation;
+
+    const selectedConversationRef = useRef(selectedConversation);
     const [onlineUsers, setOnlineUsers] = useState({});
     const [localConversations, setLocalConversations] = useState([]);
     const [sortedConversations, setSortedConversations] = useState([]);
-    const {on, emit} = useEventBus();
+    const { on, emit } = useEventBus();
     const [showGroupModal, setShowGroupModal] = useState(false);
+
+    // Mantener siempre actualizado el ref
+    useEffect(() => {
+        selectedConversationRef.current = selectedConversation;
+    }, [selectedConversation]);
 
     const isUserOnline = (userId) => onlineUsers[userId];
 
@@ -27,9 +35,8 @@ const ChatLayouts = ({ children }) => {
     };
 
     const messageCreated = (message) => {
-        setLocalConversations((oldUsers) => {
-            return oldUsers.map((u) => {
-
+        setLocalConversations((oldUsers) =>
+            oldUsers.map((u) => {
                 if (
                     message.receiver_id &&
                     !u.is_group &&
@@ -40,97 +47,86 @@ const ChatLayouts = ({ children }) => {
                     return u;
                 }
 
-                if (
-                    message.group_id &&
-                    u.is_group &&
-                    u.id == message.group_id
-                ) { 
+                if (message.group_id && u.is_group && u.id == message.group_id) {
                     u.last_message = message.message;
                     u.last_message_date = message.created_at;
                     return u;
                 }
                 return u;
-            });
-        });
+            })
+        );
     };
 
-    const messageDeleted = ({prevMessage}) => {
-        if (!prevMessage) {
-            return;
-        }
+    const messageDeleted = ({ deletedMessage, prevMessage }) => {
+        setLocalConversations((oldUsers) =>
+            oldUsers.map((u) => {
+                const matchUser =
+                    (!u.is_group &&
+                        (u.id == deletedMessage.sender_id ||
+                            u.id == deletedMessage.receiver_id)) ||
+                    (u.is_group &&
+                        deletedMessage.group_id &&
+                        u.id == deletedMessage.group_id);
 
-        setLocalConversations((oldUsers) => {
-            return oldUsers.map((u) => {
-                if (
-                    prevMessage.receiver_id &&
-                    !u.is_group &&
-                    (u.id == prevMessage.sender_id ||
-                     u.id == prevMessage.receiver_id)
-                ) {
-                    u.last_message = prevMessage.message;
-                    u.last_message_date = prevMessage.created_at;
-                    return u;
+                if (!matchUser) return u;
+
+                if (prevMessage) {
+                    return {
+                        ...u,
+                        last_message: prevMessage.message,
+                        last_message_date: prevMessage.created_at,
+                    };
                 }
-                if (
-                    prevMessage.group_id &&
-                    u.is_group &&
-                    u.id == prevMessage.group_id
-                ){
-                    u.last_message = prevMessage.message;
-                    u.last_message_date = prevMessage.created_at;
-                    return u;
-                }
-                return u;
-            });
-        });
-    }
+
+                return {
+                    ...u,
+                    last_message: null,
+                    last_message_date: null,
+                };
+            })
+        );
+    };
 
     useEffect(() => {
         const offCreated = on("message.created", messageCreated);
         const offDeleted = on("message.deleted", messageDeleted);
-        const offModalShow = on("GroupModal.show", (group) =>{
-            setShowGroupModal(true);
-            
-        }); 
+        const offModalShow = on("GroupModal.show", () => setShowGroupModal(true));
 
-        const offGroupDelete = on("group.deleted", ({id, name}) => {
-            setLocalConversations((oldConversations) => {
-                return oldConversations.filter((con) => con.id != id);
-            });
+        const offGroupDelete = on("group.deleted", ({ id, name }) => {
+            setLocalConversations((oldConversations) =>
+                oldConversations.filter((con) => con.id != id)
+            );
 
-            emit('toast.show', `Group "${name}" was deleted`);
+            emit("toast.show", `Group "${name}" was deleted`);
 
-            console.log(selectedConversation);
-            if(
-                !selectedConversation ||
-                selectedConversation &&
-                selectedConversation.is_group &&
-                selectedConversation.id == id
-            ) {
+            // Usamos el ref para acceder al selectedConversation actualizado
+            const selConv = selectedConversationRef.current;
+
+            if (!selConv || (selConv.is_group && selConv.id === id)) {
                 router.visit(route("chat"));
             }
         });
+
         return () => {
             offCreated();
             offDeleted();
             offModalShow();
             offGroupDelete();
-        }
-    }, [on]);
+        };
+    }, [on, emit]);
 
     useEffect(() => {
         setSortedConversations(
-            localConversations.sort((a, b) => {
-                if (a.blocked_at && b.blocked_at) {
-                    return a.blocked_at > b.blocked_at ? 1 : -1;
-                } else if (a.blocked_at) return 1;
-                else if (b.blocked_at) return -1;
+            [...localConversations].sort((a, b) => {
+                if (a.blocked_at && b.blocked_at) return a.blocked_at > b.blocked_at ? 1 : -1;
+                if (a.blocked_at) return 1;
+                if (b.blocked_at) return -1;
 
                 if (a.last_message_date && b.last_message_date)
                     return b.last_message_date.localeCompare(a.last_message_date);
-                else if (a.last_message_date) return -1;
-                else if (b.last_message_date) return 1;
-                else return 0;
+                if (a.last_message_date) return -1;
+                if (b.last_message_date) return 1;
+                return 0;
             })
         );
     }, [localConversations]);
@@ -139,7 +135,6 @@ const ChatLayouts = ({ children }) => {
         setLocalConversations(conversations);
     }, [conversations]);
 
-    // Canal de presencia (usuarios conectados)
     useEffect(() => {
         Echo.join("online")
             .here((users) => {
@@ -148,16 +143,14 @@ const ChatLayouts = ({ children }) => {
                 );
                 setOnlineUsers((prev) => ({ ...prev, ...onlineUsersObj }));
             })
-            .joining((user) => {
-                setOnlineUsers((prev) => ({ ...prev, [user.id]: user }));
-            })
-            .leaving((user) => {
+            .joining((user) => setOnlineUsers((prev) => ({ ...prev, [user.id]: user })))
+            .leaving((user) =>
                 setOnlineUsers((prev) => {
                     const updated = { ...prev };
                     delete updated[user.id];
                     return updated;
-                });
-            })
+                })
+            )
             .error((error) => console.error("Echo error:", error));
 
         return () => Echo.leave("online");
@@ -166,21 +159,15 @@ const ChatLayouts = ({ children }) => {
     return (
         <>
             <div className="flex w-full h-screen">
-                <div
-                    className="flex flex-col sm:w-[220px] md:w-[300px] bg-slate-800"
-                >
+                <div className="flex flex-col sm:w-[220px] md:w-[300px] bg-slate-800">
                     <div className="flex items-center justify-between py-2 px-3 text-xl font-medium text-gray-200">
                         My Conversations
-                        <div
-                            className="tooltip tooltip-left"
-                            data-tip="Create new Group"
-                        >
+                        <div className="tooltip tooltip-left" data-tip="Create new Group">
                             <button
-                                onClick={(ev) => setShowGroupModal(true)}
+                                onClick={() => setShowGroupModal(true)}
                                 className="text-gray-400 hover:text-gray-200"
                             >
                                 <PencilSquareIcon className="w-4 h-4 inline-block ml-2" />
-
                             </button>
                         </div>
                     </div>
@@ -192,24 +179,20 @@ const ChatLayouts = ({ children }) => {
                         />
                     </div>
                     <div className="flex-1 overflow-auto">
-                        {sortedConversations &&
-                            sortedConversations.map((conversation, index)=>(
-                                <ConversationItem
-                                    key={`${conversation.is_group ? "group" : "user"}_${conversation.id}_${index}`}
-                                    conversation={conversation}
-                                    online={!!isUserOnline(conversation.id)}
-                                    selectedConversation={selectedConversation}
-                                />
-                            ))}
+                        {sortedConversations.map((conversation, index) => (
+                            <ConversationItem
+                                key={`${conversation.is_group ? "group" : "user"}_${conversation.id}_${index}`}
+                                conversation={conversation}
+                                online={!!isUserOnline(conversation.id)}
+                                selectedConversation={selectedConversation}
+                            />
+                        ))}
                     </div>
                 </div>
-                <div className="flex-1 flex flex-col overflow-hidden">
-                    {children}
-                </div>
-
+                <div className="flex-1 flex flex-col overflow-hidden">{children}</div>
             </div>
 
-               <GroupModal show={showGroupModal} onClose={()=> setShowGroupModal(false)}/>             
+            <GroupModal show={showGroupModal} onClose={() => setShowGroupModal(false)} />
         </>
     );
 };

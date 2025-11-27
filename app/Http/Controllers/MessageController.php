@@ -92,7 +92,6 @@ class MessageController extends Controller
         $messages = Message::where(function ($query) use ($user) {
             $query->where('sender_id', auth()->id())
                 ->where('receiver_id', $user->id);
-
         })->orWhere(function ($query) use ($user) {
             $query->where('sender_id', $user->id)
                 ->where('receiver_id', auth()->id());
