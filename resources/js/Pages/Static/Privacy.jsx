@@ -3,7 +3,7 @@ import { Head } from '@inertiajs/react';
 
 export default function Privacy() {
   return (
-    <PublicLayout title="Política de privacidad">
+    <>
       <Head>
         <title>Política de privacidad - Huellas Solidarias</title>
       </Head>
@@ -53,6 +53,10 @@ export default function Privacy() {
           </article>
         </div>
       </div>
-    </PublicLayout>
+    </>
   );
 }
+
+Privacy.layout = (page) => (
+  <PublicLayout {...page.props} title="Política de privacidad">{page}</PublicLayout>
+);

@@ -145,32 +145,23 @@ export default function Index(props) {
 
   if (loading) {
     return (
-      <LayoutPlaceholder />
-    );
-  }
-
-  function LayoutPlaceholder() {
-    const LayoutToUse = props?.auth?.user ? AuthenticatedLayout : PublicLayout;
-    return (
-      <LayoutToUse {...props} header={<h2 className="text-xl font-semibold leading-tight text-gray-800">{viewMode === 'mine' ? 'Mis publicaciones' : 'Publicaciones'}</h2>}>
+      <>
+        <Head title={viewMode === 'mine' ? 'Mis publicaciones' : 'Publicaciones'} />
         <div className="container mx-auto p-4 min-h-[60vh] flex items-center justify-center">
           <Loading variant="centered" message="Cargando publicaciones..." />
         </div>
-      </LayoutToUse>
+      </>
     );
   }
 
-  const Layout = props?.auth?.user ? AuthenticatedLayout : PublicLayout;
+  // layout will be selected by Index.layout below
 
   function handleRemovePublicacion(id) {
     setCasos(prev => prev.filter(p => p.id !== id));
   }
 
   return (
-    <Layout
-      {...props}
-      header={<h2 className="text-xl font-semibold leading-tight text-gray-800">{viewMode === 'mine' ? 'Mis publicaciones' : 'Publicaciones'}</h2>}
-    >
+    <>
       <Head title="Publicaciones" />
 
       <div className="container mx-auto p-4">
@@ -257,6 +248,15 @@ export default function Index(props) {
         />
       </div>
       </div>
-    </Layout>
+    </>
   );
 }
+
+Index.layout = (page) => {
+  const LayoutComp = page.props?.auth?.user ? AuthenticatedLayout : PublicLayout;
+  return (
+    <LayoutComp {...page.props} header={<h2 className="text-xl font-semibold leading-tight text-gray-800">Publicaciones</h2>}>
+      {page}
+    </LayoutComp>
+  );
+};

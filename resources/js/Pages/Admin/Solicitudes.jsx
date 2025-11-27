@@ -6,7 +6,7 @@ export default function Solicitudes(props) {
   const { auth, errors, solicitudes = [] } = props;
 
   return (
-    <AuthenticatedLayout auth={auth} errors={errors}>
+    <>
       <Head title="Solicitudes de verificación" />
 
       <div className="p-6">
@@ -76,6 +76,14 @@ export default function Solicitudes(props) {
           </div>
         )}
       </div>
-    </AuthenticatedLayout>
+    </>
   );
 }
+
+Solicitudes.layout = (page) => (
+  <AuthenticatedLayout
+    {...page.props}
+  >
+    {page}
+  </AuthenticatedLayout>
+);

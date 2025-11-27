@@ -26,7 +26,7 @@ export default function Home({ auth, canLogin, canRegister }) {
   }, []);
 
   return (
-    <PublicLayout auth={auth} canLogin={canLogin} canRegister={canRegister}>
+    <>
       <Head>
         <title>Home</title>
         <link rel="preload" as="image" href="/images/Hero.jpg" />
@@ -78,6 +78,8 @@ export default function Home({ auth, canLogin, canRegister }) {
           </section>
         </div>
       )}
-    </PublicLayout>
+    </>
   );
 }
+
+Home.layout = (page) => <PublicLayout {...page.props}>{page}</PublicLayout>;

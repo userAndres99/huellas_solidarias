@@ -23,10 +23,7 @@ export default function PerdidoResults(props) {
   const { flash } = usePage().props;
 
     return (
-    <AuthenticatedLayout
-      {...props}
-      header={<h2 className="text-xl font-semibold leading-tight text-gray-800">Resultado de la búsqueda</h2>}
-    >
+    <>
       <Head title="Resultados similares" />
 
       <div className="container mx-auto p-4 max-w-5xl">
@@ -134,6 +131,15 @@ export default function PerdidoResults(props) {
           )}
         </div>
       </div>
-    </AuthenticatedLayout>
+    </>
   );
 }
+
+PerdidoResults.layout = (page) => (
+  <AuthenticatedLayout
+    {...page.props}
+    header={<h2 className="text-xl font-semibold leading-tight text-gray-800">Resultado de la búsqueda</h2>}
+  >
+    {page}
+  </AuthenticatedLayout>
+);

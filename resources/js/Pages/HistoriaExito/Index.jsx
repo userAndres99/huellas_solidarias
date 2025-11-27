@@ -48,25 +48,17 @@ export default function Historias() {
         return () => controller.abort();
     }, []);
 
-     if(loading) return (
-         <LayoutPlaceholder />
+     if (loading) return (
+         <>
+             <Head title="Historias de Éxito" />
+             <div className="container mx-auto p-6 min-h-[60vh] flex items-center justify-center">
+                 <Loading variant="centered" message="Cargando historias..." />
+             </div>
+         </>
      );
 
-     function LayoutPlaceholder(){
-         const Layout = (usePage().props?.auth?.user) ? AuthenticatedLayout : PublicLayout;
-         return (
-                 <Layout {...usePage().props} header={<h2 className="text-xl font-semibold leading-tight text-gray-800">Historias de Éxito</h2>}>
-                     <div className="container mx-auto p-6 min-h-[60vh] flex items-center justify-center">
-                         <Loading variant="centered" message="Cargando historias..." />
-                     </div>
-                 </Layout>
-         )
-     }
-
-     const Layout = auth?.user ? AuthenticatedLayout : PublicLayout;
-
      return (
-         <Layout {...pageProps} header={<h2 className="text-xl font-semibold leading-tight text-gray-800">Historias de Éxito</h2>}>
+         <>
             <Head title="Historias de Éxito" />
             <div className="container mx-auto p-6">
             <div className="flex justify-between items-center mb-8">
@@ -137,6 +129,15 @@ export default function Historias() {
                 ))}
             </div>
         </div>
-       </Layout>
+       </>
     );
 }
+
+Historias.layout = (page) => {
+    const LayoutComp = page.props?.auth?.user ? AuthenticatedLayout : PublicLayout;
+    return (
+        <LayoutComp {...page.props} header={<h2 className="text-xl font-semibold leading-tight text-gray-800">Historias de Éxito</h2>}>
+            {page}
+        </LayoutComp>
+    );
+};

@@ -163,7 +163,7 @@ export default function CreateEvento({ event = null }) {
   };
 
   return (
-    <AuthenticatedLayout header={<h2 className="text-xl font-semibold">{event ? 'Editar evento' : 'Nuevo evento'}</h2>}>
+    <>
       <Head title={event ? 'Editar evento' : 'Crear evento'} />
 
       <div className="relative max-w-4xl mx-auto mt-8 mb-8 pt-20 pb-6 px-6 border border-gray-100 shadow-lg rounded-2xl w-full" style={{ backgroundColor: '#16A34A' }}>
@@ -353,6 +353,15 @@ export default function CreateEvento({ event = null }) {
           </div>
         </div>
       </div>
-    </AuthenticatedLayout>
+    </>
   );
 }
+
+CreateEvento.layout = (page) => (
+  <AuthenticatedLayout
+    {...page.props}
+    header={<h2 className="text-xl font-semibold">{page.props.event ? 'Editar evento' : 'Nuevo evento'}</h2>}
+  >
+    {page}
+  </AuthenticatedLayout>
+);

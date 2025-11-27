@@ -4,7 +4,7 @@ import { Head, Link } from '@inertiajs/react';
 
 export default function EventShow({ event }) {
   return (
-    <AuthenticatedLayout header={<h2 className="text-xl font-semibold">Detalle del evento</h2>}>
+    <>
       <Head title={event.title || 'Evento'} />
 
       <div className="container mx-auto p-4 max-w-3xl">
@@ -29,6 +29,15 @@ export default function EventShow({ event }) {
           </div>
         </div>
       </div>
-    </AuthenticatedLayout>
+    </>
   );
 }
+
+EventShow.layout = (page) => (
+  <AuthenticatedLayout
+    {...page.props}
+    header={<h2 className="text-xl font-semibold">Detalle del evento</h2>}
+  >
+    {page}
+  </AuthenticatedLayout>
+);

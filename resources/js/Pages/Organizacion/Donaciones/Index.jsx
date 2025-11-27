@@ -7,7 +7,7 @@ export default function Index(props) {
   const meta = props.donaciones?.meta || { current_page: 1, last_page: 1, per_page: 20, total: 0 };
 
   return (
-    <AuthenticatedLayout header={<h2 className="text-xl font-semibold leading-tight text-gray-800">Donaciones</h2>}>
+    <>
       <Head title="Donaciones" />
 
       <div className="py-6">
@@ -64,6 +64,15 @@ export default function Index(props) {
           </div>
         </div>
       </div>
-    </AuthenticatedLayout>
+    </>
   );
 }
+
+Index.layout = (page) => (
+  <AuthenticatedLayout
+    {...page.props}
+    header={<h2 className="text-xl font-semibold leading-tight text-gray-800">Donaciones</h2>}
+  >
+    {page}
+  </AuthenticatedLayout>
+);

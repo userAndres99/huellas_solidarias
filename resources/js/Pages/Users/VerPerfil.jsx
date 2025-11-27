@@ -44,7 +44,7 @@ export default function VerPerfil(props){
     }
 
     return (
-        <AuthenticatedLayout {...pageProps} header={<h2 className="text-xl font-semibold leading-tight text-gray-800">Perfil de {usuario.name}</h2>}>
+        <>
             <Head title={`Perfil - ${usuario.name}`} />
             <div className="max-w-4xl mx-auto p-6">
             <div className="flex items-center gap-6">
@@ -114,7 +114,16 @@ export default function VerPerfil(props){
                     <div className="mt-4 text-sm text-gray-500">Este usuario no tiene publicaciones.</div>
                 )}
             </div>
-            </div>
-        </AuthenticatedLayout>
-    )
+                        </div>
+                </>
+        )
 }
+
+VerPerfil.layout = (page) => (
+    <AuthenticatedLayout
+        {...page.props}
+        header={<h2 className="text-xl font-semibold leading-tight text-gray-800">Perfil de {page.props.usuario?.name ?? ''}</h2>}
+    >
+        {page}
+    </AuthenticatedLayout>
+);

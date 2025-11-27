@@ -8,9 +8,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 
 export default function Index({ events }) {
   return (
-    <AuthenticatedLayout
-      header={<h2 className="text-xl font-semibold leading-tight text-gray-800">Eventos</h2>}
-    >
+    <>
       <Head title="Eventos" />
 
       <div className="py-6">
@@ -35,9 +33,18 @@ export default function Index({ events }) {
           </div>
         </div>
       </div>
-    </AuthenticatedLayout>
+    </>
   );
 }
+
+Index.layout = (page) => (
+  <AuthenticatedLayout
+    {...page.props}
+    header={<h2 className="text-xl font-semibold leading-tight text-gray-800">Eventos</h2>}
+  >
+    {page}
+  </AuthenticatedLayout>
+);
 function OrgContent({ events }) {
   const [view, setView] = useState('calendar');
 

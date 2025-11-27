@@ -261,9 +261,7 @@ export default function Index(props) {
   };
 
   return (
-    <AuthenticatedLayout
-      header={<h2 className="text-xl font-semibold leading-tight text-gray-800">Estadísticas</h2>}
-    >
+    <>
       <Head title="Estadísticas" />
 
       <div className="py-6">
@@ -358,6 +356,15 @@ export default function Index(props) {
         </div>
       </div>
 
-    </AuthenticatedLayout>
+    </>
   );
 }
+
+Index.layout = (page) => (
+  <AuthenticatedLayout
+    {...page.props}
+    header={<h2 className="text-xl font-semibold leading-tight text-gray-800">Estadísticas</h2>}
+  >
+    {page}
+  </AuthenticatedLayout>
+);

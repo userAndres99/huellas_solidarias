@@ -31,7 +31,7 @@ export default function SolicitudesShow({ auth, errors, solicitud }) {
   };
 
   return (
-    <AuthenticatedLayout auth={auth} errors={errors}>
+    <>
       <Head title={`Solicitud #${solicitud.id}`} />
 
       <div className="p-6 max-w-3xl mx-auto">
@@ -107,6 +107,14 @@ export default function SolicitudesShow({ auth, errors, solicitud }) {
           </Link>
         </div>
       </div>
-    </AuthenticatedLayout>
+    </>
   );
 }
+
+SolicitudesShow.layout = (page) => (
+  <AuthenticatedLayout
+    {...page.props}
+  >
+    {page}
+  </AuthenticatedLayout>
+);

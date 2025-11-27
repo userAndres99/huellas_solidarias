@@ -5,9 +5,7 @@ import FormCasos from '@/Components/FormCasos';
 
 export default function PublicarCaso() {
   return (
-    <AuthenticatedLayout
-      header={<h2 className="text-xl font-semibold leading-tight text-gray-800">Publicar Caso</h2>}
-    >
+    <>
       <Head title="Publicar Caso" />
 
       <div className="py-10 bg-[#C9E8F6] min-h-screen">
@@ -15,6 +13,15 @@ export default function PublicarCaso() {
           <FormCasos />
         </div>
       </div>
-    </AuthenticatedLayout>
+    </>
   );
 }
+
+PublicarCaso.layout = (page) => (
+  <AuthenticatedLayout
+    {...page.props}
+    header={<h2 className="text-xl font-semibold leading-tight text-gray-800">Publicar Caso</h2>}
+  >
+    {page}
+  </AuthenticatedLayout>
+);

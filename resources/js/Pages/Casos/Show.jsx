@@ -45,16 +45,13 @@ export default function Show(props) {
 
   if (loading){
     return (
-      <AuthenticatedLayout
-        {...props}
-        header={<h2 className="text-xl font-semibold leading-tight text-gray-800">Detalle del Caso</h2>}
-      >
+      <>
         <Head title="Detalle del Caso" />
 
         <div className="container mx-auto p-4 max-w-4xl min-h-[60vh] flex items-center justify-center">
           <Loading message="Cargando caso..." />
         </div>
-      </AuthenticatedLayout>
+      </>
     );
   }
 
@@ -69,10 +66,7 @@ export default function Show(props) {
  }
 
   return (
-    <AuthenticatedLayout
-      {...props}
-      header={<h2 className="text-xl font-semibold leading-tight text-gray-800">Detalle del Caso</h2>}
-    >
+    <>
       <Head title="Detalle del Caso" />
 
       <div className="container mx-auto p-4 max-w-4xl">
@@ -88,8 +82,16 @@ export default function Show(props) {
           />
         </div>
       </div>
-    </AuthenticatedLayout>
+    </>
 
-    
   );
 }
+
+Show.layout = (page) => (
+  <AuthenticatedLayout
+    {...page.props}
+    header={<h2 className="text-xl font-semibold leading-tight text-gray-800">Detalle del Caso</h2>}
+  >
+    {page}
+  </AuthenticatedLayout>
+);

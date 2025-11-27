@@ -7,13 +7,7 @@ import OrganizationPanel from './Partials/OrganizationPanel';
 
 export default function Edit({ mustVerifyEmail, status }) {
     return (
-        <AuthenticatedLayout
-            header={
-                <h2 className="text-xl font-semibold leading-tight text-gray-800">
-                    Configuración de Perfil
-                </h2>
-            }
-        >
+        <>
             <Head title="Configuración de Perfil" />
 
             <div className="py-12">
@@ -39,6 +33,19 @@ export default function Edit({ mustVerifyEmail, status }) {
                     </div>
                 </div>
             </div>
-        </AuthenticatedLayout>
-    );
+                </>
+        );
 }
+
+Edit.layout = (page) => (
+    <AuthenticatedLayout
+        {...page.props}
+        header={
+            <h2 className="text-xl font-semibold leading-tight text-gray-800">
+                Configuración de Perfil
+            </h2>
+        }
+    >
+        {page}
+    </AuthenticatedLayout>
+);

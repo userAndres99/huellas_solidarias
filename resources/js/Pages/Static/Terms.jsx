@@ -3,7 +3,7 @@ import { Head } from '@inertiajs/react';
 
 export default function Terms() {
   return (
-    <PublicLayout title="Términos y condiciones">
+    <>
       <Head>
         <title>Términos y condiciones - Huellas Solidarias</title>
       </Head>
@@ -55,6 +55,10 @@ export default function Terms() {
           </article>
         </div>
       </div>
-    </PublicLayout>
+    </>
   );
 }
+
+Terms.layout = (page) => (
+  <PublicLayout {...page.props} title="Términos y condiciones">{page}</PublicLayout>
+);

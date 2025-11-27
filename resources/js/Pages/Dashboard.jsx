@@ -92,13 +92,7 @@ export default function Dashboard({ auth, misPublicaciones }) {
   }, []);
   
   return (
-    <AuthenticatedLayout
-      header={
-        <h2 className="text-xl font-semibold leading-tight text-gray-800">
-          Inicio
-        </h2>
-      }
-    >
+    <>
       <Head title="Inicio" />
 
       <div className="py-6">
@@ -228,6 +222,19 @@ export default function Dashboard({ auth, misPublicaciones }) {
           </div>
         </div>
       </div>
-    </AuthenticatedLayout>
+    </>
   );
 }
+
+Dashboard.layout = (page) => (
+  <AuthenticatedLayout
+    {...page.props}
+    header={
+      <h2 className="text-xl font-semibold leading-tight text-gray-800">
+        Inicio
+      </h2>
+    }
+  >
+    {page}
+  </AuthenticatedLayout>
+);

@@ -13,7 +13,7 @@ export default function Resultado() {
   const [showRaw, setShowRaw] = useState(false);
 
   return (
-    <AuthenticatedLayout header={<h2 className="text-xl font-semibold">Resultado de la donación</h2>}>
+    <>
       <Head title="Resultado de donación" />
 
       <div className="max-w-3xl mx-auto p-6 card-surface min-h-full flex flex-col justify-center pt-8">
@@ -80,6 +80,15 @@ export default function Resultado() {
           </div>
         </div>
       </div>
-    </AuthenticatedLayout>
+    </>
   );
 }
+
+Resultado.layout = (page) => (
+  <AuthenticatedLayout
+    {...page.props}
+    header={<h2 className="text-xl font-semibold">Resultado de la donación</h2>}
+  >
+    {page}
+  </AuthenticatedLayout>
+);
