@@ -32,6 +32,9 @@ class Conversation extends Model
     {
         return $this->belongsTo(User::class, 'user_id2');
     }
+    public function messages(){
+        return $this->hasMany(Message::class);
+    }
 
     public static function getConversationsForSidebar(User $user)
     {

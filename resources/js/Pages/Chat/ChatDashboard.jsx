@@ -41,26 +41,27 @@ function ChatDashboard({selectedConversation =null, messages = null }) {
       }
   };
 
-  const messageDeleted = ({ message }) => {
-     if (selectedConversation &&
-       selectedConversation.is_group &&
-        selectedConversation.id == message.group_id
-      ) {
-        setLocalMessages((prevMessage) => {
-            return prevMessage.filter((m) => m.id !== message.id);
-        });
-      }
-      if (
-          selectedConversation &&
-          selectedConversation.is_user &&
-          (selectedConversation.id == message.sender_id || selectedConversation.id ==
-          message.receiver_id)
-      ) {
-        setLocalMessages((prevMessage) => {
-          return prevMessage.filter((m) => m.id !== message.id);
-        });
-      }
-  }
+ const messageDeleted = ({ deletedMessage, prevMessage }) => {
+    console.log("EVENT message.deleted recibido:", {
+        deletedMessage,
+        prevMessage
+    });
+
+    setLocalMessages(prev => {
+        // 1️⃣ Borrar el mensaje eliminado
+        let updated = prev.filter(m => m.id !== deletedMessage.id);
+
+        // 2️⃣ Si no hay prevMessage → simplemente devolvemos el array actualizado
+        if (!prevMessage) {
+            setNoMoreMessages(true);
+            return updated; // sigue siendo array
+        }
+
+        // 3️⃣ Si prevMessage existe → reemplazamos el mensaje en el listado
+        return updated.map(m => m.id === prevMessage.id ? prevMessage : m);
+    });
+};
+
 
   const loadMoreMessage = useCallback (() => {
     
@@ -186,7 +187,7 @@ useEffect(() =>{
             {localMessages.length === 0 && (
               <div className="flex justify-center items-center h-full">
                  <div className="text-lg text-slate-800">
-                    No messages found
+                    No hay mensajes 
                   </div> 
               </div>
             )}
