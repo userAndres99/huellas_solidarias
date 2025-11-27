@@ -86,13 +86,9 @@ class SolicitudVerificacionController extends Controller
             'latitud' => $request->input('latitud'),
             'longitud' => $request->input('longitud'),
             'status' => 'pending',
+            'notified_user' => false,
         ]);
 
-        // Notificar admins (es algo asi pero tengo que configurarlo)
-        // $admins = User::where('role', 'Admin')->get();
-        // if ($admins->isNotEmpty()) {
-        //     Notification::send($admins, new \App\Notifications\NuevaSolicitudVerificacion($solicitud));
-        // }
 
         return back()->with('success', 'Solicitud enviada correctamente. Nuestro equipo la revisará.');
     }
@@ -131,6 +127,8 @@ class SolicitudVerificacionController extends Controller
         $solicitud->status = $request->status;
         $solicitud->response_message = $request->response_message;
         $solicitud->reviewed_by = auth()->id();
+        // Marcar como no notificado al usuario; el dashboard mostrará y marcará como notificado
+        $solicitud->notified_user = false;
         $solicitud->save();
 
         $user = $solicitud->user;

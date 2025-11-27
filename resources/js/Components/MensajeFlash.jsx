@@ -1,7 +1,26 @@
-import React from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import '@/../css/components/form3D.css';
 
-export default function MensajeFlash({ tipo = 'success', children }) {
+export default function MensajeFlash({ tipo = 'success', children, duration = 60000 }) {
+  const [visible, setVisible] = useState(true);
+  const [hiding, setHiding] = useState(false);
+  const hideTimerRef = useRef(null);
+  const removeTimerRef = useRef(null);
+
+  useEffect(() => {
+
+    hideTimerRef.current = setTimeout(() => setHiding(true), duration);
+
+    removeTimerRef.current = setTimeout(() => setVisible(false), duration + 600);
+
+    return () => {
+      clearTimeout(hideTimerRef.current);
+      clearTimeout(removeTimerRef.current);
+    };
+  }, [duration]);
+
+  if (!visible) return null;
+
   const variantClass = tipo === 'error' ? 'flash-error' : tipo === 'info' ? 'flash-info' : 'flash-success';
 
   const icon = (() => {
@@ -32,7 +51,7 @@ export default function MensajeFlash({ tipo = 'success', children }) {
 
   return (
     <div className="w-full flex justify-center mb-4" role="status" aria-live="polite">
-      <div className={`flash-3d ${variantClass}`}>
+      <div className={`flash-3d ${variantClass} ${hiding ? 'flash-hidden' : ''}`}>
         <div className="flash-inner p-3">
           <div className="flash-icon" aria-hidden>
             {icon}
@@ -40,6 +59,20 @@ export default function MensajeFlash({ tipo = 'success', children }) {
           <div className="flash-content">
             {children}
           </div>
+          <button
+            type="button"
+            aria-label="Cerrar mensaje"
+            className="ml-3 text-white opacity-80 hover:opacity-100"
+            onClick={() => {
+              
+              setHiding(true);
+              clearTimeout(hideTimerRef.current);
+              clearTimeout(removeTimerRef.current);
+              removeTimerRef.current = setTimeout(() => setVisible(false), 300);
+            }}
+          >
+            ×
+          </button>
         </div>
       </div>
     </div>

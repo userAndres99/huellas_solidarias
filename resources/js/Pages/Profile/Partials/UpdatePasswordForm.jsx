@@ -220,7 +220,13 @@ export default function UpdatePasswordForm({ className = '' }) {
                 </div>
 
                 <div className="flex items-center gap-4">
-                    <PrimaryButton disabled={processingLocal}>Guardar</PrimaryButton>
+                    <PrimaryButton
+                        disabled={processingLocal}
+                        className="bg-blue-600 hover:bg-blue-700"
+                        style={{ backgroundImage: 'none', backgroundColor: '#2563eb' }}
+                    >
+                        Guardar
+                    </PrimaryButton>
 
                     <Transition
                         show={passwordSaved}

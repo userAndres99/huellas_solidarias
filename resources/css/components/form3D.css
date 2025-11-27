@@ -179,3 +179,12 @@
 .flash-3d p, .flash-3d span { color: white; }
 
 @media (prefers-reduced-motion: reduce) { .flash-3d { transition: none; } }
+
+.flash-3d {
+  transition: opacity 600ms cubic-bezier(.2,.8,.2,1), transform 600ms cubic-bezier(.2,.8,.2,1);
+}
+.flash-3d.flash-hidden {
+  opacity: 0;
+  transform: translateY(-8px) scale(0.995);
+  pointer-events: none;
+}

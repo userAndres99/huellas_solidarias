@@ -1,15 +1,23 @@
 import React from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, usePage } from '@inertiajs/react';
+import MensajeFlash from '@/Components/MensajeFlash';
 
 export default function Solicitudes(props) {
-  const { auth, errors, solicitudes = [] } = props;
+  const { solicitudes = [] } = props;
+  const { flash } = usePage().props;
 
   return (
     <>
       <Head title="Solicitudes de verificación" />
 
       <div className="p-6">
+        {flash?.success && (
+          <div className="mb-4">
+            <MensajeFlash tipo="success">{flash.success}</MensajeFlash>
+          </div>
+        )}
+
         <h1 className="text-2xl font-semibold mb-4">Solicitudes de verificación</h1>
 
         {solicitudes.length === 0 ? (
@@ -38,9 +46,7 @@ export default function Solicitudes(props) {
                       {s.user?.name ?? '—'}
                       <div className="text-xs text-gray-500">{s.user?.email ?? ''}</div>
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-700">
-                      {s.organization_name ?? '—'}
-                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-700">{s.organization_name ?? '—'}</td>
                     <td className="px-4 py-3 text-sm text-gray-700">
                       {s.organization_phone ?? ''}
                       <div className="text-xs text-gray-500">{s.organization_email ?? ''}</div>
@@ -58,9 +64,7 @@ export default function Solicitudes(props) {
                         {s.status}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-500">
-                      {new Date(s.created_at).toLocaleString()}
-                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-500">{new Date(s.created_at).toLocaleString()}</td>
                     <td className="px-4 py-3 text-right text-sm">
                       <Link
                         href={route('admin.solicitudes.show', s.id)}
@@ -81,9 +85,5 @@ export default function Solicitudes(props) {
 }
 
 Solicitudes.layout = (page) => (
-  <AuthenticatedLayout
-    {...page.props}
-  >
-    {page}
-  </AuthenticatedLayout>
+  <AuthenticatedLayout {...page.props}>{page}</AuthenticatedLayout>
 );

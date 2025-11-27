@@ -235,7 +235,14 @@ export default function OrganizationPanel() {
                     </div>
 
                     <div className="flex items-center gap-4 mt-6">
-                        <PrimaryButton type="submit" disabled={orgProcessing}>Guardar organización</PrimaryButton>
+                        <PrimaryButton
+                            type="submit"
+                            disabled={orgProcessing}
+                            className="bg-blue-600 hover:bg-blue-700"
+                            style={{ backgroundImage: 'none', backgroundColor: '#2563eb' }}
+                        >
+                            Guardar organización
+                        </PrimaryButton>
                         {orgSaved && (
                             <p className="text-sm text-gray-600">Guardado.</p>
                         )}

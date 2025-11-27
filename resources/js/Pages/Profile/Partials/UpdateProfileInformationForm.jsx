@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Inertia } from '@inertiajs/inertia';
 import { Link, usePage, useForm } from '@inertiajs/react';
 import { Transition } from '@headlessui/react';
+import Modal from '@/Components/Modal';
 
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
@@ -30,6 +31,7 @@ export default function UpdateProfileInformation({
         user.profile_photo_url ?? '/images/DefaultPerfil.jpg'
     );
     const [removePhoto, setRemovePhoto] = useState(false);
+    const [showReqModal, setShowReqModal] = useState(false);
 
     useEffect(() => {
         return () => {
@@ -289,6 +291,7 @@ export default function UpdateProfileInformation({
                 </div>
 
                 {user?.role_name === 'Usuario' && (
+                    <>
                     <div className="rounded-md border border-gray-200 bg-gray-50 p-4">
                         <h3 className="text-sm font-semibold text-gray-900">
                             Solicitar verificación como representante de una organización
@@ -303,7 +306,7 @@ export default function UpdateProfileInformation({
                         <div className="mt-3 flex items-center gap-3">
                             <Link
                                 href={route('profile.solicitud_form')}
-                                className="inline-flex items-center rounded bg-indigo-600 px-4 py-2 text-white text-sm font-medium hover:bg-indigo-700"
+                                className="inline-flex items-center rounded bg-blue-600 px-4 py-2 text-white text-sm font-medium hover:bg-blue-700"
                             >
                                 Solicitar verificación
                             </Link>
@@ -311,12 +314,48 @@ export default function UpdateProfileInformation({
                             <button
                                 type="button"
                                 className="text-sm underline text-gray-600 hover:text-gray-800"
-                                onClick={() => Inertia.get(route('profile.verification_requirements'))}
+                                onClick={() => setShowReqModal(true)}
                             >
                                 Requisitos y documentación
                             </button>
                         </div>
                     </div>
+
+                    <Modal show={showReqModal} onClose={() => setShowReqModal(false)} maxWidth="lg">
+                        <div className="p-6">
+                            <h3 className="text-lg font-semibold mb-3">Requisitos para verificar tu organización</h3>
+                            <p className="mb-4">Para poder validar que la organización realmente existe y que quien solicita la verificación está autorizado para representarla, solicitaremos la siguiente información:</p>
+
+                            <h4 className="font-semibold mt-3">1. Información básica de la entidad</h4>
+                            <p className="text-sm text-gray-700 mb-2">Incluye datos esenciales como:</p>
+                            <ul className="list-disc list-inside text-sm mb-3">
+                                <li>Nombre de la organización</li>
+                                <li>Tipo (refugio, rescatista independiente, fundación, ONG, etc.)</li>
+                                <li>Dirección o zona de actividad</li>
+                                <li>Medios de contacto oficiales</li>
+                            </ul>
+
+                            <h4 className="font-semibold mt-3">2. Evidencia de actividad</h4>
+                            <p className="text-sm text-gray-700 mb-2">Pedimos material que demuestre que la entidad está activa y trabaja realmente en rescates o cuidado de animales. Puede ser:</p>
+                            <ul className="list-disc list-inside text-sm mb-3">
+                                <li>Enlaces a redes sociales</li>
+                                <li>Fotos de casos reales</li>
+                                <li>Publicaciones o campañas</li>
+                                <li>Página web (si tiene)</li>
+                            </ul>
+
+                            <h4 className="font-semibold mt-3">3. Documento del representante</h4>
+                            <p className="text-sm text-gray-700 mb-3">Se solicita una foto del DNI, pasaporte o documento equivalente del responsable que realiza la verificación. Esto es únicamente para confirmar identidad y evitar solicitudes fraudulentas.</p>
+
+                            <h4 className="font-semibold mt-3">4. Declaración de autorización</h4>
+                            <p className="text-sm text-gray-700 mb-4">Una confirmación sencilla donde el representante declara que está autorizado para gestionar la cuenta de la organización dentro de la plataforma.</p>
+
+                            <div className="mt-4 flex justify-end">
+                                <button onClick={() => setShowReqModal(false)} className="px-4 py-2 rounded bg-blue-600 text-white">Cerrar</button>
+                            </div>
+                        </div>
+                    </Modal>
+                    </>
                 )}
 
                 {mustVerifyEmail && user.email_verified_at === null && (
@@ -342,7 +381,14 @@ export default function UpdateProfileInformation({
                 )}
 
                 <div className="flex items-center gap-4">
-                    <PrimaryButton type="submit" disabled={processingLocal}>Guardar</PrimaryButton>
+                    <PrimaryButton
+                        type="submit"
+                        disabled={processingLocal}
+                        className="bg-blue-600 hover:bg-blue-700"
+                        style={{ backgroundImage: 'none', backgroundColor: '#2563eb' }}
+                    >
+                        Guardar
+                    </PrimaryButton>
 
                     <Transition
                         show={profileSaved}

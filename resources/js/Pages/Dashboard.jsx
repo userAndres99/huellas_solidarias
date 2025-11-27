@@ -19,7 +19,7 @@ function formatDate(dateStr) {
 }
 
 export default function Dashboard({ auth, misPublicaciones }) {
-  const { flash } = usePage().props;
+  const { flash, verificationNotification } = usePage().props;
   const [profileUrl, setProfileUrl] = useState(null);
   const [scrapedItems, setScrapedItems] = useState([]);
   const [loadingScraped, setLoadingScraped] = useState(true);
@@ -97,6 +97,15 @@ export default function Dashboard({ auth, misPublicaciones }) {
 
       <div className="py-6">
         <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
+
+          {/* Notificación única de resultado de solicitud de verificación */}
+          {verificationNotification && (
+            <div className="mb-6">
+              <MensajeFlash tipo={verificationNotification.status === 'approved' ? 'success' : 'error'}>
+                {verificationNotification.message}
+              </MensajeFlash>
+            </div>
+          )}
 
           {/* bienvenida  */}
           <div className="mt-6 mx-auto max-w-4xl card-surface shadow-lg rounded-2xl overflow-hidden fade-in">
@@ -193,10 +202,10 @@ export default function Dashboard({ auth, misPublicaciones }) {
                         scrapedItems.map((item, idx) => (
                           <div key={idx} className="bg-white rounded-lg overflow-hidden shadow-sm">
                             {item.image ? (
-                              <img src={item.image} alt={item.title} className="w-full h-40 object-cover" />
-                            ) : (
-                              <div className="w-full h-40 bg-gray-100 flex items-center justify-center text-gray-400">Sin imagen</div>
-                            )}
+                                  <LoadingImagenes src={item.image} alt={item.title} wrapperClass="w-full h-40" imgClass="w-full h-40 object-cover" placeholderText="Cargando imagen..." />
+                                ) : (
+                                  <div className="w-full h-40 bg-gray-100 flex items-center justify-center text-gray-400">Sin imagen</div>
+                                )}
                             <div className="p-4">
                               <a href={item.link} target="_blank" rel="noreferrer" className="font-semibold text-sm block mb-2 text-gray-800 hover:underline">{item.title}</a>
                               <p className="text-xs text-gray-600">{item.excerpt ? item.excerpt.substring(0, 140) + (item.excerpt.length > 140 ? '…' : '') : ''}</p>

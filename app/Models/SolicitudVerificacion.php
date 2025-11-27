@@ -21,12 +21,14 @@ class SolicitudVerificacion extends Model
         'status',
         'reviewed_by',
         'response_message',
+        'notified_user',
     ];
 
     protected $casts = [
         'documents' => 'array',
         'latitud' => 'float',
         'longitud' => 'float',
+        'notified_user' => 'boolean',
     ];
 
     public function user(): BelongsTo
