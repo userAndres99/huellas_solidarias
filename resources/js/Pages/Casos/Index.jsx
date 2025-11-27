@@ -51,6 +51,22 @@ export default function Index(props) {
   const [page, setPage] = useState(1);
   const [perPage] = useState(9);
   const [viewMode, setViewMode] = useState(initialView);
+  const [clientFlash, setClientFlash] = useState(null);
+
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem('flash_message');
+      if (raw) {
+        const data = JSON.parse(raw);
+        setClientFlash(data);
+        sessionStorage.removeItem('flash_message');
+        
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    } catch (e) {
+      
+    }
+  }, []);
   
 
   // cuando cambian filtros, volver a la primera pagina
@@ -159,9 +175,14 @@ export default function Index(props) {
 
       <div className="container mx-auto p-4">
 
-        {/* Mensaje flash de creación */}
+        {/* Mensaje flash de creación  */}
         {props?.flash?.success && viewMode === 'mine' && (
           <MensajeFlash tipo="success">{props.flash.success}</MensajeFlash>
+        )}
+
+        {/* Mensaje flash */}
+        {clientFlash && viewMode === 'mine' && (
+          <MensajeFlash tipo={clientFlash.type}>{clientFlash.message}</MensajeFlash>
         )}
 
         {props?.auth?.user && (

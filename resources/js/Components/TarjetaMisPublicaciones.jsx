@@ -29,7 +29,7 @@ export default function TarjetaPublicacion({ publicacion, showEdit = true, onRem
   }, [p?.fotoAnimal]);
 
   return (
-  <div className="card-surface-alt rounded-xl overflow-hidden fade-in card-hover relative">
+  <div className="card-surface-alt rounded-xl overflow-hidden fade-in card-hover relative flex flex-col h-full">
       <div className="relative h-56 md:h-48 lg:h-56">
         {p.fotoAnimal ? (
           <LoadingImagenes
@@ -48,17 +48,66 @@ export default function TarjetaPublicacion({ publicacion, showEdit = true, onRem
         </div>
       </div>
 
-      <div className="p-4 pb-20 space-y-3">
+      <div className="p-4 pb-4 sm:pb-20 space-y-3 flex-1 flex flex-col">
         <div className="flex items-center gap-3">
           <span className="text-sm text-slate-600">{formatDate(p.fechaPublicacion)}</span>
         </div>
 
         <p className="mt-2 text-sm text-slate-800 line-clamp-3">{p.descripcion}</p>
-
         
+        {/* Footer*/}
+        <div className="sm:hidden mt-auto border-t pt-3">
+          <div className="mb-2">
+            <EnlaceRequiereLogin href={`/casos/${p.id}`} className="inline-flex w-full items-center justify-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-full text-sm hover:shadow-md transition" ariaLabel={`Ver caso ${p.id}`}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="inline-block">
+                <path d="M12 5c-7 0-11 6-11 7s4 7 11 7 11-6 11-7-4-7-11-7zm0 11a4 4 0 110-8 4 4 0 010 8z" fill="currentColor"/>
+                <path d="M12 9.5a2.5 2.5 0 100 5 2.5 2.5 0 000-5z" fill="white"/>
+              </svg>
+              Ver detalle
+            </EnlaceRequiereLogin>
+          </div>
+
+          {/*Estado + acciones compactas */}
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <div className="flex items-center">
+              <EstadoBadge situacion={p.situacion} />
+            </div>
+
+            <div className="flex items-center gap-2 flex-wrap justify-end">
+              {showEdit && (
+                <Link
+                  href={`/casos/${p.id}/edit`}
+                  className="text-xs inline-block px-2 py-1 border rounded btn-gradient text-white transition btn-animate-gradient"
+                >
+                  Editar
+                </Link>
+              )}
+
+              {p.estado === 'activo' && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setConfirmModal({ open: true, type: 'finalizar' })}
+                    className="text-xs inline-block px-2 py-1 border rounded bg-yellow-50 text-yellow-700 hover:bg-yellow-100"
+                  >
+                    Finalizar
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setConfirmModal({ open: true, type: 'cancelar' })}
+                    className="text-xs inline-block px-2 py-1 border rounded bg-red-50 text-red-700 hover:bg-red-100"
+                  >
+                    Cancelar
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div className="absolute right-3 bottom-3 flex flex-col items-end gap-2">
+      <div className="hidden sm:flex absolute right-3 bottom-3 flex-col items-end gap-2">
         <div>
           <EstadoBadge situacion={p.situacion} />
         </div>
@@ -95,7 +144,7 @@ export default function TarjetaPublicacion({ publicacion, showEdit = true, onRem
         </div>
       </div>
 
-      <div className="absolute left-3 bottom-3 z-30">
+      <div className="hidden sm:block absolute left-3 bottom-3 z-30">
         <EnlaceRequiereLogin href={`/casos/${p.id}`} className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-600 text-white rounded-full text-sm hover:shadow-md transition transform hover:-translate-y-0.5" ariaLabel={`Ver caso ${p.id}`}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="inline-block">
             <path d="M12 5c-7 0-11 6-11 7s4 7 11 7 11-6 11-7-4-7-11-7zm0 11a4 4 0 110-8 4 4 0 010 8z" fill="currentColor"/>
@@ -136,10 +185,23 @@ export default function TarjetaPublicacion({ publicacion, showEdit = true, onRem
                       const url = route('casos.update_status', p.id);
                       const resp = await axios.post(url, { status });
                       if (resp && resp.data) {
+                        
+                        try {
+                          const msg = confirmModal.type === 'finalizar' ? 'Finalizado con éxito' : 'Cancelado con éxito';
+                          sessionStorage.setItem('flash_message', JSON.stringify({ type: 'success', message: msg }));
+                        } catch (e) {
+                          
+                        }
+
+                        
                         if (typeof onRemove === 'function') {
                           onRemove(p.id);
                         }
+
                         setConfirmModal({ open: false, type: null });
+
+                        //rederijir a Mis publicaciones 
+                        window.location.href = '/casos?view=mine';
                       }
                     } catch (err) {
                       console.error('Error updating status', err);

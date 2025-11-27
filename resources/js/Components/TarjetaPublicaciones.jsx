@@ -21,7 +21,7 @@ export default function TarjetaPublicaciones({ caso }) {
   const userPhoto = usuario?.profile_photo_url ?? null;
 
   return (
-    <article key={caso.id} className="card-surface-alt rounded-xl overflow-hidden fade-in card-hover relative">
+    <article key={caso.id} className="card-surface-alt rounded-xl overflow-hidden fade-in card-hover relative flex flex-col h-full">
       <div className="relative h-56 md:h-48 lg:h-56">
         {caso.fotoAnimal ? (
           <LoadingImagenes src={caso.fotoAnimal} alt={caso.tipoAnimal || 'Foto'} wrapperClass="h-full w-full" imgClass="object-contain object-center w-full h-full" placeholderText={null} />
@@ -38,7 +38,7 @@ export default function TarjetaPublicaciones({ caso }) {
         </div>
       </div>
 
-      <div className="p-4 space-y-3">
+      <div className="p-4 flex-1 flex flex-col">
         <div className="flex items-center gap-3">
           <p className="text-sm text-slate-600">
             {new Date(caso.fechaPublicacion || caso.created_at).toLocaleDateString()}
@@ -47,10 +47,9 @@ export default function TarjetaPublicaciones({ caso }) {
             ) : null}
           </p>
         </div>
-        <h3 className="text-lg font-bold text-slate-900 line-clamp-2">{caso.descripcion}</h3>
-        <p className="text-sm text-slate-800 line-clamp-3">{caso.descripcion}</p>
+        <h3 className="text-lg font-bold text-slate-900 line-clamp-3">{caso.descripcion}</h3>
 
-        <div className="flex items-center justify-between mt-2">
+        <div className="flex items-center justify-between mt-auto">
           <div className="flex items-center gap-3">
             <EnlaceRequiereLogin href={`/casos/${caso.id}`} className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-600 text-white rounded-full text-sm hover:shadow-md transition transform hover:-translate-y-0.5" ariaLabel={`Ver caso ${caso.id}`}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="inline-block">
