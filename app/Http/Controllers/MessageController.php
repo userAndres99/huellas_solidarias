@@ -173,6 +173,14 @@ class MessageController extends Controller
         // Se dispara un evento SocketMessage para enviar el mensaje en tiempo real a los receptores
         SocketMessage::dispatch($message);
 
+        // moderacion asíncrona (se eliminará y notificará si es inapropiado)
+        try {
+            \App\Jobs\ModerateMessageJob::dispatch($message)->onQueue('moderation');
+        } catch (\Throwable $e) {
+            // si falla el dispatch al queue, lo registramos pero no bloqueamos el envío
+            \Log::error('Failed to dispatch ModerateMessageJob: ' . $e->getMessage());
+        }
+
         // Se devuelve el mensaje recién creado formateado como recurso
         return new MessageResource($message);
     }
