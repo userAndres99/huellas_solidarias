@@ -269,6 +269,9 @@ Route::middleware(['auth', \App\Http\Middleware\RoleMiddleware::class . ':Organi
 Route::middleware('auth')->group(function(){
     Route::post('/comentarios', [ComentarioController::class, 'store'])->name('comentarios.store');
 
+    // moderacion de texto via OpenModerator
+    Route::post('/moderate', [\App\Http\Controllers\ModerationController::class, 'moderate'])->name('moderate');
+
     // Actualizar comentario o respuesta
     Route::put('/comentarios/{id}', [ComentarioController::class, 'update'])->name('comentario.update');
 

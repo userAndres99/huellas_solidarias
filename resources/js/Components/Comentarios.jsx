@@ -12,6 +12,7 @@ export default function Comentarios({ comentableType, comentableId }) {
     const [replyText, setReplyText] = useState('');
     const [editingId, setEditingId] = useState(null);
     const [editingText, setEditingText] = useState('');
+    const [moderationNotice, setModerationNotice] = useState('');
 
     const makeAbsolute = (url) => {
         if (!url) return null;
@@ -100,18 +101,54 @@ export default function Comentarios({ comentableType, comentableId }) {
         e.preventDefault();
         const texto = e.target.texto.value.trim();
         if (!texto || !auth.user) return alert('Debes iniciar sesión para comentar.');
-        await axios.post('/comentarios', { comentable_id: comentableId, comentable_type: comentableType, texto });
-        e.target.reset();
-        refetch();
+
+        try {
+            const res = await axios.post('/comentarios', { comentable_id: comentableId, comentable_type: comentableType, texto });
+            // La API devuelve { comentarios, moderation }
+            const moderation = res.data?.moderation;
+            if (moderation && moderation.deleted) {
+                // Mostrar aviso temporal
+                setModerationNotice('Tu comentario fue eliminado porque contiene contenido inapropiado.');
+                e.target.reset();
+                
+                refetch();
+                // Borrar el aviso luego de unos segundos
+                setTimeout(() => setModerationNotice(''), 8000);
+                return;
+            }
+
+            // Si no fue eliminado, refrescamos y limpiamos
+            e.target.reset();
+            refetch();
+        } catch (err) {
+            console.error('Error al enviar comentario:', err);
+            alert('Error al enviar el comentario. Intenta de nuevo.');
+        }
     };
 
     // Enviar respuesta
     const handleReplySubmit = async (parentId) => {
         if (!replyText.trim() || !auth.user) return alert('Debes iniciar sesión para comentar.');
-        await axios.post('/comentarios', { comentable_id: comentableId, comentable_type: comentableType, texto: replyText, parent_id: parentId });
-        setReplyingTo(null);
-        setReplyText('');
-        refetch();
+
+        try {
+            const res = await axios.post('/comentarios', { comentable_id: comentableId, comentable_type: comentableType, texto: replyText, parent_id: parentId });
+            const moderation = res.data?.moderation;
+            if (moderation && moderation.deleted) {
+                setModerationNotice('Tu respuesta fue eliminada porque contiene contenido inapropiado.');
+                setReplyingTo(null);
+                setReplyText('');
+                refetch();
+                setTimeout(() => setModerationNotice(''), 8000);
+                return;
+            }
+
+            setReplyingTo(null);
+            setReplyText('');
+            refetch();
+        } catch (err) {
+            console.error('Error al enviar respuesta:', err);
+            alert('Error al enviar la respuesta. Intenta de nuevo.');
+        }
     };
 
     // Render recursivo de comentarios
@@ -176,6 +213,11 @@ export default function Comentarios({ comentableType, comentableId }) {
 
             {auth.user ? (
                 <>
+                    {moderationNotice && (
+                        <div className="mb-4 p-3 rounded bg-yellow-100 border border-yellow-300 text-yellow-800">
+                            {moderationNotice}
+                        </div>
+                    )}
                     <form onSubmit={handleSubmitComment} className="mb-4">
                         <textarea name="texto" placeholder="Escribe tu comentario..." className="w-full border rounded-lg p-2 focus:ring-2 focus:ring-blue-400" />
                         <button type="submit" className="mt-2 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg">Comentar</button>

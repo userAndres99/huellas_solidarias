@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Comentario;
+use Illuminate\Support\Facades\Http;
 
 class ComentarioController extends Controller
 {
@@ -71,7 +72,31 @@ class ComentarioController extends Controller
         $data['usuario_nombre'] = auth()->user()->name ?? 'Invitado';
         $data['usuario_avatar'] = auth()->user()->avatar ?? '/images/DefaultPerfil.jpg';
 
-        Comentario::create($data);
+        $comentario = Comentario::create($data);
+
+        // Moderación inmediata: llamar a OpenModerator y borrar si es inapropiado (tarda un poco en realizarse el comentario ya que primero se modera y luego se devuelve la lista)
+        $moderationResult = ['deleted' => false, 'reason' => null];
+        $apiKey = env('OPEN_MODERATOR_API_KEY');
+        if ($apiKey) {
+            try {
+                $payload = ['prompt' => $data['texto'], 'config' => ['provider' => 'google-perspective-api']];
+                $resp = Http::withHeaders([
+                    'Content-Type' => 'application/json',
+                    'x-api-key' => $apiKey,
+                ])->timeout(10)->post('https://www.openmoderator.com/api/moderate/text', $payload);
+
+                if ($resp->successful()) {
+                    $body = $resp->json();
+                    if (!empty($body['profane'])) {
+                        // borrar el comentario creado
+                        $this->deleteRecursively($comentario);
+                        $moderationResult = ['deleted' => true, 'reason' => implode(', ', $body['type'] ?? [])];
+                    }
+                }
+            } catch (\Exception $e) {
+                \Log::error('Moderation API error: ' . $e->getMessage());
+            }
+        }
 
         // Devolver todos los comentarios actualizados
         $comentarios = Comentario::where('comentable_id', $data['comentable_id'])
@@ -93,11 +118,16 @@ class ComentarioController extends Controller
             });
 
 
-        // Si la petición es XHR (fetch/AJAX), devolvemos JSON
+        // Si la petición es (fetch/AJAX), devolvemos JSON
+        $responsePayload = [
+            'comentarios' => $comentarios,
+            'moderation' => $moderationResult,
+        ];
+
         if ($request->wantsJson() || $request->ajax()) {
-            return response()->json($comentarios);
+            return response()->json($responsePayload);
         }
-        return response()->json($comentarios);
+        return response()->json($responsePayload);
     }
 
 
