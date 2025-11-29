@@ -161,7 +161,7 @@ const ChatLayouts = ({ children }) => {
             <div className="flex w-full h-screen">
                 <div className="flex flex-col sm:w-[220px] md:w-[300px] bg-slate-800">
                     <div className="flex items-center justify-between py-2 px-3 text-xl font-medium text-gray-200">
-                        My Conversations
+                        Usuarios Conectados
                         <div className="tooltip tooltip-left" data-tip="Create new Group">
                             <button
                                 onClick={() => setShowGroupModal(true)}
