@@ -6,12 +6,14 @@ import PublicLayout from '@/Layouts/PublicLayout';
 import { FaEye, FaPlus } from 'react-icons/fa';
 import Loading from '@/Components/Loading';
 import { preloadImages } from '@/helpers';
+import TarjetaHistorias from '@/Components/TarjetaHistorias';
 
 export default function Historias() {
-    const pageProps = usePage().props; // 🔹 obtenemos todas las props de la página (incluye auth, canLogin, canRegister)
+    const pageProps = usePage().props; 
     const { auth } = pageProps;
     const [historias, setHistorias] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [tab, setTab] = useState('all'); // 'all' | 'mine'
 
     useEffect(() => {
         const controller = new AbortController();
@@ -61,72 +63,43 @@ export default function Historias() {
          <>
             <Head title="Historias de Éxito" />
             <div className="container mx-auto p-6">
-            <div className="flex justify-between items-center mb-8">
+            {auth.user && (
+                <div className="mb-4 flex justify-center">
+                    <div className="inline-flex rounded-md bg-[var(--color-surface)] p-1 shadow-sm" role="tablist" aria-label="Ver historias">
+                        <button
+                            type="button"
+                            role="tab"
+                            aria-pressed={tab === 'all'}
+                            onClick={() => setTab('all')}
+                            className={`px-3 py-1 text-sm transition-transform duration-150 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] rounded-full ${tab === 'all' ? 'bg-[#C8E7F5] text-black font-semibold shadow-md border border-black scale-105' : 'text-gray-700 bg-transparent border border-transparent hover:bg-[#EAF8FF] hover:shadow-sm'}`}
+                        >
+                            Historias de Éxito
+                        </button>
 
-                {auth.user && (
-                    <Link
-                        href="/publicar-historia" // Ruta para crear nueva historia
-                        className="inline-flex items-center px-4 py-2 bg-green-600 text-white font-semibold rounded-lg shadow hover:bg-green-700 hover:scale-105 transform transition-all duration-200"
-                    >
-                        <FaPlus className="mr-2" />
-                        Nueva Historia
-                    </Link>
-                )}
-            </div>
+                        <button
+                            type="button"
+                            role="tab"
+                            aria-pressed={tab === 'mine'}
+                            onClick={() => setTab('mine')}
+                            className={`px-3 py-1 text-sm transition-transform duration-150 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] rounded-full ${tab === 'mine' ? 'bg-[#C8E7F5] text-black font-semibold shadow-md border border-black scale-105' : 'text-gray-700 bg-transparent border border-transparent hover:bg-[#EAF8FF] hover:shadow-sm'}`}
+                        >
+                            Mis Historias de Éxito
+                        </button>
+                    </div>
+                </div>
+            )}
 
             <div className="grid sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {historias.map(h => (
-                    <div
-                        key={h.id}
-                        className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-shadow duration-300 flex flex-col"
-                    >
-                        {/* Imágenes */}
-                        <div className="grid grid-cols-2 gap-1">
-                            {h.imagen_antes ? (
-                                <img
-                                    src={h.imagen_antes}
-                                    alt="Antes"
-                                    className="w-full h-40 object-cover"
-                                />
-                            ) : (
-                                <div className="w-full h-40 bg-gray-100 flex items-center justify-center text-gray-400">
-                                    Sin Imagen
-                                </div>
-                            )}
-                            {h.imagen_despues ? (
-                                <img
-                                    src={h.imagen_despues}
-                                    alt="Después"
-                                    className="w-full h-40 object-cover"
-                                />
-                            ) : (
-                                <div className="w-full h-40 bg-gray-100 flex items-center justify-center text-gray-400">
-                                    Sin Imagen
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Contenido */}
-                        <div className="p-4 flex-1 flex flex-col">
-                            <h3 className="text-xl font-semibold mb-2 text-gray-800">{h.titulo}</h3>
-                            <p className="text-gray-600 mb-3 line-clamp-3">{h.descripcion}</p>
-                            {h.testimonio && (
-                                <blockquote className="italic text-blue-700 mb-4">"{h.testimonio}"</blockquote>
-                            )}
-
-                            {/* Boton */}
-                            <div className="mt-auto flex justify-end">
-                                <EnlaceRequiereLogin
-                                    href={`/historias/${h.id}`}
-                                    className="inline-flex items-center px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow hover:bg-blue-700 hover:scale-105 transform transition-all duration-200"
-                                >
-                                    <FaEye className="mr-2" />
-                                    Ver Historia
-                                </EnlaceRequiereLogin>
-                            </div>
-                        </div>
-                    </div>
-                ))}
+                {historias
+                    .filter(h => {
+                        if (tab === 'all') return true;
+                        if (!auth.user) return false;
+                        
+                        return (h.user && h.user.id === auth.user.id) || h.user_id === auth.user.id;
+                    })
+                    .map(h => (
+                        <TarjetaHistorias key={h.id} historia={h} />
+                    ))}
             </div>
         </div>
        </>

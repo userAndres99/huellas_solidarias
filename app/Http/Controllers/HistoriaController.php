@@ -5,6 +5,7 @@ use Inertia\Inertia;
 use Illuminate\Http\Request;
 use App\Models\Historia;
 use Illuminate\Support\Facades\Storage;
+use App\Jobs\ModerateImageJob;
 
 class HistoriaController extends Controller
 {
@@ -43,13 +44,25 @@ class HistoriaController extends Controller
         $antesPath = $request->file('antes')->store('historias', 'public');
         $despuesPath = $request->file('despues')->store('historias', 'public');
 
-        $request->user()->historias()->create([
+        $historia = $request->user()->historias()->create([
             'titulo' => $request->titulo,
             'descripcion' => $request->descripcion,
             'testimonio' => $request->testimonio,
             'imagen_antes' => $antesPath,
             'imagen_despues' => $despuesPath,
         ]);
+
+        // dispatch jobs de moderación de imágenes
+        try {
+            $antesFull = Storage::disk('public')->path($antesPath);
+            $despuesFull = Storage::disk('public')->path($despuesPath);
+
+            ModerateImageJob::dispatch($antesFull, 'historia', $historia->id);
+            ModerateImageJob::dispatch($despuesFull, 'historia', $historia->id);
+        } catch (\Throwable $e) {
+            // No bloquear la creación si falla el dispatch; solo loguear
+            \Log::error('Error dispatching ModerateImageJob', ['err' => $e->getMessage()]);
+        }
 
         return back()->with('success', 'Historia de éxito creada exitosamente.');
     }

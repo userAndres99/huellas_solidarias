@@ -8,11 +8,14 @@ import axios from 'axios';
 export default function Comentarios({ comentableType, comentableId }) {
     const { auth } = usePage().props;
     const queryClient = useQueryClient();
+
     const [replyingTo, setReplyingTo] = useState(null);
     const [replyText, setReplyText] = useState('');
     const [editingId, setEditingId] = useState(null);
     const [editingText, setEditingText] = useState('');
     const [moderationNotice, setModerationNotice] = useState('');
+    const [submitting, setSubmitting] = useState(false);
+    const [replySubmittingId, setReplySubmittingId] = useState(null);
 
     const makeAbsolute = (url) => {
         if (!url) return null;
@@ -49,10 +52,10 @@ export default function Comentarios({ comentableType, comentableId }) {
 
     // Like / Unlike
     const likeMutation = useMutation({
-            mutationFn: async (comentarioId) => {
-                const res = await axios.post(`/comentarios/${comentarioId}/like`);
-                return res.data;
-            },
+        mutationFn: async (comentarioId) => {
+            const res = await axios.post(`/comentarios/${comentarioId}/like`);
+            return res.data;
+        },
         onMutate: async (comentarioId) => {
             await queryClient.cancelQueries(['comentarios', comentableId, comentableType]);
             const prevData = queryClient.getQueryData(['comentarios', comentableId, comentableType]);
@@ -103,6 +106,7 @@ export default function Comentarios({ comentableType, comentableId }) {
         if (!texto || !auth.user) return alert('Debes iniciar sesión para comentar.');
 
         try {
+            setSubmitting(true);
             const res = await axios.post('/comentarios', { comentable_id: comentableId, comentable_type: comentableType, texto });
             // La API devuelve { comentarios, moderation }
             const moderation = res.data?.moderation;
@@ -110,7 +114,7 @@ export default function Comentarios({ comentableType, comentableId }) {
                 // Mostrar aviso temporal
                 setModerationNotice('Tu comentario fue eliminado porque contiene contenido inapropiado.');
                 e.target.reset();
-                
+
                 refetch();
                 // Borrar el aviso luego de unos segundos
                 setTimeout(() => setModerationNotice(''), 8000);
@@ -123,6 +127,8 @@ export default function Comentarios({ comentableType, comentableId }) {
         } catch (err) {
             console.error('Error al enviar comentario:', err);
             alert('Error al enviar el comentario. Intenta de nuevo.');
+        } finally {
+            setSubmitting(false);
         }
     };
 
@@ -131,6 +137,7 @@ export default function Comentarios({ comentableType, comentableId }) {
         if (!replyText.trim() || !auth.user) return alert('Debes iniciar sesión para comentar.');
 
         try {
+            setReplySubmittingId(parentId);
             const res = await axios.post('/comentarios', { comentable_id: comentableId, comentable_type: comentableType, texto: replyText, parent_id: parentId });
             const moderation = res.data?.moderation;
             if (moderation && moderation.deleted) {
@@ -148,6 +155,8 @@ export default function Comentarios({ comentableType, comentableId }) {
         } catch (err) {
             console.error('Error al enviar respuesta:', err);
             alert('Error al enviar la respuesta. Intenta de nuevo.');
+        } finally {
+            setReplySubmittingId(null);
         }
     };
 
@@ -186,10 +195,10 @@ export default function Comentarios({ comentableType, comentableId }) {
 
                             {replyingTo === c.id && (
                                 <div className="mt-2">
-                                    <textarea value={replyText} onChange={(e) => setReplyText(e.target.value)} placeholder="Escribe tu respuesta..." className="w-full border rounded-lg p-2 text-sm" />
+                                    <textarea value={replyText} onChange={(e) => setReplyText(e.target.value)} placeholder="Escribe tu respuesta..." className="w-full border rounded-lg p-2 text-sm" disabled={replySubmittingId === c.id} />
                                     <div className="flex justify-end mt-1 gap-2">
                                         <button onClick={() => setReplyingTo(null)} className="text-xs text-gray-500 hover:text-gray-700">Cancelar</button>
-                                        <button onClick={() => handleReplySubmit(c.id)} className="text-xs bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600">Enviar</button>
+                                        <button onClick={() => handleReplySubmit(c.id)} disabled={replySubmittingId === c.id} className="text-xs bg-blue-500 disabled:opacity-50 text-white px-3 py-1 rounded hover:bg-blue-600">{replySubmittingId === c.id ? 'Enviando...' : 'Enviar'}</button>
                                     </div>
                                 </div>
                             )}
@@ -219,8 +228,10 @@ export default function Comentarios({ comentableType, comentableId }) {
                         </div>
                     )}
                     <form onSubmit={handleSubmitComment} className="mb-4">
-                        <textarea name="texto" placeholder="Escribe tu comentario..." className="w-full border rounded-lg p-2 focus:ring-2 focus:ring-blue-400" />
-                        <button type="submit" className="mt-2 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg">Comentar</button>
+                        <textarea name="texto" placeholder="Escribe tu comentario..." className="w-full border rounded-lg p-2 focus:ring-2 focus:ring-blue-400" disabled={submitting} />
+                        <button type="submit" disabled={submitting} className="mt-2 bg-blue-500 disabled:opacity-50 hover:bg-blue-600 text-white px-4 py-2 rounded-lg">
+                            {submitting ? 'Enviando comentario...' : 'Comentar'}
+                        </button>
                     </form>
                     {comentarios.length > 0 ? renderComentarios(comentarios) : <p className="text-gray-600">Aún no hay comentarios. Sé el primero en comentar.</p>}
                 </>
