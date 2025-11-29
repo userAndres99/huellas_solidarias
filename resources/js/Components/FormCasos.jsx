@@ -34,6 +34,8 @@ export default function FormCasos() {
 
   // preview para la imagen
   const [previewUrl, setPreviewUrl] = useState(null);
+  const [moderationInfo, setModerationInfo] = useState(null);
+  const [moderationPending, setModerationPending] = useState(false);
 
   useEffect(() => {
     // limpiar objectURL al desmontar o cuando cambie previewUrl
@@ -56,6 +58,89 @@ export default function FormCasos() {
           if (prev && prev.startsWith('blob:')) URL.revokeObjectURL(prev);
           return URL.createObjectURL(file);
         });
+          // llamar a moderación
+          (async () => {
+            try {
+              setModerationInfo(null);
+              setModerationPending(true);
+              const fd = new FormData();
+              fd.append('image', file);
+              // modelos a usar
+              fd.append('models', 'gore,violence,weapon,offensive,nudity');
+
+              const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+              const csrf = csrfMeta ? csrfMeta.getAttribute('content') : null;
+
+              const res = await fetch('/moderate/image', {
+                method: 'POST',
+                body: fd,
+                headers: {
+                  Accept: 'application/json',
+                  'X-Requested-With': 'XMLHttpRequest',
+                  ...(csrf ? { 'X-CSRF-TOKEN': csrf } : {}),
+                },
+                credentials: 'same-origin',
+              });
+
+              if (!res.ok) {
+                // ignorar errores de moderación
+                return;
+              }
+
+              const json = await res.json();
+              // procesar resultado de moderación
+              if (json && json.detections) {
+                const entries = Object.entries(json.detections || {});
+                if (entries.length > 0) {
+                  const translate = {
+                    gore: 'imagen sangrienta',
+                    violence: 'violencia',
+                    weapon: 'posible arma',
+                    weapon_firearm: 'arma de fuego',
+                    offensive: 'contenido ofensivo',
+                    nudity: 'posible contenido para adultos',
+                  };
+
+                  let cats = entries
+                    .map(([k, v]) => ({ key: k, score: Number(v), label: translate[k] || k }))
+                    .filter(c => !Number.isNaN(c.score) && c.score > 0.001);
+
+                  // Excluir etiquetas demasiado específicas que duplican la más general
+                  const excludeKeys = ['weapon_firearm'];
+                  cats = cats.filter(c => !excludeKeys.includes(c.key));
+
+                  // si la imagen supera el 60% en alguna categoría, bloquear
+                  const INAPPROPRIATE_THRESHOLD = 0.6; // 60%
+                  const hasStrong = cats.some(c => c.score >= INAPPROPRIATE_THRESHOLD);
+
+                  if (hasStrong) {
+                    // eliminar preview y limpiar el input de archivo
+                    removePhoto();
+                    const seen = new Set();
+                    const dedup = [];
+                    for (const c of cats) {
+                      if (!seen.has(c.label)) {
+                        seen.add(c.label);
+                        dedup.push({ key: c.key, label: c.label });
+                      }
+                    }
+                    // mostrar mensaje
+                    setModerationInfo({ blocked: true, message: 'Imagen posiblemente inapropiada', categories: dedup });
+                  } else if (cats.length > 0) {
+                    setModerationInfo({ blocked: false, raw: json.result || null, categories: cats });
+                  } else {
+                    setModerationInfo(null);
+                  }
+                } else {
+                  setModerationInfo(null);
+                }
+              }
+            } catch (err) {
+              // ignorar errores de la llamada a moderación
+            } finally {
+              setModerationPending(false);
+            }
+          })();
       } else {
         setPreviewUrl((prev) => {
           if (prev && prev.startsWith('blob:')) URL.revokeObjectURL(prev);
@@ -202,6 +287,17 @@ export default function FormCasos() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (moderationPending) {
+      // Evitar enviar mientras la moderación está en proceso
+      alert('Esperá a que finalice el análisis de la imagen antes de publicar.');
+      return;
+    }
+
+    if (moderationInfo && moderationInfo.blocked) {
+      alert('No podés publicar: la imagen fue considerada posiblemente inapropiada.');
+      return;
+    }
+
     post('/casos', {
       forceFormData: true,
     });
@@ -257,6 +353,27 @@ export default function FormCasos() {
               )}
 
               <div className="inner">
+                {/* Banner de moderación */}
+                {moderationInfo && moderationInfo.categories && moderationInfo.categories.length > 0 && (
+                  <div className="mb-3 p-3 rounded-md bg-yellow-50 border border-yellow-200 text-yellow-700 text-sm">
+                    <strong>Imagen posiblemente inapropiada</strong>
+
+                    {moderationInfo.blocked ? (
+                      <div className="mt-2">
+                        {moderationInfo.categories.map(c => (
+                          <div key={c.key} className="inline-block me-2">{c.label}</div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="mt-1">
+                        {moderationInfo.categories.map(c => (
+                          <span key={c.key} className="inline-block me-2">{c.label.replace('_sus',' (sospecha)')}: {Math.round(c.score * 100)}%</span>
+                        ))}
+                      </div>
+                    )}
+
+                  </div>
+                )}
                 <input
                   id="fotoAnimal"
                   type="file"
@@ -502,13 +619,13 @@ export default function FormCasos() {
         <div className="mt-4 flex justify-end items-center gap-3">
         <div className="btn-3d-container">
           <div className="btn-3d">
-            <button
-              type="submit"
-              disabled={processing}
-              className="inner-btn"
-            >
-              {processing ? 'Publicando...' : 'Publicar caso'}
-            </button>
+              <button
+                type="submit"
+                disabled={processing || moderationPending || (moderationInfo && moderationInfo.blocked)}
+                className="inner-btn"
+              >
+                {processing ? 'Publicando...' : moderationPending ? 'Analizando imagen...' : 'Publicar caso'}
+              </button>
           </div>
         </div>
       </div>

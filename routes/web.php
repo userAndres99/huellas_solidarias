@@ -271,6 +271,8 @@ Route::middleware('auth')->group(function(){
 
     // moderacion de texto via OpenModerator
     Route::post('/moderate', [\App\Http\Controllers\ModerationController::class, 'moderate'])->name('moderate');
+    // moderacion de imagenes via Sightengine
+    Route::post('/moderate/image', [\App\Http\Controllers\ModerationController::class, 'moderateImage'])->name('moderate.image');
 
     // Actualizar comentario o respuesta
     Route::put('/comentarios/{id}', [ComentarioController::class, 'update'])->name('comentario.update');
