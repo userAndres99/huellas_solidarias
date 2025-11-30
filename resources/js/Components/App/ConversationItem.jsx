@@ -9,6 +9,7 @@ const ConversationItem = ({
     selectedConversation = null,
     online = null,
     onSelect = null,
+    unreadCount = 0,
 }) => {
     const page = usePage();
     const currentUser = page.props.auth.user;
@@ -30,11 +31,25 @@ const ConversationItem = ({
             classes = "border-blue-500 bg-gray/20";
         }
     }
-    const Container = onSelect ? 'button' : Link;
+    const Container = onSelect ? 'div' : Link;
+
+    const selectProps = onSelect
+        ? {
+              role: 'button',
+              tabIndex: 0,
+              onClick: () => onSelect(conversation),
+              onKeyDown: (e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      onSelect(conversation);
+                  }
+              },
+          }
+        : {};
 
     return (
         <Container
-            {...(onSelect ? { type: 'button', onClick: () => onSelect(conversation) } : {})}
+            {...selectProps}
             href={!onSelect ? (conversation.is_group ? route('chat.group', conversation) : route('chat.user', conversation)) : undefined}
             className={
                 'conversation-item w-full flex items-center gap-2 p-2 text-gray-300 transition-all cursor-pointer border-l-4 hover:bg-black/30 ' +
@@ -62,9 +77,16 @@ const ConversationItem = ({
                         {conversation.name}
                     </h3>
                     {conversation.last_message_date && (
-                        <span className="text-xs opacity-60 text-right">
-                            {formatMessageDateShort(conversation.last_message_date)}
-                        </span>
+                        <div className="flex items-center justify-end gap-2">
+                            <span className="text-xs opacity-60 text-right">
+                                {formatMessageDateShort(conversation.last_message_date)}
+                            </span>
+                            {unreadCount > 0 && (
+                                <span className="inline-flex items-center justify-center px-2 py-0.5 text-xs font-semibold leading-none text-white bg-red-500 rounded-full">
+                                    {unreadCount}
+                                </span>
+                            )}
+                        </div>
                     )}
                     {conversation.last_message && (
                         <p className="text-xs text-gray-300 truncate mt-1 col-start-1 col-end-2">
@@ -74,7 +96,7 @@ const ConversationItem = ({
                 </div>
 
             </div>
-            {!!currentUser.is_admin && conversation.is_user && (
+            {conversation.is_user && (
                 <UserOptionsDropdown conversation={conversation}/>
             )}
         

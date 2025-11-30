@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link, usePage } from '@inertiajs/react';
+import { useEventBus } from '@/EvenBus';
 import EnlaceRequiereLogin from '@/Components/EnlaceRequiereLogin';
 import DonationModal from '@/Components/DonationModal';
 import LoadingImagenes from '@/Components/LoadingImagenes';
@@ -21,6 +22,7 @@ export default function Usuario({ usuario, caso = null, userPhoto = null, userNa
   const [donationModalOpen, setDonationModalOpen] = useState(false);
   const [donationTarget, setDonationTarget] = useState(null);
   const ref = useRef(null);
+  const { emit } = useEventBus();
 
   useEffect(() => {
     function onDoc(e) {
@@ -82,7 +84,7 @@ export default function Usuario({ usuario, caso = null, userPhoto = null, userNa
         <div className="absolute left-0 bottom-full mb-2 z-50 w-44 bg-white rounded shadow-md p-2 text-sm" role="menu" aria-label="Opciones usuario">
           <div className="flex flex-col">
             <Link href={route('usuarios.show', usuario.id)} className="px-3 py-2 hover:bg-gray-50 rounded">Ver perfil</Link>
-            <Link href={route('chat.user', usuario.id)} className="px-3 py-2 hover:bg-gray-50 rounded">Enviar mensaje</Link>
+            <button onClick={(e) => { e.stopPropagation(); emit('chat.openConversation', { is_user: true, is_group: false, id: usuario.id, name: usuario.name, avatar: usuario.profile_photo_url }); setOpen(false); }} className="px-3 py-2 text-left hover:bg-gray-50 rounded">Enviar mensaje</button>
             {hasMp && (
               <button onClick={() => { setDonationTarget({ id: usuario.organizacion.id, nombre: usuario.organizacion.nombre }); setDonationModalOpen(true); setOpen(false); }} className="text-left px-3 py-2 hover:bg-gray-50 rounded">Donar</button>
             )}

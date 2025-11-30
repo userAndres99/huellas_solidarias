@@ -1,4 +1,5 @@
 import { Link, usePage, Head } from '@inertiajs/react';
+import { useEventBus } from '@/EvenBus';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { useState } from 'react';
 import DonationModal from '@/Components/DonationModal';
@@ -17,6 +18,7 @@ export default function VerPerfil(props){
     const [followersCount, setFollowersCount] = useState(pageProps.followers_count ?? 0);
     const [donationModalOpen, setDonationModalOpen] = useState(false);
     const [donationTarget, setDonationTarget] = useState(null);
+    const { emit } = useEventBus();
 
     async function toggleFollow(){
         if(!authUser){
@@ -64,7 +66,14 @@ export default function VerPerfil(props){
             <div className="mt-6 flex gap-3 items-center">
                 {!isSelf && (
                     <>
-                        <Link href={route('chat.user', usuario.id)} className="inline-flex items-center rounded-md bg-[var(--color-primary)] px-4 py-2 text-sm font-medium text-white">Enviar mensaje</Link>
+                                <button
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        const conv = { is_user: true, is_group: false, id: usuario.id, name: usuario.name, avatar: usuario.profile_photo_url };
+                                        emit('chat.openConversation', conv);
+                                    }}
+                                    className="inline-flex items-center rounded-md bg-[var(--color-primary)] px-4 py-2 text-sm font-medium text-white"
+                                >Enviar mensaje</button>
 
                         <button onClick={toggleFollow}
                             className={`inline-flex items-center rounded-md px-4 py-2 text-sm font-medium ${following ? 'bg-gray-200 text-slate-800' : 'bg-[var(--color-primary)] text-white'}`}>

@@ -17,9 +17,9 @@ export default function MessageOptionsDropdown({ message }) {
             .delete(route("message.destroy", message.id))
             .then((res) => {
 
-                console.log("Mensaje anterior:",res.data.message);
+                console.log("Mensaje anterior:", res.data.message);
                 emit('message.deleted', {
-                    message: message,
+                    deletedMessage: message,
                     prevMessage: res.data.message,
                 });
                 
@@ -38,7 +38,13 @@ export default function MessageOptionsDropdown({ message }) {
         <div className="absolute right-full  text-gray-800 top-1/2 -translate-y-1/2 z-10">
             <Menu as="div" className="relative inline-block text-left" >
                 <div>
-                    <Menu.Button className="flex justify-center items-center w-8 h-8 rounded-full hover:bg-black/40">
+                    <Menu.Button
+                        className="flex justify-center items-center w-8 h-8 rounded-full hover:bg-black/40"
+                        onClick={(e) => e.stopPropagation()}
+                        onMouseDown={(e) => e.stopPropagation()}
+                        onTouchStart={(e) => e.stopPropagation()}
+                        onPointerDown={(e) => e.stopPropagation()}
+                    >
                         <EllipsisVerticalIcon className="h-5 w-5" />
                     </Menu.Button>
                 </div>

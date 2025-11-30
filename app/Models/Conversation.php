@@ -56,6 +56,16 @@ class Conversation extends Model
 
     public static function getConversationsForSidebar(User $user)
     {
+        // Obtener IDs de conversaciones ocultas por el usuario 
+        $hiddenIds = [];
+        try {
+            if (class_exists(\App\Models\ConversacionOculta::class)) {
+                $hiddenIds = \App\Models\ConversacionOculta::where('user_id', $user->id)->pluck('otro_user_id')->toArray();
+            }
+        } catch (\Exception $e) {
+            $hiddenIds = [];
+        }
+
         // Todas las conversaciones donde el usuario participe
         $conversations = Conversation::where('user_id1', $user->id)
             ->orWhere('user_id2', $user->id)
@@ -65,14 +75,18 @@ class Conversation extends Model
         // Grupos donde el usuario es miembro
         $groups = Group::getGroupsForUser($user);
 
-        // Transformamos todo al formato del sidebar
-        return $conversations->map(function (Conversation $conversation) use ($user) {
+        // Transformamos todo al formato del sidebar y filtramos ocultas
+        $mapped = $conversations->map(function (Conversation $conversation) use ($user) {
             return $conversation->toConversationArrayFor($user);
-        })->concat(
-            $groups->map(function (Group $group) {
-                return $group->toConversationArray();
-            })
-        );
+        })->filter(function ($conv) use ($hiddenIds) {
+            return !in_array($conv['id'], $hiddenIds);
+        })->values();
+
+        $groupMapped = $groups->map(function (Group $group) {
+            return $group->toConversationArray();
+        });
+
+        return $mapped->concat($groupMapped);
     }
 
 

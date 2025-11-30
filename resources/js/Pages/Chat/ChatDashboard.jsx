@@ -2,6 +2,7 @@ import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { Head } from "@inertiajs/react";
 import ChatLayout from "./ChatLayout";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { usePage } from "@inertiajs/react";
 import { ChatBubbleLeftRightIcon } from "@heroicons/react/24/solid";
 import ConversationHeader from "../../Components/App/ConversationHeader";
 import MessageItem from "../../Components/App/MessageItem";
@@ -21,6 +22,8 @@ function ChatDashboard({selectedConversation =null, messages = null }) {
   const [showAttachmentPreview, setShowAttachmentPreview] = useState(false);
   const [previewAttachment, setPreviewAttachment] = useState({});
   const { on } = useEventBus();
+  const page = usePage();
+  const authId = page.props.auth?.user?.id;
 
   
 
@@ -58,7 +61,15 @@ function ChatDashboard({selectedConversation =null, messages = null }) {
         }
 
         // 3️⃣ Si prevMessage existe → reemplazamos el mensaje en el listado
-        return updated.map(m => m.id === prevMessage.id ? prevMessage : m);
+        try {
+          let displayPrev = prevMessage;
+          if (prevMessage && authId && parseInt(prevMessage.sender_id) === parseInt(authId)) {
+            displayPrev = { ...prevMessage, message: `Yo: ${prevMessage.message || ''}` };
+          }
+          return updated.map(m => m.id === displayPrev.id ? displayPrev : m);
+        } catch (e) {
+          return updated.map(m => m.id === prevMessage.id ? prevMessage : m);
+        }
     });
 };
 

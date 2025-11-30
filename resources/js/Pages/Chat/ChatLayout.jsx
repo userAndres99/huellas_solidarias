@@ -60,7 +60,12 @@ const ChatLayouts = ({ children }) => {
         );
     };
 
-    const messageDeleted = ({ deletedMessage, prevMessage }) => {
+    const messageDeleted = (payload) => {
+        const deletedMessage = payload.deletedMessage || payload.message || payload.deleted_message || null;
+        const prevMessage = payload.prevMessage || payload.prev_message || null;
+
+        if (!deletedMessage) return;
+
         setLocalConversations((oldUsers) =>
             oldUsers.map((u) => {
                 const matchUser =
@@ -73,12 +78,35 @@ const ChatLayouts = ({ children }) => {
 
                 if (!matchUser) return u;
 
+                // solo actualizar si el mensaje eliminado era el último mensaje mostrado
+                const lastDate = u.last_message_date || null;
+                const lastText = (u.last_message || '') + '';
+                const deletedDate = deletedMessage.created_at || null;
+                const deletedText = (deletedMessage.message || '') + '';
+
+                const isDeletedTheLast = (lastDate && deletedDate && lastDate === deletedDate) || (lastText && deletedText && lastText === deletedText);
+
+                if (!isDeletedTheLast) {
+                    return u;
+                }
+
                 if (prevMessage) {
-                    return {
-                        ...u,
-                        last_message: prevMessage.message,
-                        last_message_date: prevMessage.created_at,
-                    };
+                    try {
+                        const authId = page.props.auth?.user?.id;
+                        const text = prevMessage.message || '';
+                        const display = authId && parseInt(prevMessage.sender_id) === parseInt(authId) ? `Yo: ${text}` : text;
+                        return {
+                            ...u,
+                            last_message: display,
+                            last_message_date: prevMessage.created_at,
+                        };
+                    } catch (e) {
+                        return {
+                            ...u,
+                            last_message: prevMessage.message,
+                            last_message_date: prevMessage.created_at,
+                        };
+                    }
                 }
 
                 return {

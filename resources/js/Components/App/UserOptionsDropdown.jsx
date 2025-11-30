@@ -12,10 +12,28 @@ import {
 import ConversationItem from "./ConversationItem";
 import { EmojiStyle } from "emoji-picker-react";
 import { useEventBus } from "@/EvenBus";
+import { usePage } from "@inertiajs/react";
 
 export default function UserOptionsDropdown({ conversation}){
 
     const { emit } = useEventBus();
+    const page = usePage();
+    const currentUser = page.props.auth?.user || null;
+
+    const hideConversation = () => {
+        if(!conversation || !conversation.id) return;
+
+        axios
+            .delete(route('conversations.hide', conversation.id))
+            .then((res) => {
+                emit('toast.show', res.data.message || 'Conversación ocultada');
+                emit('conversation.hidden', { id: conversation.id });
+            })
+            .catch((err) => {
+                console.error(err);
+                emit('toast.show', 'No se pudo eliminar la conversación');
+            });
+    };
 
     const changeUserRole = () => {
         console.log("Change user role");
@@ -60,7 +78,13 @@ export default function UserOptionsDropdown({ conversation}){
         <div>
             <Menu as="div" className="relative inline-block text-left" >
                 <div>
-                    <Menu.Button className="flex justify-center items-center w-8 h-8 rounded-full hover:bg-black/40">
+                    <Menu.Button
+                        className="flex justify-center items-center w-8 h-8 rounded-full hover:bg-black/40"
+                        onClick={(e) => e.stopPropagation()}
+                        onMouseDown={(e) => e.stopPropagation()}
+                        onTouchStart={(e) => e.stopPropagation()}
+                        onPointerDown={(e) => e.stopPropagation()}
+                    >
                         <EllipsisVerticalIcon className="h-5 w-5"/>
                     </Menu.Button>
                 </div>
@@ -74,65 +98,85 @@ export default function UserOptionsDropdown({ conversation}){
                     leaveTo="transform opacity-0 scale-95"
                 >
                     <Menu.Items className="absolute right-0 mt-2 w-48 rounded-md bg-gray-800 shadow-lg z-50">
-                        <div className="px-1 py-1">
-                            <Menu.Item>
-                                {({ active})=> (
-                                    <button
-                                        onClick={onBlockUser}
-                                        className={`${ 
-                                            active 
-                                            ? "bg-black/30 text-white" 
-                                            : "text-gray-100"
-                                        } group flex w-full items-center rounded-md px-2 py-2 
-                                        text-sm`}
-                                    
-                                    >
-                                        {conversation.blocked_at && (
-                                            <>
-                                                <LockOpenIcon className="w-4 h-4 mr-2"/>
-                                                Desbloquear Usuario
-                                            </>
-                                        )}
-                                        {!conversation.blocked_at && (
-                                            <>
-                                                <LockClosedIcon className="w-4 h-4 mr-2"/>
-                                                Bloquear Usuario
-                                            </>
+                        {/* Mostrar acciones de admin solo para usuarios admin */}
+                        {!!currentUser?.is_admin && (
+                            <>
+                                <div className="px-1 py-1">
+                                    <Menu.Item>
+                                        {({ active })=> (
+                                            <button
+                                                onClick={onBlockUser}
+                                                className={`${ 
+                                                    active 
+                                                    ? "bg-black/30 text-white" 
+                                                    : "text-gray-100"
+                                                } group flex w-full items-center rounded-md px-2 py-2 
+                                                text-sm`}
+                                            >
+                                                {!!conversation.blocked_at && (
+                                                    <>
+                                                        <LockOpenIcon className="w-4 h-4 mr-2"/>
+                                                        Desbloquear Usuario
+                                                    </>
+                                                )}
+                                                {!conversation.blocked_at && (
+                                                    <>
+                                                        <LockClosedIcon className="w-4 h-4 mr-2"/>
+                                                        Bloquear Usuario
+                                                    </>
+                                                )}
+
+                                            </button>
                                         )}
 
-                                    </button>
-                                )}
+                                    </Menu.Item>
+                                </div>
+                                <div className="px-1 py-1">
+                                    <Menu.Item>
+                                        {({ active })=>(
+                                            <button
+                                                onClick={changeUserRole}
+                                                className={`${
+                                                    active
+                                                    ? "bg-black/30 text-white"
+                                                    : "text-gray-100"
+                                                }group flex w-full items-center rounded-md 
+                                                    px-2 py-2 text-sm`}
+                                            >
+                                                {!!conversation.is_admin && (
+                                                    <>
+                                                        <UserIcon className="w-4 h-4 mr-2"/>
+                                                        Make Regular User
+                                                    </>
+                                                )}
+                                                {!conversation.is_admin && (
+                                                    <>
+                                                        <ShieldCheckIcon className="w-4 h-4 mr-2"/>
+                                                        Make Admin
+                                                    </>
+                                                )}
 
-                            </Menu.Item>
-                        </div>
-                        <div className="px-1 py-1">
+                                            </button>
+                                        )}
+                                        
+                                    </Menu.Item>
+                                </div>
+                            </>
+                        )}
+                        <div className="px-1 py-1 border-t">
                             <Menu.Item>
-                                {({ active })=>(
+                                {({ active }) => (
                                     <button
-                                        onClick={changeUserRole}
+                                        onClick={hideConversation}
                                         className={`${
                                             active
-                                            ? "bg-black/30 text-white"
-                                            : "text-gray-100"
-                                        }group flex w-full items-center rounded-md 
-                                            px-2 py-2 text-sm`}
+                                            ? "bg-red-600 text-white"
+                                            : "text-red-400"
+                                        } group flex w-full items-center rounded-md px-2 py-2 text-sm`}
                                     >
-                                        {conversation.is_admin && (
-                                            <>
-                                                <UserIcon className="w-4 h-4 mr-2"/>
-                                                Make Regular User
-                                            </>
-                                        )}
-                                        {!conversation.is_admin && (
-                                            <>
-                                                <ShieldCheckIcon className="w-4 h-4 mr-2"/>
-                                                Make Admin
-                                            </>
-                                        )}
-
+                                        Eliminar conversación (solo para mí)
                                     </button>
                                 )}
-                                
                             </Menu.Item>
                         </div>
                     </Menu.Items>

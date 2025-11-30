@@ -50,8 +50,19 @@ const MessageInput = ({ conversation = null, onFocus = null, onBlur = null, isMo
             if (f && f.file) formData.append("attachments[]", f.file);
         });
         formData.append("message", newMessage);
-        if (conversation && conversation.is_user) formData.append("receiver_id", conversation.id);
-        else if (conversation && conversation.is_group) formData.append("group_id", conversation.id);
+        // determina receiver_id o group_id segun el tipo de conversacion
+        const receiverId = conversation?.id || conversation?.with_user_id || conversation?.user_id || null;
+        const groupId = conversation?.id || conversation?.conversation_id || null;
+
+        if (conversation && conversation.is_user && receiverId) formData.append("receiver_id", receiverId);
+        else if (conversation && conversation.is_group && groupId) formData.append("group_id", groupId);
+        //debug info
+        try {
+            
+            if (process && process.env && process.env.NODE_ENV !== 'production') {
+                console.debug('Sending message payload', { message: newMessage, receiverId, groupId, filesCount: chosenFiles.length });
+            }
+        } catch (e) {}
 
         try {
             setMessageSending(true);
@@ -66,8 +77,17 @@ const MessageInput = ({ conversation = null, onFocus = null, onBlur = null, isMo
             setChosenFiles([]);
             setUploadProgress(0);
         } catch (err) {
-            const msg = err?.response?.data?.message;
-            setInputErrorMessage(msg || "Un error ocurrió al enviar el mensaje");
+            const resp = err?.response?.data || {};
+            const msg = resp?.message || null;
+            // validador de errores
+            if (resp?.errors) {
+                const first = Object.values(resp.errors).flat()[0];
+                setInputErrorMessage(first || msg || "Error de validación");
+            } else {
+                setInputErrorMessage(msg || "Un error ocurrió al enviar el mensaje");
+            }
+            // registrar error 
+            try { console.error('Message send error', err); } catch (e) {}
         } finally {
             setMessageSending(false);
         }
@@ -76,8 +96,10 @@ const MessageInput = ({ conversation = null, onFocus = null, onBlur = null, isMo
     const onLikeClick = () => {
         if (messageSending) return;
         const data = { message: "👍" };
-        if (conversation && conversation.is_user) data.receiver_id = conversation.id;
-        else if (conversation && conversation.is_group) data.group_id = conversation.id;
+        const receiverId = conversation?.id || conversation?.with_user_id || conversation?.user_id || null;
+        const groupId = conversation?.id || conversation?.conversation_id || null;
+        if (conversation && conversation.is_user && receiverId) data.receiver_id = receiverId;
+        else if (conversation && conversation.is_group && groupId) data.group_id = groupId;
         axios.post(route("message.store"), data).catch(() => {});
     };
 

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Events\SocketMessage; // Evento que se dispara para enviar mensajes por sockets (tiempo real)
+use App\Events\SocketMessageDeleted;
 use App\Http\Requests\StoreMessageRequest; // Request con validaciones para guardar mensajes
 use App\Http\Resources\MessageResource; // Recurso que formatea los datos de los mensajes antes de enviarlos al frontend
 use App\Models\Conversation; // Modelo que representa una conversación entre usuarios
@@ -162,6 +163,15 @@ class MessageController extends Controller
 
         // Si el mensaje fue enviado a un usuario individual, se actualiza la conversación entre ambos
         if ($receiverId) {
+            // Si el receptor tenía oculta la conversación con el remitente, desocultarla
+            try {
+                \App\Models\ConversacionOculta::where('user_id', $receiverId)
+                    ->where('otro_user_id', auth()->id())
+                    ->delete();
+            } catch (\Throwable $e) {
+                // ignorar errores no críticos
+            }
+
             Conversation::updateConversationWithMessage($receiverId, auth()->id(), $message);
         }
 
@@ -206,6 +216,9 @@ class MessageController extends Controller
             $conversation = Conversation::where('last_message_id', $message->id)->first();
         }
 
+        // Guardar representación del mensaje eliminado antes de borrarlo
+        $deletedMessagePayload = (new MessageResource($message))->toArray(request());
+
         // Elimina el mensaje
         $message->delete();
 
@@ -217,7 +230,20 @@ class MessageController extends Controller
             $lastMessage = $conversation->lastMessage;
         }
 
-        // Retorna una respuesta vacía con código 204 (sin contenido)
+        // Construir payload para broadcast
+        $prevPayload = $lastMessage ? (new MessageResource($lastMessage))->toArray(request()) : null;
+
+        try {
+            SocketMessageDeleted::dispatch([
+                'deletedMessage' => $deletedMessagePayload,
+                'prevMessage' => $prevPayload,
+            ]);
+        } catch (\Throwable $e) {
+            // No bloquear en caso de error de broadcast
+            \Log::error('Failed to dispatch SocketMessageDeleted: ' . $e->getMessage());
+        }
+
+        // Retorna la información del mensaje previo (si existe)
         return response()->json(['message' => $lastMessage ? new MessageResource($lastMessage) : null ]);
     }
 }

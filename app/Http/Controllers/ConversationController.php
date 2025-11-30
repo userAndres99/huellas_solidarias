@@ -27,4 +27,21 @@ class ConversationController extends Controller
 
         return redirect()->route('chat.user', $otherId);
     }
+
+    public function hide(Request $request, $otherUserId)
+    {
+        $user = auth()->user();
+
+        try {
+            // crear o actualizar registro de oculto
+            \App\Models\ConversacionOculta::firstOrCreate([
+                'user_id' => $user->id,
+                'otro_user_id' => $otherUserId,
+            ]);
+
+            return response()->json(['message' => 'Conversación eliminada de tu lista.'], 200);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Error al ocultar la conversación.'], 500);
+        }
+    }
 }
