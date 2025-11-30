@@ -34,54 +34,98 @@ class Conversation extends Model
     }
     public function messages()
     {
-        return $this->hasMany(Message::class);
+        return $this->hasMany(Message::class, 'conversation_id');
     }
+
+    public static function between($id1, $id2)
+    {
+        return self::where(function ($q) use ($id1, $id2) {
+            $q->where('user_id1', $id1)->where('user_id2', $id2);
+        })
+            ->orWhere(function ($q) use ($id1, $id2) {
+                $q->where('user_id1', $id2)->where('user_id2', $id1);
+            })
+            ->first(); // 🔥 se devuelve la conversación o null
+    }
+
+
+
+
+
+
 
     public static function getConversationsForSidebar(User $user)
     {
-        // son todos los usuarios menos el autenticado
-        $users = User::getUsersExceptUser($user);
-        // son todos los grupos donde el usuario autenticado es miembro 
+        // Todas las conversaciones donde el usuario participe
+        $conversations = Conversation::where('user_id1', $user->id)
+            ->orWhere('user_id2', $user->id)
+            ->with(['user1', 'user2', 'lastMessage'])
+            ->get();
+
+        // Grupos donde el usuario es miembro
         $groups = Group::getGroupsForUser($user);
 
-        // 
-        return $users->map(function (User $user) {
-            return $user->toConversationArray();
-        })->concat($groups->map(function (Group $group) {
-            return $group->toConversationArray();
-        }));
+        // Transformamos todo al formato del sidebar
+        return $conversations->map(function (Conversation $conversation) use ($user) {
+            return $conversation->toConversationArrayFor($user);
+        })->concat(
+            $groups->map(function (Group $group) {
+                return $group->toConversationArray();
+            })
+        );
     }
 
 
 
     public static function updateConversationWithMessage($userId1, $userId2, $message)
     {
-        // Se busca si ya existe una conversación entre los dos usuarios.
-        // La búsqueda considera ambos sentidos: (user1 → user2) y (user2 → user1)
         $conversation = Conversation::where(function ($query) use ($userId1, $userId2) {
-            // Primer caso: la conversación tiene los mismos IDs en el mismo orden
             $query->where('user_id1', $userId1)
                 ->where('user_id2', $userId2);
         })
             ->orWhere(function ($query) use ($userId1, $userId2) {
-                // Segundo caso: los IDs están en orden inverso
                 $query->where('user_id1', $userId2)
                     ->where('user_id2', $userId1);
             })
-            ->first(); // Obtiene la primera coincidencia (si existe)
+            ->first();
 
-        // Si la conversación ya existe, se actualiza con el ID del último mensaje enviado
         if ($conversation) {
             $conversation->update([
-                'last_message_id' => $message->id, // Se guarda el ID del mensaje más reciente
+                'last_message_id' => $message->id,
             ]);
         } else {
-            // Si no existe, se crea una nueva conversación entre los dos usuarios
             Conversation::create([
-                'user_id1' => $userId1,            // Primer participante
-                'user_id2' => $userId2,            // Segundo participante
-                'last_message_id' => $message->id, // Se guarda el mensaje como el más reciente
+                'user_id1' => $userId1,
+                'user_id2' => $userId2,
+                'last_message_id' => $message->id,
             ]);
         }
+    }
+
+    public function toConversationArrayFor(User $authUser)
+    {
+        $otherUser = $this->user_id1 == $authUser->id
+            ? $this->user2
+            : $this->user1;
+
+        return [
+            'is_user' => true,
+            'is_group' => false,
+
+            // El front espera "id" para navegar
+            'id' => $otherUser->id,
+
+            // Nombre + avatar del usuario
+            'name' => $otherUser->name,
+            'avatar' => $otherUser->avatar ?? null,
+
+            // Último mensaje
+            'last_message' => $this->lastMessage?->message,
+            'last_message_date' => $this->lastMessage?->created_at,
+
+            // Información para navegación
+            'conversation_id' => $this->id,
+            'with_user_id' => $otherUser->id,
+        ];
     }
 }
