@@ -90,23 +90,23 @@
 	}
 
 	.badge-estado.perdido {
-		background: rgba(253, 224, 71, 0.18);
-		color: #92400e;
+		background: rgba(253, 224, 71, 0.28);
+		color: #7a4f00;
 	}
 
 	.badge-estado.abandonado {
-		background: rgba(239, 68, 68, 0.14);
+		background: rgba(239, 68, 68, 0.24);
 		color: #7f1d1d;
 	}
 
 	.badge-estado.adopcion {
-		background: rgba(34, 197, 94, 0.14);
-		color: #065f46;
+		background: rgba(34, 197, 94, 0.24);
+		color: #054d2e;
 	}
 
 	.badge-estado.activo {
-		background: rgba(14, 165, 233, 0.12);
-		color: #0c4a6e;
+		background: rgba(14, 165, 233, 0.22);
+		color: #044c5b;
 	}
 
 	/* Efecto */

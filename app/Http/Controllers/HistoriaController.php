@@ -89,4 +89,32 @@ class HistoriaController extends Controller
     return response()->json($historias);
 }
 
+    /**
+     * remover una historia de éxito
+     */
+    public function destroy(Request $request, Historia $historia)
+    {
+        // Solo el propietario puede eliminar su historia
+        if ($request->user()->id !== $historia->user_id) {
+            return response()->json(['message' => 'No autorizado'], 403);
+        }
+
+        try {
+            // Eliminar archivos si están presentes
+            if ($historia->imagen_antes) {
+                try { Storage::disk('public')->delete($historia->imagen_antes); } catch (\Throwable $e) { /* ignore */ }
+            }
+            if ($historia->imagen_despues) {
+                try { Storage::disk('public')->delete($historia->imagen_despues); } catch (\Throwable $e) { /* ignore */ }
+            }
+
+            $historia->delete();
+
+            return response()->json(['success' => true]);
+        } catch (\Throwable $e) {
+            \Log::error('Error deleting historia', ['err' => $e->getMessage(), 'id' => $historia->id]);
+            return response()->json(['message' => 'Error al eliminar la historia'], 500);
+        }
+    }
+
 }

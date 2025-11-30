@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { usePage } from '@inertiajs/react';
 import { formatDistanceToNow } from 'date-fns';
+import { es } from 'date-fns/locale';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { FaCommentDots } from 'react-icons/fa';
 import axios from 'axios';
@@ -30,7 +31,7 @@ export default function Comentarios({ comentableType, comentableId }) {
         avatarUrl: makeAbsolute(c.usuario_avatar || c.user?.profile_photo_url || '/images/DefaultPerfil.jpg'),
         texto: c.texto,
         replies: c.respuesta?.map(formatComentario) || [],
-        createdAt: formatDistanceToNow(new Date(c.created_at), { addSuffix: true }),
+        createdAt: formatDistanceToNow(new Date(c.created_at), { addSuffix: true, locale: es }),
         likes: c.likes_count || 0,
         likedByCurrentUser: c.liked_by_current_user || false,
         parentId: c.parent_id || null,

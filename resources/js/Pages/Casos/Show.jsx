@@ -24,6 +24,20 @@ export default function Show(props) {
         if (!res.ok) throw new Error('Not found');
 
         const data = await res.json();
+
+        if ((!data.usuario && !data.user) && data.idUsuario) {
+          try {
+            const ures = await fetch(`/usuarios/json/${data.idUsuario}`, { headers: { Accept: 'application/json' }, signal });
+            if (ures.ok) {
+              const udata = await ures.json();
+              
+              data.usuario = udata;
+            }
+          } catch (err) {
+            if (err.name !== 'AbortError') console.error('Error fetching usuario fallback', err);
+          }
+        }
+
         setCaso(data);
       }catch (error){
         if(error.name !== 'AbortError'){

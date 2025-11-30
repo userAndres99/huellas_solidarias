@@ -4,6 +4,7 @@ import PublicLayout from '@/Layouts/PublicLayout';
 import { useState, useEffect } from "react";
 import { Link } from "@inertiajs/react";
 import Comentarios from "@/Components/Comentarios";
+import Usuario from '@/Components/Usuario';
 import Loading from '@/Components/Loading';
 
 
@@ -33,6 +34,19 @@ function Show ({initialId}){
 
 
                 const data = await res.json();
+                
+                if ((!data.usuario && !data.user) && (data.idUsuario || data.user_id)) {
+                    const uid = data.idUsuario || data.user_id;
+                    try {
+                        const ures = await fetch(`/usuarios/json/${uid}`, { headers: { Accept: 'application/json' }, signal });
+                        if (ures.ok) {
+                            const udata = await ures.json();
+                            data.usuario = udata;
+                        }
+                    } catch (err) {
+                        if (err.name !== 'AbortError') console.error('Error fetching usuario fallback for historia', err);
+                    }
+                }
                 setHistoria(data);
             }catch(error){
                 if(error.name !== 'AbortError'){
@@ -58,6 +72,8 @@ function Show ({initialId}){
     }
 
 
+    const usuario = historia ? (historia.usuario || historia.user || null) : null;
+
     if(historia === null){
         return(
             <div className="flex items-center justify-center h-64 text-red-600">
@@ -80,9 +96,9 @@ function Show ({initialId}){
                     ← Volver a Historias
                 </Link>
 
-                <div className="bg-white shadow-lg rounded-xl overflow-hidden">
+                <div className="relative bg-white shadow-lg rounded-xl overflow-hidden">
                     {/* Imagenes */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    <div className="relative grid grid-cols-1 md:grid-cols-2 gap-2">
                         {historia.imagen_antes ? (
                             <img
                                 src={historia.imagen_antes}
@@ -106,6 +122,8 @@ function Show ({initialId}){
                                 Sin Imagen
                             </div>
                         )}
+                        {/* Usuario donde esta la foto,nombre,etc*/}
+                        <Usuario usuario={usuario} />
                     </div>
 
                     {/* Contenido */}
@@ -118,6 +136,7 @@ function Show ({initialId}){
                             {historia.testimonio}
                         </blockquote>
                     </div>
+                    
                 </div>
 
 

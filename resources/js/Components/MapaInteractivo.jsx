@@ -28,11 +28,11 @@ function getMarkerIcon(tipoAnimal, markerType = 'animal') {
   return new L.icon({ iconUrl, iconSize: [32, 32], iconAnchor: [16, 32] });
 }
 
-function ChangeView({ center }) {
+function ChangeView({ center, zoom }) {
   const map = useMap();
   useEffect(() => {
-    if (center) map.setView(center, 13);
-  }, [center, map]);
+    if (center) map.setView(center, zoom || 13);
+  }, [center, zoom, map]);
   return null;
 }
 
@@ -91,17 +91,22 @@ export default function MapaInteractivo({
       .catch(() => setMarkers([]));
   }, [showMarkers]);
 
-  const mapCenter = center || (initialPosition ? initialPosition : [-38.9339, -67.9900]);
+  // dejamos como Default center: Argentina 
+  const defaultCoords = [-38.4161, -63.6167];
+  const mapCenter = center || (initialPosition ? initialPosition : defaultCoords);
+
+  // zoom más amplio para la vista del país cuando no se proporciona un centro específico
+  const initialZoom = (center || initialPosition) ? 13 : 5;
 
   return (
     <div style={{ height: '100%', width: '100%' }}>
-      <MapContainer center={mapCenter} zoom={13} style={{ height: '100%', width: '100%' }}>
+      <MapContainer center={mapCenter} zoom={initialZoom} style={{ height: '100%', width: '100%' }}>
         <TileLayer
           attribution="Tiles &copy; Esri"
           url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}"
         />
 
-        <ChangeView center={center || initialPosition} />
+        <ChangeView center={center || initialPosition} zoom={initialZoom} />
 
         {!readOnly && onLocationSelect && (
           <LocationMarker

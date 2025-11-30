@@ -32,6 +32,9 @@ Route::middleware(['auth', 'verified', 'active'])->group(function(){
    // Buscador de usuarios (nombre de usuario o nombre de organización)
    Route::get('/buscador-usuarios', [BuscadorUsuariosController::class, 'search'])
         ->name('buscador.usuarios');
+   // Endpoint JSON público para obtener un usuario por id (usado por frontend)
+   Route::get('/usuarios/json/{user}', [BuscadorUsuariosController::class, 'jsonShow'])->name('usuarios.json.show');
+
    // Página pública (para usuarios autenticados) de ver perfil
    Route::get('/usuarios/{user}', [BuscadorUsuariosController::class, 'show'])
        ->name('usuarios.show');
@@ -177,6 +180,7 @@ Route::get('/historias/{id}', function ($id) {
 Route::middleware(['auth'])->group(function () {
     Route::get('/publicar-historia', [HistoriaController::class, 'create'])->name('historias.create');
     Route::post('/historias', [HistoriaController::class, 'store'])->name('historias.store');
+    Route::delete('/historias/{historia}', [HistoriaController::class, 'destroy'])->name('historias.destroy');
 });
 
 /* -----------------------------------------------------------------

@@ -13,7 +13,9 @@ export default function Historias() {
     const { auth } = pageProps;
     const [historias, setHistorias] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [tab, setTab] = useState('all'); // 'all' | 'mine'
+    const initialTab = (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('view') === 'mine') ? 'mine' : 'all';
+    const [tab, setTab] = useState(initialTab); // 'all' | 'mine'
+    const handleRemove = (id) => setHistorias(prev => prev.filter(h => h.id !== id));
 
     useEffect(() => {
         const controller = new AbortController();
@@ -22,7 +24,13 @@ export default function Historias() {
         const fetchHistorias = async () => {
             try {
                 setLoading(true);
-                const res = await fetch('/historias/json', {
+                const params = new URLSearchParams();
+                // si estamos en modo 'mine', pedimos solo las historias del usuario autenticado
+                if (tab === 'mine') params.append('mio', '1');
+
+                const url = `/historias/json?${params.toString()}`;
+
+                const res = await fetch(url, {
                     headers: { Accept: 'application/json' },
                     signal,
                 });
@@ -48,7 +56,7 @@ export default function Historias() {
 
         fetchHistorias();
         return () => controller.abort();
-    }, []);
+    }, [tab]);
 
      if (loading) return (
          <>
@@ -98,7 +106,7 @@ export default function Historias() {
                         return (h.user && h.user.id === auth.user.id) || h.user_id === auth.user.id;
                     })
                     .map(h => (
-                        <TarjetaHistorias key={h.id} historia={h} />
+                        <TarjetaHistorias key={h.id} historia={h} showDelete={tab === 'mine'} onRemove={handleRemove} />
                     ))}
             </div>
         </div>

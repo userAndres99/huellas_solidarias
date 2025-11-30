@@ -76,4 +76,22 @@ class BuscadorUsuariosController extends Controller
             'followers_count' => $followersCount,
         ]);
     }
+
+    /**
+     * Devuelve un usuario en formato JSON 
+     */
+    public function jsonShow(User $user)
+    {
+        $user->load('organizacion');
+
+        $result = [
+            'id' => $user->id,
+            'name' => $user->name,
+            'email' => $user->email,
+            'organizacion' => $user->organizacion ? ['id' => $user->organizacion->id, 'nombre' => $user->organizacion->nombre] : null,
+            'profile_photo_url' => $user->profile_photo_url,
+        ];
+
+        return response()->json($result);
+    }
 }

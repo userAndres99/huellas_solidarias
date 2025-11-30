@@ -80,6 +80,7 @@ export default function LoadingImagenes({ src, alt = '', imgClass = '', wrapperC
               
             } finally {
               setLoaded(true);
+              // imagen cargada
               if (typeof onLoad === 'function') onLoad(e);
             }
           }}
@@ -93,6 +94,8 @@ export default function LoadingImagenes({ src, alt = '', imgClass = '', wrapperC
             } catch (err) {
               
             }
+
+
 
             setLoaded(true);
             if (typeof onLoad === 'function') onLoad(e);
