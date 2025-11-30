@@ -5,11 +5,13 @@ import { PencilSquareIcon } from "@heroicons/react/24/outline";
 import ConversationItem from "../../Components/App/ConversationItem";
 import { useEventBus } from "@/EvenBus";
 import GroupModal from "@/Components/App/GroupModal";
+import StartChatModal from "@/Components/App/StartChatModal";
 
 const ChatLayouts = ({ children }) => {
     const page = usePage();
     const conversations = page.props.conversations;
     const selectedConversation = page.props.selectedConversation;
+    const users = page.props.users;
 
     const selectedConversationRef = useRef(selectedConversation);
     const [onlineUsers, setOnlineUsers] = useState({});
@@ -17,6 +19,7 @@ const ChatLayouts = ({ children }) => {
     const [sortedConversations, setSortedConversations] = useState([]);
     const { on, emit } = useEventBus();
     const [showGroupModal, setShowGroupModal] = useState(false);
+    const [showStartChatModal, setShowStartChatModal] = useState(false);
 
     // Mantener siempre actualizado el ref
     useEffect(() => {
@@ -107,11 +110,14 @@ const ChatLayouts = ({ children }) => {
             }
         });
 
+        const offStarChat = on("StartChat.show", () => setShowStartChatModal(true));
+
         return () => {
             offCreated();
             offDeleted();
             offModalShow();
             offGroupDelete();
+            offStarChat();
         };
     }, [on, emit]);
 
@@ -162,6 +168,17 @@ const ChatLayouts = ({ children }) => {
                 <div className="flex flex-col sm:w-[220px] md:w-[300px] bg-slate-800">
                     <div className="flex items-center justify-between py-2 px-3 text-xl font-medium text-gray-200">
                         Usuarios Conectados
+                        <div className="flex items-center gap-3">
+                            <div className="tooltip tooltip-left" data-tip="Iniciar Conversacion">
+                                <button
+                                    onClick={() => emit("StartChat.show")}
+                                    className="text-gray-400 hover:text-gray-200"
+                                >
+                                    <span className="text-sm">💬</span>
+                                </button>
+                            </div>
+
+                        </div>
                         <div className="tooltip tooltip-left" data-tip="Create new Group">
                             <button
                                 onClick={() => setShowGroupModal(true)}
@@ -193,6 +210,13 @@ const ChatLayouts = ({ children }) => {
             </div>
 
             <GroupModal show={showGroupModal} onClose={() => setShowGroupModal(false)} />
+
+            <StartChatModal
+                show={showStartChatModal}
+                onClose={() => setShowStartChatModal(false)}
+                users = {users}
+            
+            />
         </>
     );
 };

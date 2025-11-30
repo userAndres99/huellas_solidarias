@@ -13,6 +13,7 @@ use App\Http\Controllers\SolicitudVerificacionController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ComentarioController;
+use App\Http\Controllers\ConversationController;
 use App\Http\Controllers\GroupController;
 use App\Models\Donacion;
 use App\Models\Organizacion;
@@ -49,7 +50,7 @@ Route::middleware(['auth', 'verified', 'active'])->group(function(){
     Route::delete('/message/{message}', [MessageController::class, 'destroy'])->name('message.destroy');
     Route::get('/message/older/{message}', [MessageController::class, 'loadOlder'])->name('message.loadOlder');
 
-    
+    Route::post('/conversations/start', [ConversationController::class, 'start'])->name('conversations.start');
 
     Route::post('/group', [GroupController::class, 'store'])->name('group.store');
     Route::put('/group/{group}', [GroupController::class, 'update'])->name('group.update');
