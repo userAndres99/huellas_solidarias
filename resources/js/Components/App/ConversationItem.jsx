@@ -2,7 +2,7 @@ import { Link, usePage } from "@inertiajs/react";
 import UserAvatar from './UserAvatar';
 import GroupAvatar from './GroupAvatar';
 import UserOptionsDropdown from './UserOptionsDropdown';
-import { formatMessageDateShort } from "@/helpers";
+import { formatMessageDateShort, previewText } from "@/helpers";
 
 const ConversationItem = ({
     conversation,
@@ -37,39 +37,41 @@ const ConversationItem = ({
             {...(onSelect ? { type: 'button', onClick: () => onSelect(conversation) } : {})}
             href={!onSelect ? (conversation.is_group ? route('chat.group', conversation) : route('chat.user', conversation)) : undefined}
             className={
-                'conversation-item flex items-center gap-2 p-2 text-gray-300 transition-all cursor-pointer border-l-4 hover:bg-black/30 ' +
+                'conversation-item w-full flex items-center gap-2 p-2 text-gray-300 transition-all cursor-pointer border-l-4 hover:bg-black/30 ' +
                 classes +
                 (conversation.is_user && currentUser.is_admin ? ' pr-2' : ' pr-4')
             }
         >
             {conversation.is_user && (
-                <UserAvatar user={conversation} online={online}/>
+                <div className="flex-shrink-0">
+                    <UserAvatar user={conversation} online={online}/>
+                </div>
             )}
             {conversation.is_group && <GroupAvatar/>}
             <div
                 className={
-                    `flex-1 text-xs max-w-full overflow-hidden ` +
+                    `flex-1 text-xs max-w-full overflow-hidden text-left min-w-0 ` +
                     (conversation.is_user && conversation.blocked_at
                         ? "opacity-50"
                         : ""
                     )
                 }
             >
-                <div className="flex gap-1 justify-between items-center">
-                    <h3 className="text-sm font-semibold text-white truncate">
+                <div className="grid grid-cols-[1fr_3rem] gap-2 items-center">
+                    <h3 className="text-sm font-semibold text-white truncate min-w-0">
                         {conversation.name}
                     </h3>
                     {conversation.last_message_date && (
-                        <span className="text-xs opacity-60">
+                        <span className="text-xs opacity-60 text-right">
                             {formatMessageDateShort(conversation.last_message_date)}
                         </span>
                     )}
+                    {conversation.last_message && (
+                        <p className="text-xs text-gray-300 truncate mt-1 col-start-1 col-end-2">
+                            {previewText(conversation.last_message, 6)}
+                        </p>
+                    )}
                 </div>
-                {conversation.last_message && (
-                    <p className="text-xs text-gray-300 truncate">
-                        {conversation.last_message}
-                    </p>
-                )}
 
             </div>
             {!!currentUser.is_admin && conversation.is_user && (

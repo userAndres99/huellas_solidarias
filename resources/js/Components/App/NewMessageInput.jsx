@@ -21,7 +21,17 @@ const NewMessageInput = ({ value, onChange, onSend, onFocus, onBlur }) => {
         setTimeout(() => {
             if (!input.current) return;
             input.current.style.height = 'auto';
-            input.current.style.height = input.current.scrollHeight + 1 + 'px';
+            const max = 120; 
+            const sh = input.current.scrollHeight + 1;
+            
+            input.current.style.overflowX = 'hidden';
+            if (sh > max) {
+                input.current.style.height = `${max}px`;
+                input.current.style.overflowY = 'auto';
+            } else {
+                input.current.style.height = `${sh}px`;
+                input.current.style.overflowY = 'hidden';
+            }
         }, 100);
     };
 
@@ -44,14 +54,14 @@ const NewMessageInput = ({ value, onChange, onSend, onFocus, onBlur }) => {
             ref={input}
             value={value}
             rows="1"
-            placeholder="Escribe un mensaje"
+            placeholder="escribe...."
             onKeyDown={onInputKeyDown}
             onChange={(ev) => onChangeEvent(ev)}
             onFocus={handleFocus}
             onBlur={handleBlur}
             onClick={handleFocus}
             onTouchStart={handleFocus}
-            className="input input-bordered w-full min-h-11 resize-none overflow-y-auto bg-[#9ED9F0] text-slate-900 max-h-40 rounded-none rounded-l-lg"
+            className="input input-bordered w-full min-h-[36px] resize-none bg-[#9ED9F0] text-slate-900 max-h-[120px] rounded-none rounded-l-lg px-3 py-1 overflow-x-hidden whitespace-pre-wrap break-words"
         />
     );
 };

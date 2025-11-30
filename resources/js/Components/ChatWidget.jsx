@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { useEventBus } from '@/EvenBus';
 import { usePage } from '@inertiajs/react';
 import axios from 'axios';
+import { XMarkIcon } from '@heroicons/react/24/solid';
 import MessageItem from '@/Components/App/MessageItem';
 import MessageInput from '@/Components/App/MessageInput';
 import ConversationItem from '@/Components/App/ConversationItem';
@@ -249,11 +250,11 @@ export default function ChatWidget() {
                 </button>
 
                 {open && (
-                    <div className="fixed bottom-0 left-0 right-0 w-full h-[70vh] rounded-t-lg bg-white shadow-xl ring-1 ring-black ring-opacity-5 z-50 sm:absolute sm:bottom-16 sm:right-full sm:mr-4 sm:left-auto sm:w-[760px] sm:max-h-[520px] sm:h-auto sm:rounded-lg">
+                    <div className="fixed bottom-4 right-4 w-[92vw] max-h-[85vh] h-auto rounded-lg bg-white shadow-xl ring-1 ring-black ring-opacity-5 z-50 sm:fixed sm:bottom-16 sm:right-4 sm:left-auto sm:w-[760px] sm:max-h-[520px] sm:h-auto sm:rounded-lg">
                         <div className="h-full flex flex-col sm:flex-row">
 
                             {!(isMobile && selectedConversation) && (
-                                <div className="w-full sm:w-72 border-r bg-slate-800 text-white flex flex-col">
+                                <div className="w-full sm:w-72 border-r bg-slate-800 text-white flex flex-col flex-1 overflow-y-auto">
                                     <div className="px-4 py-3 border-b border-slate-700 flex items-center justify-between">
                                         <h3 className="text-sm font-semibold text-white">Usuarios Conectados</h3>
                                         <div className="flex items-center gap-2">
@@ -266,6 +267,16 @@ export default function ChatWidget() {
                                                     className="text-gray-400 hover:text-gray-200"
                                                 >
                                                     ✏️
+                                                </button>
+                                            </div>
+                                            <div className="tooltip tooltip-left" data-tip="Cerrar chat">
+                                                <button
+                                                    onClick={() => setOpen(false)}
+                                                    className="text-gray-400 hover:text-gray-200"
+                                                    aria-label="Cerrar chat"
+                                                    title="Cerrar chat"
+                                                >
+                                                    <XMarkIcon className="w-5 h-5" />
                                                 </button>
                                             </div>
                                         </div>
@@ -335,7 +346,7 @@ export default function ChatWidget() {
                                             <div className="text-lg text-slate-800">Por favor selecciona una conversación</div>
                                         </div>
                                     ) : (
-                                        <div className="flex flex-col h-full sm:h-[520px] min-h-0">
+                                        <div className={`flex flex-col h-full sm:h-[520px] min-h-0 ${isMobile ? 'h-[60vh]' : ''}`}>
                                             <div className="flex items-center justify-between px-3 py-2 border-b">
                                                 <button
                                                     onClick={() => { setSelectedConversation(null); setMessages([]); }}
@@ -364,7 +375,7 @@ export default function ChatWidget() {
                                             </div>
 
                                             <div className="flex-shrink-0 p-2 border-t bg-white" ref={inputContainerRef}>
-                                                <MessageInput conversation={selectedConversation} onFocus={handleInputFocus} onBlur={handleInputBlur} />
+                                                <MessageInput conversation={selectedConversation} onFocus={handleInputFocus} onBlur={handleInputBlur} isMobile={isMobile} compact={true} />
                                             </div>
                                         </div>
                                     )}

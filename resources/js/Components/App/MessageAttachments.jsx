@@ -17,10 +17,10 @@ const MessageAttachments = ({ attachments, attachmentClick}) => {
                             key={attachment.id}
                             className={
                                 `group flex flex-col items-center justify-center
-                                text-gray-500 relative cursor-pointer ` +
-                                (isAudio(attachment)
-                                    ? "w-84"
-                                    : "w-32 aspect-square bg-blue-100") 
+                                    text-gray-500 relative cursor-pointer ` +
+                                    (isAudio(attachment)
+                                        ? "w-full max-w-[240px]"
+                                        : "w-32 aspect-square bg-blue-100") 
                             }
                         >
                             {!isAudio(attachment) && (
@@ -50,10 +50,12 @@ const MessageAttachments = ({ attachments, attachmentClick}) => {
                                 </div>
                             )}
                             {isAudio(attachment) && (
-                                <div className='relative flex justify-center items-center'>
+                                <div className='relative flex justify-center items-center w-full py-1'>
                                     <audio 
                                     src={attachment.url}
                                     controls
+                                    className='block w-full h-10 min-w-[160px] max-w-[320px]'
+                                    style={{objectFit: 'cover'}}
                                     ></audio>
                                 </div>
                             )}

@@ -1,4 +1,4 @@
-import React, { useState, Fragment } from "react";
+import React, { useState, Fragment, useRef } from "react";
 import {
     PaperClipIcon,
     PhotoIcon,
@@ -6,6 +6,7 @@ import {
     HandThumbUpIcon,
     PaperAirplaneIcon,
     XCircleIcon,
+    MicrophoneIcon,
 } from "@heroicons/react/24/solid";
 import axios from "axios";
 import NewMessageInput from "./NewMessageInput";
@@ -16,126 +17,101 @@ import CustomAudioPlayer from "./CustomAudioPlayer";
 import AttachmentPreview from "./AttachmentPreview";
 import AudioRecorder from "./AudioRecorder";
 
-const MessageInput = ({ conversation = null, onFocus = null, onBlur = null }) => {
+const MessageInput = ({ conversation = null, onFocus = null, onBlur = null, isMobile = false, compact = false }) => {
     const [newMessage, setNewMessage] = useState("");
     const [inputErrorMessage, setInputErrorMessage] = useState("");
     const [messageSending, setMessageSending] = useState(false);
     const [chosenFiles, setChosenFiles] = useState([]);
     const [uploadProgress, setUploadProgress] = useState(0);
 
-    const onFileChange = (ev) => {
-        const files = ev.target.files; 
-        const updatedFiles = [...files].map((file) => {
-            return {
-                file: file,
-                url: URL.createObjectURL(file),
-            };
-        });
+    const attachInputRef = useRef();
+    const photoInputRef = useRef();
+    const [showEmoji, setShowEmoji] = useState(false);
+    const [showAudioInMenu, setShowAudioInMenu] = useState(false);
 
-        setChosenFiles((prevFiles) =>{
-            return [...prevFiles, ...updatedFiles];
-        });
+    const onFileChange = (ev) => {
+        const files = ev.target.files || [];
+        const updatedFiles = Array.from(files).map((file) => ({ file, url: URL.createObjectURL(file) }));
+        setChosenFiles((prev) => [...prev, ...updatedFiles]);
+    };
+    const recordedAudioReady = (file, url) => {
+        setChosenFiles((prevFiles) => [...prevFiles, { file, url }]);
     };
 
-
-    const onSendClick = () => {
-        if(messageSending){
-            return;
-        }
+    const onSendClick = async () => {
+        if (messageSending) return;
         if (newMessage.trim() === "" && chosenFiles.length === 0) {
-            setInputErrorMessage("Please provide a message or upload attachments");
-            setTimeout(() => {
-                setInputErrorMessage("");
-            }, 3000)
+            setInputErrorMessage("Por favor escribe un mensaje o adjunta un archivo");
+            setTimeout(() => setInputErrorMessage(""), 3000);
             return;
         }
         const formData = new FormData();
-        chosenFiles.forEach((file) => {
-            formData.append("attachments[]", file.file);
+        chosenFiles.forEach((f) => {
+            if (f && f.file) formData.append("attachments[]", f.file);
         });
         formData.append("message", newMessage);
-        if (conversation.is_user) {
-            formData.append("receiver_id", conversation.id);
-        } else if (conversation.is_group) {
-            formData.append("group_id", conversation.id);
-        }
-        setMessageSending(true);
-        axios.post(route("message.store"), formData, {
-            onUploadProgress: (progressEvent) => {
-                const progress = Math.round(
-                    (progressEvent.loaded / progressEvent.total) * 100
-                );
-                console.log(progress);
-                setUploadProgress(progress);
-            },
-        }).then((response) => {
+        if (conversation && conversation.is_user) formData.append("receiver_id", conversation.id);
+        else if (conversation && conversation.is_group) formData.append("group_id", conversation.id);
+
+        try {
+            setMessageSending(true);
+            await axios.post(route("message.store"), formData, {
+                onUploadProgress: (progressEvent) => {
+                    if (!progressEvent.total) return;
+                    const progress = Math.round((progressEvent.loaded / progressEvent.total) * 100);
+                    setUploadProgress(progress);
+                },
+            });
             setNewMessage("");
-            setMessageSending(false);
+            setChosenFiles([]);
             setUploadProgress(0);
-            setChosenFiles([]);
-        }).catch((error) => {
+        } catch (err) {
+            const msg = err?.response?.data?.message;
+            setInputErrorMessage(msg || "Un error ocurrió al enviar el mensaje");
+        } finally {
             setMessageSending(false);
-            setChosenFiles([]);
-            const message = error?.response?.data?.message;
-            setInputErrorMessage(
-                message || "Un error ocurrio al enviar el mensaje"
-            );
-        });
+        }
     };
 
-    const onLikeClick = () =>{
-        if (messageSending){
-            return;
-        }
-
-        const data = {
-            message: "👍",
-        }
-        if (conversation.is_user) {
-            data["receiver_id"] = conversation.id;
-        } else if(conversation.is_group){
-            data["group_id"] = conversation.id;
-        }
-
-
-        axios
-            .post(route("message.store"), data)
-
-
+    const onLikeClick = () => {
+        if (messageSending) return;
+        const data = { message: "👍" };
+        if (conversation && conversation.is_user) data.receiver_id = conversation.id;
+        else if (conversation && conversation.is_group) data.group_id = conversation.id;
+        axios.post(route("message.store"), data).catch(() => {});
     };
-
-    const recordedAudioReady = (file, url) => {
-        setChosenFiles((prevFiles) => [...prevFiles, { file, url}]);
-    }
 
 
     return (
         <div className="flex items-start border-t border-slate-700 py-3">
-            <div className="order-2 p-2 flex-shrink-0">
-                <button className="p-1 text-gray-400 hover:text-gray-300 relative" aria-label="Documentos">
-                    <PaperClipIcon className="w-6"/>
-                    <input 
-                    type="file"
-                    multiple
-                    onChange={onFileChange}
-                    className="absolute left-0 top-0 right-0 bottom-0 z-20 opacity-0 cursor-pointer"
-                    
-                    />
-                </button>
-                <button className="p-1 text-gray-400 hover:text-gray-300 relative" title="Seleccionar Imagen">
-                    <PhotoIcon className="w-6"/>
-                    <input 
-                    type="file"
-                    multiple
-                    accept="image/*"
-                    onChange={onFileChange}
-                    className="absolute left-0 top-0 right-0 bottom-0 z-0 opacity-0 cursor-pointer"
-                    />
-                </button>
-                <AudioRecorder fileReady={recordedAudioReady} title="boton audio voz"/>
+            <div className="order-2 p-1 flex-shrink-0 flex items-center gap-1">
+                {!(isMobile || compact) && (
+                    <>
+                        <button
+                            className="p-1 text-gray-400 hover:text-gray-300 relative"
+                            aria-label="Documentos"
+                            onClick={() => attachInputRef.current && attachInputRef.current.click()}
+                        >
+                            <PaperClipIcon className="w-5 h-5" />
+                        </button>
+                        <button
+                            className="p-1 text-gray-400 hover:text-gray-300 relative"
+                            title="Seleccionar Imagen"
+                            onClick={() => photoInputRef.current && photoInputRef.current.click()}
+                        >
+                            <PhotoIcon className="w-5 h-5" />
+                        </button>
+                        <div>
+                            <AudioRecorder fileReady={recordedAudioReady} title="boton audio voz" />
+                        </div>
+                    </>
+                )}
+
+                <input ref={attachInputRef} type="file" multiple onChange={onFileChange} className="hidden" />
+                <input ref={photoInputRef} type="file" multiple accept="image/*" onChange={onFileChange} className="hidden" />
             </div>
-            <div className="order-1 px-3 xs:p-0 min-w-0 flex-1 relative">
-                <div className="flex">
+            <div className="order-1 px-2 xs:p-0 min-w-0 flex-1 relative">
+                <div className="flex items-center gap-2 w-full">
                     <NewMessageInput
                         value={newMessage}
                         onSend={onSendClick}
@@ -143,7 +119,7 @@ const MessageInput = ({ conversation = null, onFocus = null, onBlur = null }) =>
                         onFocus={onFocus}
                         onBlur={onBlur}
                     />
-                    <button type="button" onClick={onSendClick} disabled={messageSending} className="btn btn-info rounded-l-none" aria-label="Enviar mensaje">
+                    <button type="button" onClick={onSendClick} disabled={messageSending} className="btn btn-info rounded-l-none px-3 py-2" aria-label="Enviar mensaje">
                         <PaperAirplaneIcon className="w-6"/>
                         <span className="hidden sm:inline">Enviar</span>
                     </button>
@@ -207,21 +183,104 @@ const MessageInput = ({ conversation = null, onFocus = null, onBlur = null }) =>
 
                 </div>
             </div>
-            <div className="order-3 xs:order-3 p-2 flex">
-                <Popover className="relative">
-                    <Popover.Button className="p-1 text-gray-400 hover:text-gray-300" title="emogins">
-                        <FaceSmileIcon className="w-6 h-6" />
-                    </Popover.Button>
-                    <Popover.Panel className="absolute z-10 right-0 bottom-full">
-                        <EmojiPicker theme="dark" onEmojiClick={(ev) => setNewMessage(newMessage + ev.emoji)}>
+            <div className="order-3 xs:order-3 p-1 flex items-center gap-2">
+                {!(isMobile || compact) ? (
+                    <div className="flex items-center gap-2 relative">
+                        <button
+                            className="p-1 text-gray-400 hover:text-gray-300"
+                            title="emoji"
+                            onClick={() => { setShowEmoji(true); }}
+                        >
+                            <FaceSmileIcon className="w-5 h-5" />
+                        </button>
 
-                        </EmojiPicker>
-                    </Popover.Panel>
-                </Popover>
-                <button onClick={onLikeClick} className="p-1 text-gray-400 hover:text-gray-300" title="Like">
-                    <HandThumbUpIcon className="w-6 h-6"/>
-                </button>
+                        {!showEmoji && (
+                            <button onClick={onLikeClick} className="p-1 text-gray-400 hover:text-gray-300" title="Like">
+                                <HandThumbUpIcon className="w-5 h-5" />
+                            </button>
+                        )}
 
+                        {showEmoji && (
+                            <div className="absolute z-10 right-0 bottom-full w-[320px] max-w-[92vw] rounded-md bg-gray-800 shadow-lg p-2">
+                                <div className="flex items-center justify-between mb-2">
+                                    <button onClick={() => setShowEmoji(false)} className="text-sm text-gray-200 px-2 py-1 hover:bg-white/5 rounded">Volver</button>
+                                    <button onClick={() => setShowEmoji(false)} className="text-gray-400 p-1 hover:text-gray-200">
+                                        <XCircleIcon className="w-5 h-5" />
+                                    </button>
+                                </div>
+                                <div className={`${(isMobile || compact) ? 'max-h-[220px] overflow-auto p-1' : ''}`}>
+                                    <EmojiPicker theme="dark" onEmojiClick={(ev) => { setNewMessage(newMessage + ev.emoji); setShowEmoji(false); }} />
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                ) : (
+                    <div>
+                        <Popover className="relative inline-block text-left">
+                            <Popover.Button className="p-1 text-gray-400 hover:text-gray-300">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor"><path d="M6 12a2 2 0 11-4 0 2 2 0 014 0zm9 0a2 2 0 11-4 0 2 2 0 014 0zM22 12a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                            </Popover.Button>
+                            <Transition
+                                as={Fragment}
+                                enter="transition ease-out duration-100"
+                                enterFrom="transform opacity-0 scale-95"
+                                enterTo="transform opacity-100 scale-100"
+                                leave="transition ease-in duration-75"
+                                leaveFrom="transform opacity-100 scale-100"
+                                leaveTo="transform opacity-0 scale-95"
+                            >
+                                <Popover.Panel className="absolute right-0 bottom-full mb-2 w-[320px] max-w-[92vw] rounded-md bg-gray-800 shadow-lg z-50 p-2">
+                                    <div className="flex flex-col gap-1">
+                                        {!showEmoji ? (
+                                            <>
+                                                <button onClick={() => attachInputRef.current && attachInputRef.current.click()} className="flex items-center gap-2 px-2 py-1 text-sm text-gray-100 hover:bg-black/30">
+                                                    <PaperClipIcon className="w-5 h-5" />
+                                                    <span>Archivo</span>
+                                                </button>
+                                                <button onClick={() => photoInputRef.current && photoInputRef.current.click()} className="flex items-center gap-2 px-2 py-1 text-sm text-gray-100 hover:bg-black/30">
+                                                    <PhotoIcon className="w-5 h-5" />
+                                                    <span>Imagen</span>
+                                                </button>
+                                                <button onClick={() => setShowAudioInMenu((s) => !s)} className="flex items-center gap-2 px-2 py-1 text-sm text-gray-100 hover:bg-black/30">
+                                                    <MicrophoneIcon className="w-5 h-5" />
+                                                    <span>Audio</span>
+                                                </button>
+                                                <button onClick={() => { setShowEmoji(true); setShowAudioInMenu(false); }} className="flex items-center gap-2 px-2 py-1 text-sm text-gray-100 hover:bg-black/30">
+                                                    <FaceSmileIcon className="w-5 h-5" />
+                                                    <span>Emoji</span>
+                                                </button>
+                                                <button onClick={() => { onLikeClick(); }} className="flex items-center gap-2 px-2 py-1 text-sm text-gray-100 hover:bg-black/30">
+                                                    <HandThumbUpIcon className="w-5 h-5" />
+                                                    <span>Like</span>
+                                                </button>
+
+                                                {showAudioInMenu && (
+                                                    <div className="w-full px-2 py-1 mt-1">
+                                                        <AudioRecorder fileReady={recordedAudioReady} title="Audio" />
+                                                    </div>
+                                                )}
+                                            </>
+                                        ) : (
+                                            <div className="w-full">
+                                                <div className="flex items-center justify-between px-2 py-1">
+                                                    <button onClick={() => setShowEmoji(false)} className="text-sm text-gray-200 px-2 py-1 hover:bg-white/5 rounded">Volver</button>
+                                                    <button onClick={() => setShowEmoji(false)} className="text-gray-400 p-1 hover:text-gray-200">
+                                                        <XCircleIcon className="w-5 h-5" />
+                                                    </button>
+                                                </div>
+                                                <div className="w-full px-2 py-1 mt-1">
+                                                    <div className="max-h-[320px] overflow-auto">
+                                                        <EmojiPicker theme="dark" onEmojiClick={(ev) => { setNewMessage(newMessage + ev.emoji); setShowEmoji(false); }} />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </Popover.Panel>
+                            </Transition>
+                        </Popover>
+                    </div>
+                )}
             </div>
 
         </div>
