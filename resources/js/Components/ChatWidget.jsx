@@ -5,9 +5,11 @@ import { usePage } from '@inertiajs/react';
 import axios from 'axios';
 import MessageItem from '@/Components/App/MessageItem';
 import MessageInput from '@/Components/App/MessageInput';
+import ConversationItem from '@/Components/App/ConversationItem';
+import GroupModal from '@/Components/App/GroupModal';
 
 export default function ChatWidget() {
-    const { on } = useEventBus();
+    const { on, emit } = useEventBus();
     const [mounted, setMounted] = useState(false);
     const page = usePage();
     const user = page.props.auth?.user;
@@ -20,6 +22,12 @@ export default function ChatWidget() {
     const [loadingMessages, setLoadingMessages] = useState(false);
     const messagesRef = useRef(null);
     const [search, setSearch] = useState('');
+    const [isMobile, setIsMobile] = useState(false);
+    const initialInnerHeightRef = useRef(null);
+    const sentinelRef = useRef(null);
+    const inputContainerRef = useRef(null);
+    const [showGroupModal, setShowGroupModal] = useState(false);
+    const [onlineUsers, setOnlineUsers] = useState({});
 
     useEffect(() => {
         if (!on) return;
@@ -86,6 +94,144 @@ export default function ChatWidget() {
 
     useEffect(() => setMounted(true), []);
 
+    useEffect(() => {
+        const check = () => setIsMobile(window.innerWidth < 640);
+        check();
+        window.addEventListener('resize', check);
+        return () => window.removeEventListener('resize', check);
+    }, []);
+
+    // para manejar el enfoque del input y ajustar la vista para modo responsive
+    const handleInputFocus = () => {
+        try {
+            if (!messagesRef.current) return;
+
+            // recalcular la altura disponible usando visualViewport 
+            try {
+                const vv = window.visualViewport;
+                const viewportHeight = (vv && vv.height) || window.innerHeight;
+                const top = messagesRef.current.getBoundingClientRect().top;
+                const inputH = inputContainerRef.current ? inputContainerRef.current.getBoundingClientRect().height : 64;
+                const available = Math.max(100, Math.floor(viewportHeight - top - inputH - 12));
+                messagesRef.current.style.height = `${available}px`;
+                messagesRef.current.style.maxHeight = `${available}px`;
+            } catch (e) {}
+
+            if (!messagesRef.current.style.paddingBottom) messagesRef.current.style.paddingBottom = '220px';
+            messagesRef.current.style.touchAction = 'pan-y';
+
+            const start = Date.now();
+            const timeout = 900; // ms
+            const tryScroll = () => {
+                try {
+                    if (!messagesRef.current) return;
+                    const atBottom = messagesRef.current.scrollTop + messagesRef.current.clientHeight >= messagesRef.current.scrollHeight - 2;
+                    if (!atBottom) {
+                        messagesRef.current.scrollTop = messagesRef.current.scrollHeight;
+                    }
+                    if (sentinelRef.current) {
+                        sentinelRef.current.scrollIntoView({ behavior: 'auto', block: 'end' });
+                    }
+                } catch (e) {}
+                if (Date.now() - start < timeout) {
+                    requestAnimationFrame(tryScroll);
+                }
+            };
+            tryScroll();
+        } catch (e) {}
+    };
+
+    const handleInputBlur = () => {
+        try {
+            if (messagesRef.current) messagesRef.current.style.paddingBottom = '';
+        } catch (e) {}
+    };
+
+    // manejo de visualViewport para teclados móviles
+    useEffect(() => {
+        try {
+            initialInnerHeightRef.current = window.innerHeight;
+        } catch (e) {
+            initialInnerHeightRef.current = null;
+        }
+
+        const onResize = () => {
+            try {
+                const initial = initialInnerHeightRef.current || window.innerHeight;
+                const current = window.innerHeight;
+                const delta = initial - current;
+                if (delta > 100 && messagesRef.current) {
+                    messagesRef.current.style.paddingBottom = `${delta + 80}px`;
+                    messagesRef.current.scrollTop = messagesRef.current.scrollHeight + delta;
+                } else if (messagesRef.current) {
+                    messagesRef.current.style.paddingBottom = '';
+                }
+            } catch (e) {}
+        };
+
+        window.addEventListener('resize', onResize);
+        return () => window.removeEventListener('resize', onResize);
+    }, []);
+
+    // Seguimiento de usuarios en línea para el widget (misma lógica que en ChatLayout)
+    useEffect(() => {
+        try {
+            Echo.join('online')
+                .here((users) => {
+                    const onlineUsersObj = Object.fromEntries(users.map((u) => [u.id, u]));
+                    setOnlineUsers((prev) => ({ ...prev, ...onlineUsersObj }));
+                })
+                .joining((user) => setOnlineUsers((prev) => ({ ...prev, [user.id]: user })))
+                .leaving((user) =>
+                    setOnlineUsers((prev) => {
+                        const updated = { ...prev };
+                        delete updated[user.id];
+                        return updated;
+                    })
+                )
+                .error((error) => console.error('Echo error:', error));
+        } catch (e) {
+            
+        }
+
+        return () => {
+            try {
+                Echo.leave('online');
+            } catch (e) {}
+        };
+    }, []);
+
+    // Uso de visualViewport para ajustar alturas en móviles
+    useEffect(() => {
+        const updateHeights = () => {
+            try {
+                if (!messagesRef.current) return;
+                const vv = window.visualViewport;
+                const viewportHeight = (vv && vv.height) || window.innerHeight;
+                const top = messagesRef.current.getBoundingClientRect().top;
+                const inputH = inputContainerRef.current ? inputContainerRef.current.getBoundingClientRect().height : 64;
+                const available = Math.max(100, Math.floor(viewportHeight - top - inputH - 12));
+                messagesRef.current.style.height = `${available}px`;
+                messagesRef.current.style.maxHeight = `${available}px`;
+            } catch (e) {}
+        };
+
+        const vv = window.visualViewport;
+        if (vv) {
+            vv.addEventListener('resize', updateHeights);
+            vv.addEventListener('scroll', updateHeights);
+        }
+        window.addEventListener('resize', updateHeights);
+        setTimeout(updateHeights, 120);
+        return () => {
+            if (vv) {
+                vv.removeEventListener('resize', updateHeights);
+                vv.removeEventListener('scroll', updateHeights);
+            }
+            window.removeEventListener('resize', updateHeights);
+        };
+    }, [selectedConversation, messages]);
+
     const widget = (
         <div className="fixed bottom-4 right-4 z-50">
             <div className="relative">
@@ -106,13 +252,28 @@ export default function ChatWidget() {
                     <div className="fixed bottom-0 left-0 right-0 w-full h-[70vh] rounded-t-lg bg-white shadow-xl ring-1 ring-black ring-opacity-5 z-50 sm:absolute sm:bottom-16 sm:right-full sm:mr-4 sm:left-auto sm:w-[760px] sm:max-h-[520px] sm:h-auto sm:rounded-lg">
                         <div className="h-full flex flex-col sm:flex-row">
 
-                            <div className="w-full sm:w-72 border-r border-blue-800 bg-blue-900 text-white flex flex-col">
-                                <div className="px-4 py-3 border-b border-blue-800">
-                                    <div className="flex items-center justify-between">
-                                        <h3 className="text-sm font-semibold text-white">Mis conversaciones</h3>
-                                        <button onClick={() => setOpen(false)} className="text-sm text-white/90">Cerrar</button>
+                            {!(isMobile && selectedConversation) && (
+                                <div className="w-full sm:w-72 border-r bg-slate-800 text-white flex flex-col">
+                                    <div className="px-4 py-3 border-b border-slate-700 flex items-center justify-between">
+                                        <h3 className="text-sm font-semibold text-white">Usuarios Conectados</h3>
+                                        <div className="flex items-center gap-2">
+                                            <div className="tooltip tooltip-left" data-tip="Create new Group">
+                                                <button
+                                                    onClick={() => {
+                                                        if (emit) emit('GroupModal.show', { name: '', description: '', users: [], owner_id: user.id });
+                                                        setShowGroupModal(true);
+                                                    }}
+                                                    className="text-gray-400 hover:text-gray-200"
+                                                >
+                                                    ✏️
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <GroupModal show={showGroupModal} onClose={() => setShowGroupModal(false)} />
                                     </div>
-                                    <div className="mt-2">
+
+                                    <div className="p-3">
                                         <input
                                             type="text"
                                             value={search}
@@ -121,86 +282,76 @@ export default function ChatWidget() {
                                             className="input input-bordered w-full bg-white text-slate-800"
                                         />
                                     </div>
-                                </div>
-                                <div className="p-2 overflow-auto">
-                                    {conversations.length === 0 ? (
-                                        <div className="text-sm text-blue-200 p-4">No hay conversaciones</div>
-                                    ) : (
-                                        conversations.filter(c => ( (c.name||c.title||'') .toString().toLowerCase().includes(search.toLowerCase()) ) ).map((c) => (
-                                            <button
-                                                key={c.id}
-                                                type="button"
-                                                onClick={async () => {
-                                                    setSelectedConversation(c);
-                                                    setLoadingMessages(true);
-                                                    try {
-                                                        const url = c.is_user ? route('message.user.json', c.id) : route('message.group.json', c.id);
-                                                        const { data } = await axios.get(url);
-                                                        setMessages(data.data.reverse());
-                                                        setTimeout(() => {
-                                                            if (messagesRef.current) messagesRef.current.scrollTop = messagesRef.current.scrollHeight;
-                                                        }, 30);
-                                                    } catch (err) {
-                                                        console.error('Error loading messages', err);
-                                                    } finally {
-                                                        setLoadingMessages(false);
-                                                    }
-                                                }}
-                                                className="w-full text-left block px-3 py-2 border border-blue-800/30 rounded-md mb-2 last:mb-0 hover:bg-blue-800"
-                                            >
-                                                <div className="text-sm font-medium text-white">{c.title ?? c.name ?? (c.is_user ? c.other_name : `Grupo ${c.id}`)}</div>
-                                                <div className="text-xs text-blue-200 truncate">{c.last_message?.message ?? c.last_message?.text ?? ''}</div>
-                                            </button>
-                                        ))
-                                    )}
-                                </div>
-                            </div>
 
-                            <div className="flex-1 bg-white flex flex-col">
+                                    <div className="flex-1 overflow-y-auto overflow-x-hidden">
+                                        {conversations.length === 0 ? (
+                                            <div className="text-sm text-blue-200 p-4">No hay conversaciones</div>
+                                        ) : (
+                                            conversations
+                                                .filter((c) => c && (((c.name || c.title || '') + '').toString().toLowerCase().includes(search.toLowerCase())))
+                                                .map((c, idx) => {
+                                                    if (!c) return null;
+                                                    const keyId = c.id ?? idx;
+                                                    return (
+                                                        <ConversationItem
+                                                            key={`${c.is_group ? 'group' : 'user'}_${keyId}_${idx}`}
+                                                            conversation={c}
+                                                            online={!!onlineUsers[c.id]}
+                                                            selectedConversation={selectedConversation}
+                                                            onSelect={async (conv) => {
+                                                                setSelectedConversation(conv);
+                                                                setLoadingMessages(true);
+                                                                try {
+                                                                    const url = conv.is_user ? route('message.user.json', conv.id) : route('message.group.json', conv.id);
+                                                                    const { data } = await axios.get(url);
+                                                                    setMessages(data.data.reverse());
+                                                                    setTimeout(() => {
+                                                                        if (messagesRef.current) messagesRef.current.scrollTop = messagesRef.current.scrollHeight;
+                                                                    }, 30);
+                                                                } catch (err) {
+                                                                    console.error('Error loading messages', err);
+                                                                } finally {
+                                                                    setLoadingMessages(false);
+                                                                }
+                                                            }}
+                                                        />
+                                                    );
+                                                })
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className={`flex-1 bg-white flex flex-col ${isMobile && !selectedConversation ? 'hidden' : ''}`}>
                                 <div className="px-4 py-3 border-b">
                                     <div className="flex items-center justify-between">
                                         <h3 className="text-sm font-semibold">Mensajes</h3>
                                     </div>
                                 </div>
 
-                                <div className="flex-1 flex flex-col overflow-hidden">
+                                <div className="flex-1 flex flex-col overflow-hidden min-h-0">
                                     {!selectedConversation ? (
                                         <div className="flex-1 flex flex-col items-center justify-center text-center p-6">
                                             <div className="text-lg text-slate-800">Por favor selecciona una conversación</div>
                                         </div>
                                     ) : (
-                                        <div className="flex flex-col h-full sm:h-[520px]">
+                                        <div className="flex flex-col h-full sm:h-[520px] min-h-0">
                                             <div className="flex items-center justify-between px-3 py-2 border-b">
                                                 <button
                                                     onClick={() => { setSelectedConversation(null); setMessages([]); }}
-                                                    className="text-sm text-gray-600"
+                                                    className="text-sm text-white bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded-md"
                                                 >
                                                     Volver
                                                 </button>
                                                 <div className="text-sm font-medium truncate">
-                                                    {selectedConversation.title ??
-                                                        selectedConversation.name ??
-                                                        (selectedConversation.is_user
-                                                            ? selectedConversation.other_name
-                                                            : `Grupo ${selectedConversation.id}`)}
+                                                    {selectedConversation.title ?? selectedConversation.name ?? (selectedConversation.is_user ? selectedConversation.other_name : `Grupo ${selectedConversation.id}`)}
                                                 </div>
-                                                <a
-                                                    href={
-                                                        selectedConversation.is_user
-                                                            ? route('chat.user', selectedConversation.id)
-                                                            : route('chat.group', selectedConversation.id)
-                                                    }
-                                                    target="_blank"
-                                                    rel="noreferrer"
-                                                    className="text-sm text-blue-600"
-                                                >
-                                                    Abrir
-                                                </a>
                                             </div>
 
                                             <div
                                                 ref={messagesRef}
-                                                className="flex-1 overflow-auto px-3 py-2 bg-gray-50 min-w-0"
+                                                className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-2 bg-gray-50 min-w-0"
+                                                style={{ WebkitOverflowScrolling: 'touch' }}
                                             >
                                                 {loadingMessages ? (
                                                     <div className="text-sm text-gray-500 p-2">Cargando mensajes...</div>
@@ -209,10 +360,11 @@ export default function ChatWidget() {
                                                 ) : (
                                                     messages.map((m) => <MessageItem key={m.id} message={m} />)
                                                 )}
+                                                <div ref={sentinelRef}></div>
                                             </div>
 
-                                            <div className="flex-shrink-0 p-2 border-t bg-white">
-                                                <MessageInput conversation={selectedConversation} />
+                                            <div className="flex-shrink-0 p-2 border-t bg-white" ref={inputContainerRef}>
+                                                <MessageInput conversation={selectedConversation} onFocus={handleInputFocus} onBlur={handleInputBlur} />
                                             </div>
                                         </div>
                                     )}

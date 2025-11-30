@@ -6,8 +6,9 @@ import { formatMessageDateShort } from "@/helpers";
 
 const ConversationItem = ({
     conversation,
-    selectedConversation=null,
+    selectedConversation = null,
     online = null,
+    onSelect = null,
 }) => {
     const page = usePage();
     const currentUser = page.props.auth.user;
@@ -29,21 +30,16 @@ const ConversationItem = ({
             classes = "border-blue-500 bg-gray/20";
         }
     }
+    const Container = onSelect ? 'button' : Link;
+
     return (
-        <Link
-            href={
-                conversation.is_group
-                ? route("chat.group", conversation)
-                : route("chat.user", conversation)
-            }
-            
+        <Container
+            {...(onSelect ? { type: 'button', onClick: () => onSelect(conversation) } : {})}
+            href={!onSelect ? (conversation.is_group ? route('chat.group', conversation) : route('chat.user', conversation)) : undefined}
             className={
-                "conversation-item flex items-center gap-2 p-2 text-gray-300 transition-all cursor-pointer border-l-4 hover:bg-black/30 " + 
-                classes + 
-                (conversation.is_user && currentUser.is_admin 
-                    ? "pr-2"
-                    : "pr-4"
-                )
+                'conversation-item flex items-center gap-2 p-2 text-gray-300 transition-all cursor-pointer border-l-4 hover:bg-black/30 ' +
+                classes +
+                (conversation.is_user && currentUser.is_admin ? ' pr-2' : ' pr-4')
             }
         >
             {conversation.is_user && (
@@ -60,20 +56,17 @@ const ConversationItem = ({
                 }
             >
                 <div className="flex gap-1 justify-between items-center">
-                    <h3 className="text-sm font-semibold text-white overflow-hidden text-nowrap text-ellipsis">
+                    <h3 className="text-sm font-semibold text-white truncate">
                         {conversation.name}
                     </h3>
                     {conversation.last_message_date && (
-                        <span className="text-nowrap">
-                            {formatMessageDateShort(
-                                conversation.last_message_date
-                            )}
+                        <span className="text-xs opacity-60">
+                            {formatMessageDateShort(conversation.last_message_date)}
                         </span>
                     )}
-                  
                 </div>
                 {conversation.last_message && (
-                    <p className="text-xs text-nowrap overflow-hidden text-ellipsis">
+                    <p className="text-xs text-gray-300 truncate">
                         {conversation.last_message}
                     </p>
                 )}
@@ -83,7 +76,7 @@ const ConversationItem = ({
                 <UserOptionsDropdown conversation={conversation}/>
             )}
         
-        </Link>
+        </Container>
     );
 };
 

@@ -16,7 +16,7 @@ import CustomAudioPlayer from "./CustomAudioPlayer";
 import AttachmentPreview from "./AttachmentPreview";
 import AudioRecorder from "./AudioRecorder";
 
-const MessageInput = ({ conversation = null}) => {
+const MessageInput = ({ conversation = null, onFocus = null, onBlur = null }) => {
     const [newMessage, setNewMessage] = useState("");
     const [inputErrorMessage, setInputErrorMessage] = useState("");
     const [messageSending, setMessageSending] = useState(false);
@@ -137,9 +137,11 @@ const MessageInput = ({ conversation = null}) => {
             <div className="order-1 px-3 xs:p-0 min-w-0 flex-1 relative">
                 <div className="flex">
                     <NewMessageInput
-                        value = {newMessage}
+                        value={newMessage}
                         onSend={onSendClick}
                         onChange={(ev) => setNewMessage(ev.target.value)}
+                        onFocus={onFocus}
+                        onBlur={onBlur}
                     />
                     <button type="button" onClick={onSendClick} disabled={messageSending} className="btn btn-info rounded-l-none" aria-label="Enviar mensaje">
                         <PaperAirplaneIcon className="w-6"/>

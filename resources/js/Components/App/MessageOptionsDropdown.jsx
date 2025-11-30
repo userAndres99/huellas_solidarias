@@ -18,11 +18,9 @@ export default function MessageOptionsDropdown({ message }) {
             .then((res) => {
 
                 console.log("Mensaje anterior:",res.data.message);
-                emit('message.deleted', 
-                    {
-                    deletedMessage: message, 
+                emit('message.deleted', {
+                    message: message,
                     prevMessage: res.data.message,
-
                 });
                 
             })

@@ -1,17 +1,16 @@
-import React, { useEffect, useRef } from "react";
-const NewMessageInput = ({ value, onChange, onSend}) => {
+import React, { useEffect, useRef } from 'react';
 
+const NewMessageInput = ({ value, onChange, onSend, onFocus, onBlur }) => {
     const input = useRef();
 
     const onInputKeyDown = (ev) => {
-        if(ev.key === "Enter" && !ev.shiftKey){
+        if (ev.key === 'Enter' && !ev.shiftKey) {
             ev.preventDefault();
-            onSend()
+            onSend();
         }
     };
 
-
-     const onChangeEvent = (ev) => {
+    const onChangeEvent = (ev) => {
         setTimeout(() => {
             adjustHeight();
         }, 10);
@@ -20,8 +19,9 @@ const NewMessageInput = ({ value, onChange, onSend}) => {
 
     const adjustHeight = () => {
         setTimeout(() => {
-            input.current.style.height = "auto";
-            input.current.style.height = input.current.scrollHeight + 1 + "px";
+            if (!input.current) return;
+            input.current.style.height = 'auto';
+            input.current.style.height = input.current.scrollHeight + 1 + 'px';
         }, 100);
     };
 
@@ -29,22 +29,31 @@ const NewMessageInput = ({ value, onChange, onSend}) => {
         adjustHeight();
     }, [value]);
 
+    const handleFocus = (ev) => {
+        if (typeof onFocus === 'function') onFocus(ev);
+        adjustHeight();
+    };
 
-    return(
-        <textarea 
-        aria-label="Cuadro de mensaje"
-        ref={input}
-        value={value}
-        rows="1"
-        placeholder="Escribe un mensaje"
-        onKeyDown={onInputKeyDown}
-        onChange={(ev) => onChangeEvent(ev)}
-        className="input input-bordered w-full min-h-11 resize-none overflow-y-auto bg-base-100 max-h-40 rounded-none rounded-l-lg"
-        >
+    const handleBlur = (ev) => {
+        if (typeof onBlur === 'function') onBlur(ev);
+    };
 
-        </textarea>
-    )
-
-}
+    return (
+        <textarea
+            aria-label="Cuadro de mensaje"
+            ref={input}
+            value={value}
+            rows="1"
+            placeholder="Escribe un mensaje"
+            onKeyDown={onInputKeyDown}
+            onChange={(ev) => onChangeEvent(ev)}
+            onFocus={handleFocus}
+            onBlur={handleBlur}
+            onClick={handleFocus}
+            onTouchStart={handleFocus}
+            className="input input-bordered w-full min-h-11 resize-none overflow-y-auto bg-[#9ED9F0] text-slate-900 max-h-40 rounded-none rounded-l-lg"
+        />
+    );
+};
 
 export default NewMessageInput;

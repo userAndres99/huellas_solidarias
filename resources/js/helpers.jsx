@@ -2,49 +2,49 @@ export const formatMessageDateLong = (date) => {
     const now = new Date();
     const inputDate = new Date(date);
 
-    if(isToday(inputDate)){
-        return inputDate.toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit",
-        })
-    }else if(isYesterday(inputDate)){
+    if (isToday(inputDate)) {
+        return inputDate.toLocaleTimeString('es-ES', {
+            hour: '2-digit',
+            minute: '2-digit',
+        });
+    } else if (isYesterday(inputDate)) {
         return (
-            "Yesterday " + 
-            inputDate.toLocaleDateString([], {
-                hour: "2-digit",
-                minute: "2-digit",
+            'Ayer ' +
+            inputDate.toLocaleDateString('es-ES', {
+                hour: '2-digit',
+                minute: '2-digit',
             })
         );
-    }else if( inputDate.getFullYear() === now.getFullYear()){
-        return inputDate.toLocaleDateString([], {
-            day: "2-digit",
-            month: "short",
+    } else if (inputDate.getFullYear() === now.getFullYear()) {
+        return inputDate.toLocaleDateString('es-ES', {
+            day: '2-digit',
+            month: 'short',
         });
-    }else{
-        return inputDate.toLocaleDateString();
+    } else {
+        return inputDate.toLocaleDateString('es-ES');
     }
-}
+};
 
 
-export const formatMessageDateShort = (date) =>{
-    const  now = new Date();
+export const formatMessageDateShort = (date) => {
+    const now = new Date();
     const inputDate = new Date(date);
 
-    if (isToday(inputDate)){
-        return inputDate.toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit",
-            hour12: true,
+    if (isToday(inputDate)) {
+        return inputDate.toLocaleTimeString('es-ES', {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false,
         });
-    }else if(isYesterday(inputDate)){
-        return "Yesterday";
-    }else if (inputDate.getFullYear() === now.getFullYear()){
-        return inputDate.toLocaleDateString([],{
-            day: "2-digit",
-            month: "short",
+    } else if (isYesterday(inputDate)) {
+        return 'Ayer';
+    } else if (inputDate.getFullYear() === now.getFullYear()) {
+        return inputDate.toLocaleDateString('es-ES', {
+            day: '2-digit',
+            month: 'short',
         });
-    }else{
-        return inputDate.toLocaleDateString();
+    } else {
+        return inputDate.toLocaleDateString('es-ES');
     }
 };
 
@@ -103,6 +103,13 @@ export const isPreviewable = (attachment) => {
         isAudio(attachment) ||
         isPDF(attachment)
     );
+};
+
+export const previewText = (text, maxWords = 6) => {
+    if (!text) return "";
+    const words = text.split(/\s+/).filter(Boolean);
+    if (words.length <= maxWords) return text;
+    return words.slice(0, maxWords).join(' ') + '...';
 };
 
 

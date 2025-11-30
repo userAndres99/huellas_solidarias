@@ -198,6 +198,7 @@ class MessageController extends Controller
 
         $group = null;
         $conversation = null;
+        $lastMessage = null;
 
         if($message->group_id) {
             $group = Group::where('last_message_id', $message->id)->first();
@@ -211,9 +212,9 @@ class MessageController extends Controller
         if ($group) {
             $group = Group::find($group->id);
             $lastMessage = $group->lastMessage;
-        }else if($conversation){
+        } else if ($conversation) {
             $conversation = Conversation::find($conversation->id);
-            $lastMessage = $conversation->lastMessage;  
+            $lastMessage = $conversation->lastMessage;
         }
 
         // Retorna una respuesta vacía con código 204 (sin contenido)
