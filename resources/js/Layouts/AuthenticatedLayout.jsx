@@ -73,26 +73,27 @@ export default function AuthenticatedLayout({ header, children }) {
                 .error((error) => {
                     console.log(error);
                 })
-                .listen("SocketMessage", (e) => {
-                    console.log("SocketMessage", e);
-                    const message = e.message;
+                    .listen("SocketMessage", (e) => {
+                        console.log("SocketMessage", e);
+                        const message = e.message;
+                        console.debug('[AuthenticatedLayout] SocketMessage received', message && message.id ? {id: message.id, sender_id: message.sender_id, receiver_id: message.receiver_id, group_id: message.group_id} : message);
 
-                    emit("message.created", message);
-                    if (message.sender_id === user.id) {
-                        return;
-                    }
-                    emit("newMessageNotification", {
-                        user: message.sender,
-                        group_id: message.group_id,
-                        message:
-                            message.message ||
-                            `Shared ${message.attachments.length === 1
-                                ? "an attachment"
-                                : message.attachments.length +
-                                " attachmnets"
-                            }`,
+                        if (message) emit("message.created", message);
+                        if (message && message.sender_id === user.id) {
+                            return;
+                        }
+                        emit("newMessageNotification", {
+                            user: message.sender,
+                            group_id: message.group_id,
+                            message:
+                                message.message ||
+                                `Shared ${message.attachments.length === 1
+                                    ? "an attachment"
+                                    : message.attachments.length +
+                                    " attachmnets"
+                                }`,
+                        });
                     });
-                });
 
                 // Escuchar evento de mensaje borrado 
                 Echo.private(channel)

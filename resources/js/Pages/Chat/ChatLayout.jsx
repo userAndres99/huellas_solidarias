@@ -14,10 +14,12 @@ const ChatLayouts = ({ children }) => {
     const users = page.props.users;
 
     const selectedConversationRef = useRef(selectedConversation);
+    
+    const tombstonedConversationsRef = useRef(new Map());
     const [onlineUsers, setOnlineUsers] = useState({});
     const [localConversations, setLocalConversations] = useState([]);
     const [sortedConversations, setSortedConversations] = useState([]);
-    const { on, emit } = useEventBus();
+    const { on, emit, hasDeletedMessage, isConversationTombstoned } = useEventBus();
     const [showGroupModal, setShowGroupModal] = useState(false);
     const [showStartChatModal, setShowStartChatModal] = useState(false);
 
@@ -38,6 +40,38 @@ const ChatLayouts = ({ children }) => {
     };
 
     const messageCreated = (message) => {
+        try {
+            // Protecciones y mensajes borrados
+            try {
+                if (message?.id && hasDeletedMessage && hasDeletedMessage(message.id)) {
+                    console.debug('[ChatLayout] Skipping message.created because id is recently deleted', message.id);
+                    return;
+                }
+            } catch (e) {}
+            const createdAt = message?.created_at ? Date.parse(message.created_at) : null;
+            const keysToCheck = [];
+            if (message?.group_id) keysToCheck.push(`g_${message.group_id}`);
+            if (message?.sender_id && message?.receiver_id) {
+                keysToCheck.push(`u_${message.sender_id}_${message.receiver_id}`);
+                keysToCheck.push(`u_${message.receiver_id}_${message.sender_id}`);
+            }
+            // Comprobar tombstone central antes de aplicar el mensaje
+            try {
+                if (isConversationTombstoned && isConversationTombstoned(keysToCheck, message?.created_at)) {
+                    console.debug('[ChatLayout] Skipping message.created due to EventBus tombstone', { keysToCheck, createdAt });
+                    return;
+                }
+            } catch (e) {
+                for (const k of keysToCheck) {
+                    const tomb = tombstonedConversationsRef.current.get(k);
+                    if (tomb && createdAt && createdAt <= (tomb + 2000)) {
+                        console.debug('[ChatLayout] Skipping message.created due to tombstone', { key: k, createdAt, tomb });
+                        return;
+                    }
+                }
+            }
+        } catch (e) {}
+
         setLocalConversations((oldUsers) =>
             oldUsers.map((u) => {
                 if (
@@ -47,12 +81,19 @@ const ChatLayouts = ({ children }) => {
                 ) {
                     try {
                         const authId = page.props.auth?.user?.id;
-                        // Si ya tenemos un prefijo 'Yo:' para esta conversación (porque el usuario acaba de enviar
-                        // el mensaje y lo actualizamos localmente), no sobrescribimos con la versión sin prefijo
-                        // que puede llegar desde el evento creado del servidor.
-                        const existing = (u.last_message || '');
-                        if (!(existing.startsWith('Yo:') && parseInt(message.sender_id) === parseInt(authId))) {
-                            u.last_message = message.message;
+                        // Si el remitente es el usuario autenticado, 'Yo:'
+                        if (authId && parseInt(message.sender_id) === parseInt(authId)) {
+                            // Si ya existe el prefijo, no duplicarlo
+                            const existing = (u.last_message || '');
+                            if (!existing.startsWith('Yo:')) {
+                                u.last_message = `Yo: ${message.message}`;
+                            }
+                        } else {
+
+                            const existing = (u.last_message || '');
+                            if (!(existing.startsWith('Yo:') && parseInt(message.sender_id) === parseInt(authId))) {
+                                u.last_message = message.message;
+                            }
                         }
                     } catch (e) {
                         u.last_message = message.message;
@@ -75,7 +116,28 @@ const ChatLayouts = ({ children }) => {
         const deletedMessage = payload.deletedMessage || payload.message || payload.deleted_message || null;
         const prevMessage = payload.prevMessage || payload.prev_message || null;
 
+        console.debug('[ChatLayout] message.deleted payload=', { deletedMessage, prevMessage });
+
         if (!deletedMessage) return;
+
+        // si hay un conversationPayload, actualizar o insertar la conversación/grupo en el sidebar
+        const convPayload = payload?.conversation || null;
+        if (convPayload) {
+            try {
+                setLocalConversations((prev) => {
+                    const filtered = (prev || []).filter((c) => parseInt(c.id) !== parseInt(convPayload.id));
+                    const existingLocal = (prev || []).find((c) => parseInt(c.id) === parseInt(convPayload.id));
+                    const defaultAvatar = (typeof window !== 'undefined' && window.location ? `${window.location.origin}/images/DefaultPerfil.jpg` : '/images/DefaultPerfil.jpg');
+                    const avatar = existingLocal?.avatar || existingLocal?.avatar_url || convPayload.avatar || convPayload.avatar_url || existingLocal?.profile_photo_url || defaultAvatar;
+                    const avatar_url = existingLocal?.avatar_url || existingLocal?.avatar || convPayload.avatar_url || convPayload.avatar || existingLocal?.profile_photo_url || defaultAvatar;
+                    const merged = { ...convPayload, avatar, avatar_url };
+                    return [merged, ...filtered];
+                });
+                // Forzar recarga parcial de Inertia para actualizar la prop `conversations` en otras partes de la UI
+                try { router.reload({ only: ['conversations'] }); } catch (e) {}
+                return;
+            } catch (e) {}
+        }
 
         setLocalConversations((oldUsers) =>
             oldUsers.map((u) => {
@@ -91,15 +153,24 @@ const ChatLayouts = ({ children }) => {
 
                 // solo actualizar si el mensaje eliminado era el último mensaje mostrado
                 const lastDate = u.last_message_date || null;
-                const lastText = (u.last_message || '') + '';
+                const lastText = ((u.last_message || '') + '').toString();
                 const deletedDate = deletedMessage.created_at || null;
-                const deletedText = (deletedMessage.message || '') + '';
+                const deletedText = ((deletedMessage.message || '') + '').toString();
 
-                const isDeletedTheLast = (lastDate && deletedDate && lastDate === deletedDate) || (lastText && deletedText && lastText === deletedText);
+                const normalize = (s) => (s || '').toString().replace(/^\s*Yo:\s*/i, '').trim();
+                const normalizedLast = normalize(lastText);
+                const normalizedDeleted = normalize(deletedText);
+
+                const isDeletedTheLast = 
+                    (lastDate && deletedDate && lastDate === deletedDate) ||
+                    (normalizedLast && normalizedDeleted && normalizedLast === normalizedDeleted) ||
+                    (normalizedLast && normalizedDeleted && normalizedLast.includes(normalizedDeleted));
 
                 if (!isDeletedTheLast) {
                     return u;
                 }
+
+                const defaultAvatar = (typeof window !== 'undefined' && window.location ? `${window.location.origin}/images/DefaultPerfil.jpg` : '/images/DefaultPerfil.jpg');
 
                 if (prevMessage) {
                     try {
@@ -107,24 +178,41 @@ const ChatLayouts = ({ children }) => {
                         const text = prevMessage.message || '';
                         const shouldPrefix = authId && parseInt(prevMessage.sender_id) === parseInt(authId);
                         const display = shouldPrefix ? (text.startsWith('Yo:') ? text : `Yo: ${text}`) : text;
+                        // intentar preservar avatar 
+                        const avatarFromPrev = prevMessage.sender?.profile_photo_url || prevMessage.sender?.avatar_url || prevMessage.sender?.avatar || null;
                         return {
                             ...u,
+                            avatar: u.avatar || u.avatar_url || avatarFromPrev || u.profile_photo_url || defaultAvatar,
+                            avatar_url: u.avatar_url || u.avatar || avatarFromPrev || u.profile_photo_url || defaultAvatar,
                             last_message: display,
                             last_message_date: prevMessage.created_at,
                         };
                     } catch (e) {
                         return {
                             ...u,
+                            avatar: u.avatar || u.avatar_url || u.profile_photo_url || defaultAvatar,
+                            avatar_url: u.avatar_url || u.avatar || u.profile_photo_url || defaultAvatar,
                             last_message: prevMessage.message,
                             last_message_date: prevMessage.created_at,
                         };
                     }
                 }
 
+                // Si no hay mensaje previo, mostramos un placeholder indicando eliminación
+                try {
+                    const key = deletedMessage.group_id ? `g_${deletedMessage.group_id}` : `u_${deletedMessage.sender_id}_${deletedMessage.receiver_id}`;
+                    const now = Date.now();
+                    tombstonedConversationsRef.current.set(key, now);
+                    setTimeout(() => tombstonedConversationsRef.current.delete(key), 20000);
+                    console.debug('[ChatLayout] Tombstoned conversation', { key, at: now });
+                } catch (e) {}
+
                 return {
                     ...u,
-                    last_message: null,
-                    last_message_date: null,
+                    avatar: u.avatar || u.avatar_url || u.profile_photo_url || defaultAvatar,
+                    avatar_url: u.avatar_url || u.avatar || u.profile_photo_url || defaultAvatar,
+                    last_message: 'Mensaje borrado',
+                    last_message_date: deletedMessage.created_at || u.last_message_date,
                 };
             })
         );
@@ -137,10 +225,40 @@ const ChatLayouts = ({ children }) => {
         const offLastMessage = on('conversation.last_message', (conv) => {
             try {
                 if (!conv || !conv.id) return;
+                try {
+                    // comprobar central antes de aplicar un conversation.last_message
+                    const createdAt = conv?.last_message_date || null;
+                    const keys = [];
+                    if (conv?.is_group) keys.push(`g_${conv.id}`);
+                    const authId = page.props.auth?.user?.id;
+                    if (!conv?.is_group && authId) {
+                        keys.push(`u_${authId}_${conv.id}`);
+                        keys.push(`u_${conv.id}_${authId}`);
+                    }
+                    if (isConversationTombstoned && isConversationTombstoned(keys, createdAt)) {
+                        console.debug('[ChatLayout] Ignoring conversation.last_message due tombstone', { conv: conv.id, keys, createdAt });
+                        return;
+                    }
+                } catch (e) {}
+
                 setLocalConversations((prev) => {
                     try {
                         const filtered = (prev || []).filter((c) => parseInt(c.id) !== parseInt(conv.id));
-                        return [conv, ...filtered];
+                        const existingLocal = (prev || []).find((c) => parseInt(c.id) === parseInt(conv.id));
+                        const existingServer = (conversations || []).find((c) => parseInt(c.id) === parseInt(conv.id));
+                        const defaultAvatar = (typeof window !== 'undefined' && window.location ? `${window.location.origin}/images/DefaultPerfil.jpg` : '/images/DefaultPerfil.jpg');
+
+                        const avatarFromConv = conv.avatar || conv.avatar_url || conv.profile_photo_url || null;
+                        const avatar = existingLocal?.avatar || existingLocal?.avatar_url || avatarFromConv || existingServer?.avatar || existingServer?.avatar_url || existingServer?.profile_photo_url || defaultAvatar;
+                        const avatar_url = existingLocal?.avatar_url || existingLocal?.avatar || avatarFromConv || existingServer?.avatar_url || existingServer?.avatar || existingServer?.profile_photo_url || defaultAvatar;
+
+                        const merged = {
+                            ...conv,
+                            avatar,
+                            avatar_url,
+                        };
+
+                        return [merged, ...filtered];
                     } catch (e) {
                         return prev;
                     }

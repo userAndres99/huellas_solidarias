@@ -8,11 +8,11 @@ use Illuminate\Broadcasting\Channel; // Clase base para los canales de broadcast
 use Illuminate\Broadcasting\InteractsWithSockets; // Trait para manejar la interacción con sockets
 use Illuminate\Broadcasting\PresenceChannel; // Canal de presencia (permite saber quién está conectado)
 use Illuminate\Broadcasting\PrivateChannel; // Canal privado (solo accesible por usuarios autorizados)
-use Illuminate\Contracts\Broadcasting\ShouldBroadcast; // Indica que el evento debe transmitirse por broadcasting
+use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow; // Indica que el evento debe transmitirse inmediatamente por broadcasting
 use Illuminate\Foundation\Events\Dispatchable; // Trait que permite despachar el evento fácilmente
 use Illuminate\Queue\SerializesModels; // Trait que serializa los modelos para que puedan transmitirse
 
-class SocketMessage implements ShouldBroadcast
+class SocketMessage implements ShouldBroadcastNow
 {
     // Traits utilizados por el evento:
     use Dispatchable, InteractsWithSockets, SerializesModels;

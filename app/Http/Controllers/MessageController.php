@@ -194,7 +194,10 @@ class MessageController extends Controller
             Group::updateGroupWithMessage($groupId, $message);
         }
 
-        // Se dispara un evento SocketMessage para enviar el mensaje en tiempo real a los receptores
+        // despachar el evento para transmitir el nuevo mensaje en tiempo real
+        try {
+            \Log::info('MessageController@store: dispatching SocketMessage for message_id=' . $message->id);
+        } catch (\Throwable $e) {}
         SocketMessage::dispatch($message);
 
         // moderacion asíncrona (se eliminará y notificará si es inapropiado)
@@ -239,9 +242,19 @@ class MessageController extends Controller
         if ($group) {
             $group = Group::find($group->id);
             $lastMessage = $group->lastMessage;
+            // Asegurar que el grupo tenga actualizado el last_message_id en BD
+            try {
+                $group->last_message_id = $lastMessage?->id ?? null;
+                $group->save();
+            } catch (\Throwable $e) {}
         } else if ($conversation) {
             $conversation = Conversation::find($conversation->id);
             $lastMessage = $conversation->lastMessage;
+            // Asegurar que la conversación tenga actualizado el last_message_id en BD
+            try {
+                $conversation->last_message_id = $lastMessage?->id ?? null;
+                $conversation->save();
+            } catch (\Throwable $e) {}
         }
 
         // Construir payload para broadcast

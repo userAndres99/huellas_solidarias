@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useEventBus } from '@/EvenBus';
-import { usePage } from '@inertiajs/react';
+import { router, usePage } from '@inertiajs/react';
 import axios from 'axios';
 import { XMarkIcon } from '@heroicons/react/24/solid';
 import MessageItem from '@/Components/App/MessageItem';
@@ -10,7 +10,7 @@ import ConversationItem from '@/Components/App/ConversationItem';
 import GroupModal from '@/Components/App/GroupModal';
 
 export default function ChatWidget() {
-    const { on, emit } = useEventBus();
+    const { on, emit, hasDeletedMessage, isConversationTombstoned } = useEventBus();
     const [mounted, setMounted] = useState(false);
     const page = usePage();
     const user = page.props.auth?.user;
@@ -50,6 +50,26 @@ export default function ChatWidget() {
         // estaba oculta para nosotros, la desocultamos 
         const offUnhide = on('message.created', (message) => {
             try {
+                
+                try {
+                    const msgId = message?.id;
+                    const createdAt = message?.created_at || null;
+                    const keys = [];
+                    if (message?.group_id) keys.push(`g_${message.group_id}`);
+                    if (message?.sender_id && message?.receiver_id) {
+                        keys.push(`u_${message.sender_id}_${message.receiver_id}`);
+                        keys.push(`u_${message.receiver_id}_${message.sender_id}`);
+                    }
+                    if (msgId && hasDeletedMessage && hasDeletedMessage(msgId)) {
+                        console.debug('[ChatWidget] Skipping message.created because id is recently deleted', msgId);
+                        return;
+                    }
+                    if (isConversationTombstoned && isConversationTombstoned(keys, createdAt)) {
+                        console.debug('[ChatWidget] Skipping message.created because conversation is tombstoned', { keys, createdAt });
+                        return;
+                    }
+                } catch (e) {}
+
                 const authId = page.props.auth?.user?.id;
                 if (!authId) return;
                 // Solo para mensajes privados dirigidos al usuario autenticado
@@ -62,51 +82,79 @@ export default function ChatWidget() {
                     });
                     // Construir objeto de conversación mínimo a partir del remitente
                     const sender = message.sender || {};
-                    const existingServerConv = (conversations || []).find((c) => parseInt(c.id) === parseInt(sender.id || senderId));
-                    const convObj = {
-                        is_user: true,
-                        is_group: false,
-                        id: sender.id || senderId,
-                        name: sender.name || sender.display_name || existingServerConv?.name || `Usuario ${senderId}`,
-                        avatar: sender.avatar || sender.avatar_url || existingServerConv?.avatar || existingServerConv?.profile_photo_url || null,
-                        avatar_url: sender.avatar_url || (sender.profile_photo_url) || existingServerConv?.avatar_url || existingServerConv?.profile_photo_url || null,
-                        last_message: message.message || '',
-                        last_message_date: message.created_at || null,
-                        conversation_id: message.conversation_id || null,
-                        with_user_id: sender.id || senderId,
-                    };
+                    const serverConvs = page.props.conversations || [];
 
                     setLocalConversations((prev) => {
+                        const existingServerConv = serverConvs.find((c) => parseInt(c.id) === parseInt(sender.id || senderId));
+                        const existingLocal = (prev || []).find((c) => parseInt(c.id) === parseInt(sender.id || senderId));
+                        const name = sender.name || sender.display_name || existingLocal?.name || existingServerConv?.name || `Usuario ${senderId}`;
+                        const avatarFromSender = sender.avatar || sender.avatar_url || sender.profile_photo_url || null;
+                        const avatar = existingLocal?.avatar || existingLocal?.avatar_url || avatarFromSender || existingServerConv?.avatar || existingServerConv?.avatar_url || existingServerConv?.profile_photo_url || null;
+                        const convObj = {
+                            is_user: true,
+                            is_group: false,
+                            id: sender.id || senderId,
+                            name,
+                            avatar,
+                            avatar_url: avatar || existingLocal?.avatar_url || existingServerConv?.avatar_url || existingServerConv?.profile_photo_url || null,
+                            last_message: message.message || '',
+                            last_message_date: message.created_at || null,
+                            conversation_id: message.conversation_id || null,
+                            with_user_id: sender.id || senderId,
+                        };
+
                         // Upsert: eliminar cualquier entrada previa con mismo id y reinsertar al frente
                         const filtered = prev.filter((c) => parseInt(c.id) !== parseInt(convObj.id));
                         return [convObj, ...filtered];
                     });
                 }
                 
-                if (message.sender_id && parseInt(message.sender_id) === parseInt(authId)) {
+                    if (message.sender_id && parseInt(message.sender_id) === parseInt(authId)) {
                     const receiverId = parseInt(message.receiver_id || message.to || 0);
                     if (receiverId) {
-                        
+                        // protection similar a arriba para mensajes que nos enviamos a nosotros mismos
+                        try {
+                            const msgId = message?.id;
+                            const createdAt = message?.created_at || null;
+                            const keys = [];
+                            if (message?.group_id) keys.push(`g_${message.group_id}`);
+                            if (message?.sender_id && message?.receiver_id) {
+                                keys.push(`u_${message.sender_id}_${message.receiver_id}`);
+                                keys.push(`u_${message.receiver_id}_${message.sender_id}`);
+                            }
+                            if (msgId && hasDeletedMessage && hasDeletedMessage(msgId)) {
+                                console.debug('[ChatWidget] Skipping self message.created because id is recently deleted', msgId);
+                                return;
+                            }
+                            if (isConversationTombstoned && isConversationTombstoned(keys, createdAt)) {
+                                console.debug('[ChatWidget] Skipping self message.created because conversation is tombstoned', { keys, createdAt });
+                                return;
+                            }
+                        } catch (e) {}
                         const receiver = message.receiver || null;
-                        const existing = (conversations || []).find((c) => parseInt(c.id) === parseInt(receiverId)) || (localConversations || []).find((c) => parseInt(c.id) === parseInt(receiverId));
-                        const name = (receiver && (receiver.name || receiver.display_name)) || existing?.name || `Usuario ${receiverId}`;
-                        const avatar = (receiver && (receiver.avatar_url || receiver.avatar || receiver.profile_photo_url)) || existing?.avatar || existing?.profile_photo_url || null;
-                        const convObjMe = {
-                            is_user: true,
-                            is_group: false,
-                            id: receiverId,
-                            name,
-                            avatar,
-                            avatar_url: avatar || existing?.avatar_url || existing?.profile_photo_url || null,
-                            last_message: (message.message ? `Yo: ${message.message}` : 'Yo'),
-                            last_message_date: message.created_at || null,
-                            conversation_id: message.conversation_id || null,
-                            with_user_id: receiverId,
-                        };
+                        const serverConvs = page.props.conversations || [];
 
-                        setHiddenConversations((prev) => prev.filter((id) => parseInt(id) !== parseInt(receiverId)));
+                        setHiddenConversations((prevHidden) => prevHidden.filter((id) => parseInt(id) !== parseInt(receiverId)));
 
                         setLocalConversations((prev) => {
+                            const existingServer = serverConvs.find((c) => parseInt(c.id) === parseInt(receiverId));
+                            const existingLocal = (prev || []).find((c) => parseInt(c.id) === parseInt(receiverId));
+                            const name = (receiver && (receiver.name || receiver.display_name)) || existingLocal?.name || existingServer?.name || `Usuario ${receiverId}`;
+                            const avatarFromReceiver = (receiver && (receiver.avatar_url || receiver.avatar || receiver.profile_photo_url)) || null;
+                            const avatar = existingLocal?.avatar || existingLocal?.avatar_url || avatarFromReceiver || existingServer?.avatar || existingServer?.avatar_url || existingServer?.profile_photo_url || null;
+                            const convObjMe = {
+                                is_user: true,
+                                is_group: false,
+                                id: receiverId,
+                                name,
+                                avatar,
+                                avatar_url: avatar || existingLocal?.avatar_url || existingServer?.avatar_url || existingServer?.profile_photo_url || null,
+                                last_message: (message.message ? `Yo: ${message.message}` : 'Yo'),
+                                last_message_date: message.created_at || null,
+                                conversation_id: message.conversation_id || null,
+                                with_user_id: receiverId,
+                            };
+
                             const filtered = prev.filter((c) => parseInt(c.id) !== parseInt(convObjMe.id));
                             return [convObjMe, ...filtered];
                         });
@@ -121,6 +169,26 @@ export default function ChatWidget() {
                 const prevMessage = payload?.prevMessage || payload?.prev_message || null;
                 if (!deletedMessage) return;
 
+                // si hay un conversationPayload, actualizar o insertar la conversación/grupo en el sidebar
+                const convPayload = payload?.conversation || null;
+                if (convPayload) {
+                    try {
+                        setLocalConversations((prev) => {
+                            const filtered = (prev || []).filter((c) => c && parseInt(c.id) !== parseInt(convPayload.id));
+                            const existingLocal = (prev || []).find((c) => c && parseInt(c.id) === parseInt(convPayload.id));
+                            const defaultAvatar = (typeof window !== 'undefined' && window.location ? `${window.location.origin}/images/DefaultPerfil.jpg` : '/images/DefaultPerfil.jpg');
+                            const avatar = existingLocal?.avatar || existingLocal?.avatar_url || convPayload.avatar || convPayload.avatar_url || existingLocal?.profile_photo_url || defaultAvatar;
+                            const avatar_url = existingLocal?.avatar_url || existingLocal?.avatar || convPayload.avatar_url || convPayload.avatar || existingLocal?.profile_photo_url || defaultAvatar;
+                            const merged = { ...convPayload, avatar, avatar_url };
+                            return [merged, ...filtered];
+                        });
+                        try { router.reload({ only: ['conversations'] }); } catch (e) {}
+                        return;
+                    } catch (e) {}
+                }
+
+                console.debug('[ChatWidget] message.deleted payload=', { deletedMessage, prevMessage });
+
                 setLocalConversations((prev) => {
                     let found = false;
                     const updated = prev.map((u) => {
@@ -134,41 +202,57 @@ export default function ChatWidget() {
 
                         // solo actualizar la vista previa si el mensaje eliminado era el último mensaje visible
                         const lastDate = u.last_message_date || null;
-                        const lastText = (u.last_message || '') + '';
+                        const lastText = ((u.last_message || '') + '').toString();
                         const deletedDate = deletedMessage.created_at || null;
-                        const deletedText = (deletedMessage.message || '') + '';
+                        const deletedText = ((deletedMessage.message || '') + '').toString();
 
-                        const isDeletedTheLast = (lastDate && deletedDate && lastDate === deletedDate) || (lastText && deletedText && lastText === deletedText);
+                        const normalize = (s) => (s || '').toString().replace(/^\s*Yo:\s*/i, '').trim();
+                        const normalizedLast = normalize(lastText);
+                        const normalizedDeleted = normalize(deletedText);
+
+                        const isDeletedTheLast =
+                            (lastDate && deletedDate && lastDate === deletedDate) ||
+                            (normalizedLast && normalizedDeleted && normalizedLast === normalizedDeleted) ||
+                            (normalizedLast && normalizedDeleted && normalizedLast.includes(normalizedDeleted));
 
                         if (!isDeletedTheLast) {
-                            
                             return u;
                         }
 
-                                if (prevMessage) {
-                                    try {
-                                        const authId = page.props.auth?.user?.id;
-                                        const text = prevMessage.message || '';
-                                        const shouldPrefix = authId && parseInt(prevMessage.sender_id) === parseInt(authId);
-                                        const display = shouldPrefix ? (text.startsWith('Yo:') ? text : `Yo: ${text}`) : text;
-                                        return {
-                                            ...u,
-                                            last_message: display,
-                                            last_message_date: prevMessage.created_at,
-                                        };
-                                    } catch (e) {
-                                        return {
-                                            ...u,
-                                            last_message: prevMessage.message,
-                                            last_message_date: prevMessage.created_at,
-                                        };
-                                    }
-                                }
+                        const defaultAvatar = (typeof window !== 'undefined' && window.location ? `${window.location.origin}/images/DefaultPerfil.jpg` : '/images/DefaultPerfil.jpg');
 
+                        if (prevMessage) {
+                            try {
+                                const authId = page.props.auth?.user?.id;
+                                const text = prevMessage.message || '';
+                                const shouldPrefix = authId && parseInt(prevMessage.sender_id) === parseInt(authId);
+                                const display = shouldPrefix ? (text.startsWith('Yo:') ? text : `Yo: ${text}`) : text;
+                                const avatarFromPrev = prevMessage.sender?.profile_photo_url || prevMessage.sender?.avatar_url || prevMessage.sender?.avatar || null;
+                                return {
+                                    ...u,
+                                    avatar: u.avatar || u.avatar_url || avatarFromPrev || u.profile_photo_url || defaultAvatar,
+                                    avatar_url: u.avatar_url || u.avatar || avatarFromPrev || u.profile_photo_url || defaultAvatar,
+                                    last_message: display,
+                                    last_message_date: prevMessage.created_at,
+                                };
+                            } catch (e) {
+                                return {
+                                    ...u,
+                                    avatar: u.avatar || u.avatar_url || u.profile_photo_url || defaultAvatar,
+                                    avatar_url: u.avatar_url || u.avatar || u.profile_photo_url || defaultAvatar,
+                                    last_message: prevMessage.message,
+                                    last_message_date: prevMessage.created_at,
+                                };
+                            }
+                        }
+
+                        // Si no hay mensaje previo, mostramos indicador de mensaje borrado pero preservamos avatar (o fallback)
                         return {
                             ...u,
-                            last_message: null,
-                            last_message_date: null,
+                            avatar: u.avatar || u.avatar_url || u.profile_photo_url || defaultAvatar,
+                            avatar_url: u.avatar_url || u.avatar || u.profile_photo_url || defaultAvatar,
+                            last_message: 'Mensaje borrado',
+                            last_message_date: deletedMessage.created_at || u.last_message_date,
                         };
                     });
 
@@ -186,26 +270,35 @@ export default function ChatWidget() {
                             match = convs.find((c) => !c.is_group && (parseInt(c.id) === parseInt(deletedMessage.sender_id) || parseInt(c.id) === parseInt(deletedMessage.receiver_id)));
                         }
 
-                            if (match) {
+                        if (match) {
                             // solo actualizar la vista previa si el mensaje eliminado era el último mensaje visible
                             const convLastDate = match.last_message_date || null;
-                            const convLastText = (match.last_message || '') + '';
+                            const convLastText = ((match.last_message || '') + '').toString();
                             const deletedDate = deletedMessage.created_at || null;
-                            const deletedText = (deletedMessage.message || '') + '';
-                            const isDeletedTheLastConv = (convLastDate && deletedDate && convLastDate === deletedDate) || (convLastText && deletedText && convLastText === deletedText);
+                            const deletedText = ((deletedMessage.message || '') + '').toString();
+                            const normalizeC = (s) => (s || '').toString().replace(/^\s*Yo:\s*/i, '').trim();
+                            const convNorm = normalizeC(convLastText);
+                            const delNorm = normalizeC(deletedText);
+                            const isDeletedTheLastConv = (convLastDate && deletedDate && convLastDate === deletedDate) || (convNorm && delNorm && convNorm === delNorm) || (convNorm && delNorm && convNorm.includes(delNorm));
 
                             if (!isDeletedTheLastConv) {
-                                return prev; 
+                                return prev;
                             }
 
                             const authId = page.props.auth?.user?.id;
                             const prevText = prevMessage ? (prevMessage.message || '') : null;
                             const shouldPrefixPrev = prevText && authId && parseInt(prevMessage?.sender_id) === parseInt(authId);
                             const displayPrev = shouldPrefixPrev ? (prevText.startsWith('Yo:') ? prevText : `Yo: ${prevText}`) : prevText;
+
+                            const existingLocal = prev.find((c) => c && parseInt(c.id) === parseInt(match.id));
+
                             const newConv = {
                                 ...match,
-                                last_message: prevMessage ? displayPrev : null,
-                                last_message_date: prevMessage ? prevMessage.created_at : null,
+                                // preservar avatar si existe en local antes de sobreescribir
+                                avatar: existingLocal?.avatar ?? match.avatar ?? match.profile_photo_url ?? null,
+                                avatar_url: existingLocal?.avatar_url ?? match.avatar_url ?? match.profile_photo_url ?? null,
+                                last_message: prevMessage ? displayPrev : 'Mensaje borrado',
+                                last_message_date: prevMessage ? prevMessage.created_at : deletedMessage.created_at || match.last_message_date,
                             };
                             const filtered = prev.filter((c) => c && parseInt(c.id) !== parseInt(newConv.id));
                             return [newConv, ...filtered];
@@ -235,6 +328,22 @@ export default function ChatWidget() {
         const offLastMessage = on('conversation.last_message', (conv) => {
             try {
                 if (!conv || !conv.id) return;
+                try {
+                    // comprobar tombstone antes de aplicar un conversation.last_message que pudiera revertir un borrado
+                    const createdAt = conv?.last_message_date || null;
+                    const keys = [];
+                    if (conv?.is_group) keys.push(`g_${conv.id}`);
+                    const authId = page.props.auth?.user?.id;
+                    if (!conv?.is_group && authId) {
+                        keys.push(`u_${authId}_${conv.id}`);
+                        keys.push(`u_${conv.id}_${authId}`);
+                    }
+                    if (isConversationTombstoned && isConversationTombstoned(keys, createdAt)) {
+                        console.debug('[ChatWidget] Ignoring conversation.last_message due tombstone', { conv: conv.id, keys, createdAt });
+                        return;
+                    }
+                } catch (e) {}
+
                 setLocalConversations((prev) => {
                     try {
                         const filtered = (prev || []).filter((c) => parseInt(c.id) !== parseInt(conv.id));
@@ -243,7 +352,7 @@ export default function ChatWidget() {
                         return prev;
                     }
                 });
-                
+
                 setHiddenConversations((prev) => prev.filter((x) => parseInt(x) !== parseInt(conv.id)));
             } catch (e) {}
         });
@@ -362,7 +471,10 @@ export default function ChatWidget() {
                             Echo.private(channel)
                                 .listen("SocketMessage", (e) => {
                                     const message = e.message;
-                                    if (message) emit("message.created", message);
+                                    console.debug('[ChatWidget] SocketMessage received', message && message.id ? {id: message.id, sender_id: message.sender_id, receiver_id: message.receiver_id, group_id: message.group_id} : message);
+                                    if (message) {
+                                        emit("message.created", message);
+                                    }
                                     if (message && message.sender_id !== user.id) {
                                         emit("newMessageNotification", {
                                             user: message.sender,
