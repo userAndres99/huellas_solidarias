@@ -48,7 +48,7 @@ export default function Home({ auth, canLogin, canRegister }) {
               <Link
                 href={route('register')}
                 aria-label="Quiero empezar a ayudar — crear cuenta"
-                className="btn-gradient btn-animate-gradient"
+                className="inline-flex items-center rounded-md bg-blue-600 hover:bg-blue-700 text-white px-4 py-2"
               >
                 Quiero empezar a ayudar
               </Link>
@@ -56,7 +56,7 @@ export default function Home({ auth, canLogin, canRegister }) {
               <Link
                 href={route('login')}
                 aria-label="Ya tengo cuenta — iniciar sesión"
-                className="inline-flex items-center rounded-md border border-primary px-4 py-2 text-sm text-primary hover:bg-primary/5 focus:outline-none"
+                className="inline-flex items-center rounded-md border border-gray-200 px-4 py-2 text-sm text-black hover:bg-gray-100 focus:outline-none"
               >
                 Ya tengo cuenta
               </Link>
@@ -72,8 +72,8 @@ export default function Home({ auth, canLogin, canRegister }) {
               Refugios y asociaciones pueden verificarse y gestionar donaciones y eventos.
             </FeatureCard>
 
-            <FeatureCard title="Recursos comunitarios" className="fade-delay-3">
-              Guías, formularios y un foro para resolver dudas y compartir experiencias.
+            <FeatureCard title="Recursos y consejos" className="fade-delay-3">
+              Consejos sobre el cuidado de animales recopilados de fuentes públicas y una sección de chat en tiempo real para resolver dudas y coordinar ayuda.
             </FeatureCard>
           </section>
         </div>

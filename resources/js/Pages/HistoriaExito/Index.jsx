@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, usePage, Head } from "@inertiajs/react";
+import MensajeFlash from '@/Components/MensajeFlash';
 import EnlaceRequiereLogin from '@/Components/EnlaceRequiereLogin';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import PublicLayout from '@/Layouts/PublicLayout';
@@ -10,7 +11,7 @@ import TarjetaHistorias from '@/Components/TarjetaHistorias';
 
 export default function Historias() {
     const pageProps = usePage().props; 
-    const { auth } = pageProps;
+    const { auth, flash } = pageProps;
     const [historias, setHistorias] = useState([]);
     const [loading, setLoading] = useState(true);
     const initialTab = (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('view') === 'mine') ? 'mine' : 'all';
@@ -47,11 +48,13 @@ export default function Historias() {
                     // no bloquear si falla el preload
                     console.warn('Error preloading historia images', e);
                 }
-            } catch(err) {
-                if(err.name !== 'AbortError') console.error(err);
-            } finally {
-                setLoading(false);
-            }
+
+        } catch(err) {
+            if(err.name !== 'AbortError') console.error(err);
+        } finally {
+            setLoading(false);
+        }
+
         };
 
         fetchHistorias();
@@ -71,7 +74,21 @@ export default function Historias() {
          <>
             <Head title="Historias de Éxito" />
             <div className="container mx-auto p-6">
+
+            {flash?.success && (
+                <MensajeFlash tipo="success">{flash.success}</MensajeFlash>
+            )}
+
+            <div className="mb-6 flex justify-center">
+                <EnlaceRequiereLogin href={route('historias.create')} className="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg text-sm font-semibold shadow-md transition hover:-translate-y-0.5" ariaLabel="Crear nueva historia">
+                    <span className="text-base">+</span>
+                    <span>Nueva Historia</span>
+                </EnlaceRequiereLogin>
+            </div>
+
             {auth.user && (
+                <>
+
                 <div className="mb-4 flex justify-center">
                     <div className="inline-flex rounded-md bg-[var(--color-surface)] p-1 shadow-sm" role="tablist" aria-label="Ver historias">
                         <button
@@ -95,6 +112,10 @@ export default function Historias() {
                         </button>
                     </div>
                 </div>
+
+                
+
+                </>
             )}
 
             <div className="grid sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

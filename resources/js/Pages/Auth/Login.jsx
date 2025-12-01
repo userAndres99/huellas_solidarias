@@ -5,6 +5,7 @@ import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
 import GuestLayout from '@/Layouts/GuestLayout';
 import ApplicationLogo from '@/Components/ApplicationLogo';
+import LoadingImagenes from '@/Components/LoadingImagenes';
 import { Head, Link, useForm } from '@inertiajs/react';
 
 export default function Login({ status,errorMessage, canResetPassword, auth, canLogin, canRegister }) {
@@ -29,10 +30,12 @@ export default function Login({ status,errorMessage, canResetPassword, auth, can
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
 
           <div className="hidden md:block rounded-2xl overflow-hidden h-[520px] shadow-lg relative">
-            <img
+            <LoadingImagenes
               src="/images/Hero.jpg"
               alt="Huellas Solidarias"
-              className="w-full h-full object-cover"
+              imgClass="w-full h-full object-cover"
+              wrapperClass="w-full h-full"
+              placeholderText="Cargando imagen..."
             />
             <div className="absolute inset-0 bg-gradient-to-b from-transparent to-white/60 mix-blend-multiply z-10" />
             <div className="relative p-8 h-full flex flex-col justify-end z-20">

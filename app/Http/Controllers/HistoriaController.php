@@ -64,7 +64,8 @@ class HistoriaController extends Controller
             \Log::error('Error dispatching ModerateImageJob', ['err' => $e->getMessage()]);
         }
 
-        return back()->with('success', 'Historia de éxito creada exitosamente.');
+        // Redirigir al listado de historias mostrando la pestaña "Mis Historias de Éxito"
+        return redirect('/historias?view=mine')->with('success', 'Historia de éxito creada exitosamente.');
     }
 
 
@@ -77,12 +78,20 @@ class HistoriaController extends Controller
 
 
     public function jsonIndex() {
-    $historias = Historia::with('user:id,name')
+    $historias = Historia::with('user:id,name,profile_photo_path')
         ->orderBy('created_at', 'desc')
         ->get()
         ->map(function($historia){
             $historia->imagen_antes = $historia->imagen_antes ? Storage::url($historia->imagen_antes) : null;
             $historia->imagen_despues = $historia->imagen_despues ? Storage::url($historia->imagen_despues) : null;
+
+            // Añadir URL pública de la foto de perfil del autor 
+            if ($historia->user) {
+                $historia->user->profile_photo_url = isset($historia->user->profile_photo_path) && $historia->user->profile_photo_path
+                    ? Storage::url($historia->user->profile_photo_path)
+                    : null;
+            }
+
             return $historia;
         });
 

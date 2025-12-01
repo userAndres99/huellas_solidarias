@@ -128,6 +128,11 @@ class MessageController extends Controller
         $receiverId = $data['receiver_id'] ?? null;
         $groupId = $data['group_id'] ?? null;
 
+        // prevención básica: no enviarse mensajes a uno mismo
+        if ($receiverId && intval($receiverId) === intval(auth()->id())) {
+            return response()->json(['message' => 'No puedes enviarte un mensaje a ti mismo.'], 422);
+        }
+
         // Se obtienen los archivos adjuntos enviados (si existen)
         $files = $data['attachments'] ?? [];
 

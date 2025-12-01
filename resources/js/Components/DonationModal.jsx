@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 
-export default function DonationModal({ open, onClose, organizacion, userEmail = null }) {
+export default function DonationModal({ open, onClose, organizacion, userEmail = null, requireEmail = true }) {
   const [monto, setMonto] = useState('');
   const [email, setEmail] = useState(userEmail || '');
   const [loading, setLoading] = useState(false);
@@ -13,6 +13,13 @@ export default function DonationModal({ open, onClose, organizacion, userEmail =
     e.preventDefault();
     setLoading(true);
     setMessage(null);
+    // Abrir una pestaña en blanco inmediatamente para evitar bloqueadores de popups
+    let popup = null;
+    try {
+      popup = window.open('', '_blank');
+    } catch (e) {
+      popup = null;
+    }
 
     try {
       const getCsrfToken = () => {
@@ -31,7 +38,10 @@ export default function DonationModal({ open, onClose, organizacion, userEmail =
       };
 
       axios.defaults.withCredentials = true;
-      const payload = { organizacion_id: organizacion.id, monto: Number(monto), payer_email: userEmail || email };
+      const payload = { organizacion_id: organizacion.id, monto: Number(monto) };
+      if (requireEmail) {
+        payload.payer_email = userEmail || email;
+      }
       const token = getCsrfToken();
 
       let data;
@@ -71,16 +81,32 @@ export default function DonationModal({ open, onClose, organizacion, userEmail =
       // Si MP devolvió un init_point, redirigir al donante para completar el pago
       const redirectUrl = data.init_point || data.sandbox_init_point || null;
       if (redirectUrl) {
-        // Abrir en la misma pestaña para que continúe el flujo de pago
-        window.location.href = redirectUrl;
+        // Cerrar el modal antes de redirigir (mejora UX y evita que quede abierto)
+        try { onClose && onClose(true); } catch (e) {}
+
+        // Si abrimos la pestaña en blanco antes, redirigimos esa pestaña al init_point
+        try {
+          if (popup && !popup.closed) {
+            popup.location.href = redirectUrl;
+          } else {
+            // fallback: abrir nueva ventana
+            window.open(redirectUrl, '_blank', 'noopener,noreferrer');
+          }
+        } catch (e) {
+          try { window.open(redirectUrl, '_blank', 'noopener,noreferrer'); } catch (ee) { window.location.href = redirectUrl; }
+        }
         return;
       }
 
+      //cerramos el modal inmediatamente
       setMessage({ type: 'success', text: 'Donación iniciada correctamente. Revisá tu e-mail.' });
       setMonto('');
       if (!userEmail) setEmail('');
-      setTimeout(() => { setLoading(false); onClose && onClose(true); }, 1200);
+      try { onClose && onClose(true); } catch (e) {}
+      setLoading(false);
     } catch (err) {
+      // si hubo popup creado y hubo error, cerrarlo
+      try { if (popup && !popup.closed) popup.close(); } catch (e) {}
       setMessage({ type: 'error', text: err.message || 'Error' });
       setLoading(false);
     }
@@ -96,7 +122,7 @@ export default function DonationModal({ open, onClose, organizacion, userEmail =
             <label className="text-sm">Monto (ARS)</label>
             <input type="number" min="1" required value={monto} onChange={e => setMonto(e.target.value)} className="w-full border p-2 rounded" />
           </div>
-          {!userEmail && (
+          {requireEmail && !userEmail && (
             <div>
               <label className="text-sm">Tu e-mail</label>
               <input type="email" required value={email} onChange={e => setEmail(e.target.value)} className="w-full border p-2 rounded" />

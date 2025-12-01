@@ -231,7 +231,7 @@ export default function ChatWidget() {
             } catch (e) {}
         });
 
-        // Immediate sidebar upsert when the sender sends a message (ensures 'Yo:' appears right away)
+        
         const offLastMessage = on('conversation.last_message', (conv) => {
             try {
                 if (!conv || !conv.id) return;
@@ -243,7 +243,7 @@ export default function ChatWidget() {
                         return prev;
                     }
                 });
-                // also ensure it's not hidden for sender
+                
                 setHiddenConversations((prev) => prev.filter((x) => parseInt(x) !== parseInt(conv.id)));
             } catch (e) {}
         });

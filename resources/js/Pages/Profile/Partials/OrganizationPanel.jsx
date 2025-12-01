@@ -225,10 +225,21 @@ export default function OrganizationPanel() {
                                 </Modal>
                             </div>
                         ) : (
-                            <a href={route('mercadopago.connect')} className="inline-flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded hover:shadow">
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    try {
+                                        window.open(route('mercadopago.connect'), '_blank', 'noopener,noreferrer');
+                                    } catch (e) {
+                                        // fallback a navegación en la misma pestaña
+                                        window.location.href = route('mercadopago.connect');
+                                    }
+                                }}
+                                className="inline-flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded hover:shadow"
+                            >
                                 <img src="/images/mercadopagologo.png" alt="Mercado Pago" className="h-5" />
                                 <span>Conectar Mercado Pago</span>
-                            </a>
+                            </button>
                         )}
 
                         <p className="mt-2 text-sm text-gray-700">Al vincular su cuenta de Mercado Pago podrá recibir donaciones de los usuarios que quieran cooperar para ayudar a su organización a seguir ayudando a los animales.</p>
