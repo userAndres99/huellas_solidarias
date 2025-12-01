@@ -172,6 +172,15 @@ class MessageController extends Controller
                 // ignorar errores no críticos
             }
 
+            // Si el remitente tenía oculta la conversación con el receptor, desocultarla también
+            try {
+                \App\Models\ConversacionOculta::where('user_id', auth()->id())
+                    ->where('otro_user_id', $receiverId)
+                    ->delete();
+            } catch (\Throwable $e) {
+                // ignorar errores no críticos
+            }
+
             Conversation::updateConversationWithMessage($receiverId, auth()->id(), $message);
         }
 

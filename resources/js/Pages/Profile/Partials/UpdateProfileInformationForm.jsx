@@ -139,7 +139,12 @@ export default function UpdateProfileInformation({
                         setProfileSaved(true);
                         setTimeout(() => setProfileSaved(false), 3000);
                         setRemovePhoto(false);
-                        window.dispatchEvent(new Event('profile-updated'));
+                        try {
+                            const json = await res.json();
+                            window.dispatchEvent(new CustomEvent('profile-updated', { detail: { id: user.id, profile_photo_url: json.profile_photo_url, name: data.name || user.name } }));
+                        } catch (e) {
+                            window.dispatchEvent(new CustomEvent('profile-updated', { detail: { id: user.id, profile_photo_url: null, name: data.name || user.name } }));
+                        }
                         setProcessingLocal(false);
                         return;
                     }
@@ -180,7 +185,12 @@ export default function UpdateProfileInformation({
             setProfileSaved(true);
             setTimeout(() => setProfileSaved(false), 3000);
             setRemovePhoto(false);
-            window.dispatchEvent(new Event('profile-updated'));
+            try {
+                const json = await res.json();
+                window.dispatchEvent(new CustomEvent('profile-updated', { detail: { id: user.id, profile_photo_url: json.profile_photo_url, name: data.name || user.name } }));
+            } catch (e) {
+                window.dispatchEvent(new CustomEvent('profile-updated', { detail: { id: user.id, profile_photo_url: null, name: data.name || user.name } }));
+            }
         } catch (err) {
             console.error('Error de red al guardar perfil:', err);
         } finally {

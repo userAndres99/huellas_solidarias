@@ -10,6 +10,7 @@ import {
 } from "@heroicons/react/24/solid";
 import axios from "axios";
 import NewMessageInput from "./NewMessageInput";
+import { useEventBus } from '@/EvenBus';
 import EmojiPicker from "emoji-picker-react";
 import { Popover, Transition } from "@headlessui/react";
 import { isAudio, isImage } from "@/helpers";
@@ -37,6 +38,8 @@ const MessageInput = ({ conversation = null, onFocus = null, onBlur = null, isMo
     const recordedAudioReady = (file, url) => {
         setChosenFiles((prevFiles) => [...prevFiles, { file, url }]);
     };
+
+    const { emit } = useEventBus();
 
     const onSendClick = async () => {
         if (messageSending) return;
@@ -66,13 +69,60 @@ const MessageInput = ({ conversation = null, onFocus = null, onBlur = null, isMo
 
         try {
             setMessageSending(true);
-            await axios.post(route("message.store"), formData, {
+            const { data: created } = await axios.post(route("message.store"), formData, {
                 onUploadProgress: (progressEvent) => {
                     if (!progressEvent.total) return;
                     const progress = Math.round((progressEvent.loaded / progressEvent.total) * 100);
                     setUploadProgress(progress);
                 },
             });
+            // emitir eventos para desocultar conversacion si estaba oculta y actualizar sidebar
+            try {
+                // Si la conversación es con usuario y estaba oculta, desocultarla
+                if (conversation && conversation.is_user && (receiverId || data?.receiver_id || created?.receiver_id)) {
+                    const id = receiverId || data?.receiver_id || created?.receiver_id;
+                    if (emit) emit('conversation.unhide', { id });
+                    try {
+                        // Persistir desocultación en el servidor para que permanezca después de recargar
+                        await axios.post(route('conversations.unhide', id));
+                    } catch (e) {
+                        
+                    }
+                } else if (conversation && conversation.is_group && (groupId || data?.group_id || created?.group_id)) {
+                    const id = groupId || data?.group_id || created?.group_id;
+                    if (emit) emit('conversation.unhide', { id });
+                    try {
+                        await axios.post(route('conversations.unhide', id));
+                    } catch (e) {}
+                }
+                // También emitir el mensaje creado localmente para que los widgets que escuchan puedan agregarlo inmediatamente
+                if (created) {
+                    if (emit) emit('message.created', created);
+                    try {
+                       
+                        const rid = receiverId || created?.receiver_id || null;
+                        const gid = groupId || created?.group_id || null;
+                        if (rid) {
+                            const receiver = created?.receiver || null;
+                            const name = (receiver && (receiver.name || receiver.display_name)) || (conversation && (conversation.name || conversation.title)) || `Usuario ${rid}`;
+                            const avatar = (receiver && (receiver.avatar_url || receiver.avatar || receiver.profile_photo_url)) || (conversation && (conversation.avatar || conversation.profile_photo_url)) || null;
+                            const convObj = {
+                                is_user: true,
+                                is_group: false,
+                                id: rid,
+                                name,
+                                avatar,
+                                avatar_url: avatar || (conversation && (conversation.avatar_url || conversation.profile_photo_url)) || null,
+                                last_message: created?.message ? `Yo: ${created.message}` : (newMessage ? `Yo: ${newMessage}` : 'Yo'),
+                                last_message_date: created?.created_at || null,
+                                conversation_id: created?.conversation_id || conversation?.conversation_id || null,
+                                with_user_id: rid,
+                            };
+                            if (emit) emit('conversation.last_message', convObj);
+                        }
+                    } catch (e) {}
+                }
+            } catch (e) {}
             setNewMessage("");
             setChosenFiles([]);
             setUploadProgress(0);

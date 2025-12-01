@@ -121,6 +121,21 @@ class Conversation extends Model
         $otherUser = $this->user_id1 == $authUser->id
             ? $this->user2
             : $this->user1;
+        // Formatear el último mensaje para la vista 
+        $lastMessageText = null;
+        $lastMessageDate = null;
+        if ($this->lastMessage) {
+            $lastMessageDate = $this->lastMessage->created_at;
+            try {
+                $lastMessageText = $this->lastMessage->message;
+                if ($this->lastMessage->sender_id == $authUser->id) {
+                    $lastMessageText = 'Yo: ' . ($lastMessageText ?? '');
+                }
+            } catch (\Throwable $e) {
+                // seguro fallback
+                $lastMessageText = $this->lastMessage->message ?? null;
+            }
+        }
 
         return [
             'is_user' => true,
@@ -132,10 +147,12 @@ class Conversation extends Model
             // Nombre + avatar del usuario
             'name' => $otherUser->name,
             'avatar' => $otherUser->avatar ?? null,
+            
+            'avatar_url' => $otherUser->profile_photo_path ? \Illuminate\Support\Facades\Storage::url($otherUser->profile_photo_path) : ($otherUser->profile_photo_url ?? null),
 
-            // Último mensaje
-            'last_message' => $this->lastMessage?->message,
-            'last_message_date' => $this->lastMessage?->created_at,
+            // Último mensaje (formateado)
+            'last_message' => $lastMessageText,
+            'last_message_date' => $lastMessageDate,
 
             // Información para navegación
             'conversation_id' => $this->id,

@@ -45,7 +45,18 @@ const ChatLayouts = ({ children }) => {
                     !u.is_group &&
                     (u.id == message.sender_id || u.id == message.receiver_id)
                 ) {
-                    u.last_message = message.message;
+                    try {
+                        const authId = page.props.auth?.user?.id;
+                        // Si ya tenemos un prefijo 'Yo:' para esta conversación (porque el usuario acaba de enviar
+                        // el mensaje y lo actualizamos localmente), no sobrescribimos con la versión sin prefijo
+                        // que puede llegar desde el evento creado del servidor.
+                        const existing = (u.last_message || '');
+                        if (!(existing.startsWith('Yo:') && parseInt(message.sender_id) === parseInt(authId))) {
+                            u.last_message = message.message;
+                        }
+                    } catch (e) {
+                        u.last_message = message.message;
+                    }
                     u.last_message_date = message.created_at;
                     return u;
                 }
@@ -94,7 +105,8 @@ const ChatLayouts = ({ children }) => {
                     try {
                         const authId = page.props.auth?.user?.id;
                         const text = prevMessage.message || '';
-                        const display = authId && parseInt(prevMessage.sender_id) === parseInt(authId) ? `Yo: ${text}` : text;
+                        const shouldPrefix = authId && parseInt(prevMessage.sender_id) === parseInt(authId);
+                        const display = shouldPrefix ? (text.startsWith('Yo:') ? text : `Yo: ${text}`) : text;
                         return {
                             ...u,
                             last_message: display,
@@ -122,6 +134,19 @@ const ChatLayouts = ({ children }) => {
         const offCreated = on("message.created", messageCreated);
         const offDeleted = on("message.deleted", messageDeleted);
         const offModalShow = on("GroupModal.show", () => setShowGroupModal(true));
+        const offLastMessage = on('conversation.last_message', (conv) => {
+            try {
+                if (!conv || !conv.id) return;
+                setLocalConversations((prev) => {
+                    try {
+                        const filtered = (prev || []).filter((c) => parseInt(c.id) !== parseInt(conv.id));
+                        return [conv, ...filtered];
+                    } catch (e) {
+                        return prev;
+                    }
+                });
+            } catch (e) {}
+        });
 
         const offGroupDelete = on("group.deleted", ({ id, name }) => {
             setLocalConversations((oldConversations) =>
@@ -144,6 +169,7 @@ const ChatLayouts = ({ children }) => {
             offCreated();
             offDeleted();
             offModalShow();
+            try { offLastMessage(); } catch (e) {}
             offGroupDelete();
             offStarChat();
         };

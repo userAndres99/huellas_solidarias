@@ -44,4 +44,19 @@ class ConversationController extends Controller
             return response()->json(['message' => 'Error al ocultar la conversación.'], 500);
         }
     }
+
+    public function unhide(Request $request, $otherUserId)
+    {
+        $user = auth()->user();
+
+        try {
+            \App\Models\ConversacionOculta::where('user_id', $user->id)
+                ->where('otro_user_id', $otherUserId)
+                ->delete();
+
+            return response()->json(['message' => 'Conversación restaurada.'], 200);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Error al restaurar la conversación.'], 500);
+        }
+    }
 }

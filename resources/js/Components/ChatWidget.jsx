@@ -62,12 +62,14 @@ export default function ChatWidget() {
                     });
                     // Construir objeto de conversación mínimo a partir del remitente
                     const sender = message.sender || {};
+                    const existingServerConv = (conversations || []).find((c) => parseInt(c.id) === parseInt(sender.id || senderId));
                     const convObj = {
                         is_user: true,
                         is_group: false,
                         id: sender.id || senderId,
-                        name: sender.name || sender.display_name || `Usuario ${senderId}`,
-                        avatar: sender.avatar || sender.avatar_url || null,
+                        name: sender.name || sender.display_name || existingServerConv?.name || `Usuario ${senderId}`,
+                        avatar: sender.avatar || sender.avatar_url || existingServerConv?.avatar || existingServerConv?.profile_photo_url || null,
+                        avatar_url: sender.avatar_url || (sender.profile_photo_url) || existingServerConv?.avatar_url || existingServerConv?.profile_photo_url || null,
                         last_message: message.message || '',
                         last_message_date: message.created_at || null,
                         conversation_id: message.conversation_id || null,
@@ -88,13 +90,14 @@ export default function ChatWidget() {
                         const receiver = message.receiver || null;
                         const existing = (conversations || []).find((c) => parseInt(c.id) === parseInt(receiverId)) || (localConversations || []).find((c) => parseInt(c.id) === parseInt(receiverId));
                         const name = (receiver && (receiver.name || receiver.display_name)) || existing?.name || `Usuario ${receiverId}`;
-                        const avatar = (receiver && (receiver.avatar_url || receiver.avatar)) || existing?.avatar || null;
+                        const avatar = (receiver && (receiver.avatar_url || receiver.avatar || receiver.profile_photo_url)) || existing?.avatar || existing?.profile_photo_url || null;
                         const convObjMe = {
                             is_user: true,
                             is_group: false,
                             id: receiverId,
                             name,
                             avatar,
+                            avatar_url: avatar || existing?.avatar_url || existing?.profile_photo_url || null,
                             last_message: (message.message ? `Yo: ${message.message}` : 'Yo'),
                             last_message_date: message.created_at || null,
                             conversation_id: message.conversation_id || null,
@@ -142,24 +145,25 @@ export default function ChatWidget() {
                             return u;
                         }
 
-                        if (prevMessage) {
-                            try {
-                                const authId = page.props.auth?.user?.id;
-                                const text = prevMessage.message || '';
-                                const display = authId && parseInt(prevMessage.sender_id) === parseInt(authId) ? `Yo: ${text}` : text;
-                                return {
-                                    ...u,
-                                    last_message: display,
-                                    last_message_date: prevMessage.created_at,
-                                };
-                            } catch (e) {
-                                return {
-                                    ...u,
-                                    last_message: prevMessage.message,
-                                    last_message_date: prevMessage.created_at,
-                                };
-                            }
-                        }
+                                if (prevMessage) {
+                                    try {
+                                        const authId = page.props.auth?.user?.id;
+                                        const text = prevMessage.message || '';
+                                        const shouldPrefix = authId && parseInt(prevMessage.sender_id) === parseInt(authId);
+                                        const display = shouldPrefix ? (text.startsWith('Yo:') ? text : `Yo: ${text}`) : text;
+                                        return {
+                                            ...u,
+                                            last_message: display,
+                                            last_message_date: prevMessage.created_at,
+                                        };
+                                    } catch (e) {
+                                        return {
+                                            ...u,
+                                            last_message: prevMessage.message,
+                                            last_message_date: prevMessage.created_at,
+                                        };
+                                    }
+                                }
 
                         return {
                             ...u,
@@ -182,7 +186,7 @@ export default function ChatWidget() {
                             match = convs.find((c) => !c.is_group && (parseInt(c.id) === parseInt(deletedMessage.sender_id) || parseInt(c.id) === parseInt(deletedMessage.receiver_id)));
                         }
 
-                        if (match) {
+                            if (match) {
                             // solo actualizar la vista previa si el mensaje eliminado era el último mensaje visible
                             const convLastDate = match.last_message_date || null;
                             const convLastText = (match.last_message || '') + '';
@@ -196,7 +200,8 @@ export default function ChatWidget() {
 
                             const authId = page.props.auth?.user?.id;
                             const prevText = prevMessage ? (prevMessage.message || '') : null;
-                            const displayPrev = prevText && authId && parseInt(prevMessage?.sender_id) === parseInt(authId) ? `Yo: ${prevText}` : prevText;
+                            const shouldPrefixPrev = prevText && authId && parseInt(prevMessage?.sender_id) === parseInt(authId);
+                            const displayPrev = shouldPrefixPrev ? (prevText.startsWith('Yo:') ? prevText : `Yo: ${prevText}`) : prevText;
                             const newConv = {
                                 ...match,
                                 last_message: prevMessage ? displayPrev : null,
@@ -219,9 +224,34 @@ export default function ChatWidget() {
             });
         });
 
+        // Manual para desocultar conversación (por ejemplo, al enviar un mensaje)
+        const offManualUnhide = on('conversation.unhide', ({ id }) => {
+            try {
+                setHiddenConversations((prev) => prev.filter((x) => parseInt(x) !== parseInt(id)));
+            } catch (e) {}
+        });
+
+        // Immediate sidebar upsert when the sender sends a message (ensures 'Yo:' appears right away)
+        const offLastMessage = on('conversation.last_message', (conv) => {
+            try {
+                if (!conv || !conv.id) return;
+                setLocalConversations((prev) => {
+                    try {
+                        const filtered = (prev || []).filter((c) => parseInt(c.id) !== parseInt(conv.id));
+                        return [conv, ...filtered];
+                    } catch (e) {
+                        return prev;
+                    }
+                });
+                // also ensure it's not hidden for sender
+                setHiddenConversations((prev) => prev.filter((x) => parseInt(x) !== parseInt(conv.id)));
+            } catch (e) {}
+        });
+
         return () => {
             off();
             try { offHidden(); } catch (e) {}
+            try { offManualUnhide(); } catch (e) {}
             try { offUnhide(); } catch (e) {}
             try { offDeleted(); } catch (e) {}
         };
@@ -235,8 +265,13 @@ export default function ChatWidget() {
             if (!selectedConversation) return;
 
             
-            if (selectedConversation.is_group && message.group_id && selectedConversation.id == message.group_id) {
-                setMessages((prev) => [...prev, message]);
+                if (selectedConversation.is_group && message.group_id && selectedConversation.id == message.group_id) {
+                setMessages((prev) => {
+                    try {
+                        if (prev.some((m) => m.id === message.id)) return prev;
+                    } catch (e) {}
+                    return [...prev, message];
+                });
                 setTimeout(() => {
                     if (messagesRef.current) messagesRef.current.scrollTop = messagesRef.current.scrollHeight;
                 }, 30);
@@ -251,7 +286,12 @@ export default function ChatWidget() {
                     
                     const authId = page.props.auth?.user?.id;
                     if (authId && (message.sender_id == authId || message.receiver_id == authId)) {
-                        setMessages((prev) => [...prev, message]);
+                        setMessages((prev) => {
+                            try {
+                                if (prev.some((m) => m.id === message.id)) return prev;
+                            } catch (e) {}
+                            return [...prev, message];
+                        });
                         setTimeout(() => {
                             if (messagesRef.current) messagesRef.current.scrollTop = messagesRef.current.scrollHeight;
                         }, 30);

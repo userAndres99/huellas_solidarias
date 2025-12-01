@@ -52,6 +52,7 @@ Route::middleware(['auth', 'verified', 'active'])->group(function(){
 
     Route::post('/conversations/start', [ConversationController::class, 'start'])->name('conversations.start');
     Route::delete('/conversations/hide/{user}', [ConversationController::class, 'hide'])->name('conversations.hide');
+    Route::post('/conversations/unhide/{user}', [ConversationController::class, 'unhide'])->name('conversations.unhide');
 
     Route::post('/group', [GroupController::class, 'store'])->name('group.store');
     Route::put('/group/{group}', [GroupController::class, 'update'])->name('group.update');

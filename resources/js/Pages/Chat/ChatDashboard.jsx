@@ -32,7 +32,12 @@ function ChatDashboard({selectedConversation =null, messages = null }) {
        selectedConversation.is_group &&
         selectedConversation.id == message.group_id
       ) {
-        setLocalMessages((prevMessage) => [...prevMessage, message]);
+        setLocalMessages((prevMessage) => {
+          try {
+            if (prevMessage.some(m => m.id === message.id)) return prevMessage;
+          } catch (e) {}
+          return [...prevMessage, message];
+        });
       }
       if (
           selectedConversation &&
@@ -40,7 +45,12 @@ function ChatDashboard({selectedConversation =null, messages = null }) {
           (selectedConversation.id == message.sender_id || selectedConversation.id ==
           message.receiver_id)
       ) {
-        setLocalMessages((prevMessage) => [...prevMessage, message]);
+        setLocalMessages((prevMessage) => {
+          try {
+            if (prevMessage.some(m => m.id === message.id)) return prevMessage;
+          } catch (e) {}
+          return [...prevMessage, message];
+        });
       }
   };
 
@@ -62,13 +72,10 @@ function ChatDashboard({selectedConversation =null, messages = null }) {
 
         // 3️⃣ Si prevMessage existe → reemplazamos el mensaje en el listado
         try {
-          let displayPrev = prevMessage;
-          if (prevMessage && authId && parseInt(prevMessage.sender_id) === parseInt(authId)) {
-            displayPrev = { ...prevMessage, message: `Yo: ${prevMessage.message || ''}` };
-          }
+          const displayPrev = prevMessage;
           return updated.map(m => m.id === displayPrev.id ? displayPrev : m);
         } catch (e) {
-          return updated.map(m => m.id === prevMessage.id ? prevMessage : m);
+          return updated.map(m => m.id === (prevMessage?.id) ? prevMessage : m);
         }
     });
 };
