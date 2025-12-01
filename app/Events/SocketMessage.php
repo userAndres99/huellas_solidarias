@@ -63,6 +63,15 @@ class SocketMessage implements ShouldBroadcastNow
             $channels[] = new PrivateChannel(
                 'message.user.' . collect([$m->sender_id, $m->receiver_id])->sort()->implode('-')
             );
+
+            // Adicionalmente, se puede emitir en canales específicos para cada usuario si es necesario
+            try {
+                if ($m->receiver_id) {
+                    $channels[] = new PrivateChannel('App.Models.User.' . $m->receiver_id);
+                }
+            } catch (\Throwable $e) {
+                
+            }
         }
 
         // Se devuelven los canales por los que se transmitirá el mensaje

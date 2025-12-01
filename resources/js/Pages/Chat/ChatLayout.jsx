@@ -16,6 +16,8 @@ const ChatLayouts = ({ children }) => {
     const selectedConversationRef = useRef(selectedConversation);
     
     const tombstonedConversationsRef = useRef(new Map());
+    // evitar recargas repetidas para la misma conversación cuando falta avatar
+    const pendingConvReloads = useRef(new Set());
     const [onlineUsers, setOnlineUsers] = useState({});
     const [localConversations, setLocalConversations] = useState([]);
     const [sortedConversations, setSortedConversations] = useState([]);
@@ -111,6 +113,107 @@ const ChatLayouts = ({ children }) => {
             })
         );
     };
+
+    // Escuchar creación de mensajes para actualizar conversaciones locales
+    try {
+        const authId = page.props.auth?.user?.id;
+        if (authId) {
+            // si hay un usuario autenticado, escuchar mensajes creados
+            on && on('message.created', (message) => {
+                try {
+                    if (!message) return;
+                    if (message.group_id) return;
+                    const createdForMe = message.receiver_id && parseInt(message.receiver_id) === parseInt(authId);
+                    const sentByMe = message.sender_id && parseInt(message.sender_id) === parseInt(authId);
+
+                    if (!createdForMe && !sentByMe) return;
+
+                    // verificar si ya existe en page.props.conversations o local
+                    const serverConvs = page.props.conversations || [];
+                    const existsServer = serverConvs.some((c) => !c.is_group && (parseInt(c.id) === parseInt(message.sender_id) || parseInt(c.id) === parseInt(message.receiver_id)));
+                    const existsLocal = (tombstonedConversationsRef.current && Array.from(tombstonedConversationsRef.current.values())) ? null : null; // noop placeholder
+
+                    // construir convObj similar al widget
+                    if (createdForMe) {
+                        const sender = message.sender || {};
+                        const senderId = sender.id || message.sender_id;
+                        const name = sender.name || sender.display_name || `Usuario ${senderId}`;
+                        const avatarFromSender = sender.avatar || sender.avatar_url || sender.profile_photo_url || null;
+                        const avatar = avatarFromSender || null;
+
+                        // si ya existe en page props no hacer nada
+                        if (existsServer) return;
+
+                        setLocalConversations((prev) => {
+                            const existingLocal = (prev || []).find((c) => parseInt(c.id) === parseInt(senderId));
+                            if (existingLocal) return prev;
+                                const defaultAvatar = (typeof window !== 'undefined' && window.location ? `${window.location.origin}/images/DefaultPerfil.jpg` : '/images/DefaultPerfil.jpg');
+                                const convObj = {
+                                    is_user: true,
+                                    is_group: false,
+                                    id: senderId,
+                                    name,
+                                    avatar: avatar || defaultAvatar,
+                                    avatar_url: avatar || defaultAvatar,
+                                    last_message: message.message || '',
+                                    last_message_date: message.created_at || null,
+                                    conversation_id: message.conversation_id || null,
+                                    with_user_id: senderId,
+                                };
+                            return [convObj, ...(prev || [])];
+                        });
+
+                        try {
+                            const createdAvatar = sender.avatar || sender.avatar_url || sender.profile_photo_url || null;
+                            const serverHasAvatar = (page.props.conversations || []).some((c) => parseInt(c.id) === parseInt(senderId) && (c.avatar || c.avatar_url || c.profile_photo_url));
+                            if (!createdAvatar && !serverHasAvatar && !pendingConvReloads.current.has(senderId)) {
+                                pendingConvReloads.current.add(senderId);
+                                try { router.reload({ only: ['conversations'] }); } catch (e) {}
+                                setTimeout(() => pendingConvReloads.current.delete(senderId), 10000);
+                            }
+                        } catch (e) {}
+                    }
+
+                    if (sentByMe) {
+                        const receiverId = parseInt(message.receiver_id || message.to || 0);
+                        if (!receiverId) return;
+                        const receiver = message.receiver || {};
+                        const createdAvatar = receiver.avatar || receiver.avatar_url || receiver.profile_photo_url || null;
+                        const serverHasAvatar = (page.props.conversations || []).some((c) => parseInt(c.id) === parseInt(receiverId) && (c.avatar || c.avatar_url || c.profile_photo_url));
+
+                        setLocalConversations((prev) => {
+                            const existingLocal = (prev || []).find((c) => parseInt(c.id) === parseInt(receiverId));
+                            if (existingLocal) return prev;
+                            const name = (receiver && (receiver.name || receiver.display_name)) || `Usuario ${receiverId}`;
+                            const avatar = createdAvatar || null;
+                            const defaultAvatar = (typeof window !== 'undefined' && window.location ? `${window.location.origin}/images/DefaultPerfil.jpg` : '/images/DefaultPerfil.jpg');
+                            const convObjMe = {
+                                is_user: true,
+                                is_group: false,
+                                id: receiverId,
+                                name,
+                                avatar: avatar || defaultAvatar,
+                                avatar_url: avatar || defaultAvatar,
+                                last_message: (message.message ? `Yo: ${message.message}` : 'Yo'),
+                                last_message_date: message.created_at || null,
+                                conversation_id: message.conversation_id || null,
+                                with_user_id: receiverId,
+                            };
+                            return [convObjMe, ...(prev || [])];
+                        });
+
+                        try {
+                            if (!createdAvatar && !serverHasAvatar && !pendingConvReloads.current.has(receiverId)) {
+                                pendingConvReloads.current.add(receiverId);
+                                try { router.reload({ only: ['conversations'] }); } catch (e) {}
+                                setTimeout(() => pendingConvReloads.current.delete(receiverId), 10000);
+                            }
+                        } catch (e) {}
+                    }
+                } catch (e) {}
+            });
+        }
+    } catch (e) {}
 
     const messageDeleted = (payload) => {
         const deletedMessage = payload.deletedMessage || payload.message || payload.deleted_message || null;

@@ -8,6 +8,10 @@ export const EventBusProvider = ({ children }) => {
 
     // Guardar IDs de mensajes borrados recientemente
     const deletedMessagesRef = React.useRef(new Set());
+    // Guardar IDs de mensajes creados recientemente (evitar duplicados entre emit local y broadcast)
+    const recentCreatedMessagesRef = React.useRef(new Set());
+    // Guardar notificaciones recientes para evitar duplicados (user|group|message)
+    const recentNotificationsRef = React.useRef(new Set());
     // Guardar conversaciones borradas recientemente: key -> timestamp
     const deletedConversationsRef = React.useRef(new Map());
 
@@ -15,6 +19,21 @@ export const EventBusProvider = ({ children }) => {
         try {
             // Si el evento es de creación de mensaje, aplicamos filtros de protección
             if (name === 'message.created') {
+                try {
+                    const mid = data?.id;
+                    if (mid) {
+                        // si ya vimos este id recientemente, ignorar para evitar duplicados
+                        if (recentCreatedMessagesRef.current.has(String(mid))) {
+                           
+                            return;
+                        }
+                        // registrar que vemos este id ahora
+                        recentCreatedMessagesRef.current.add(String(mid));
+                        setTimeout(() => {
+                            try { recentCreatedMessagesRef.current.delete(String(mid)); } catch (e) {}
+                        }, 20000);
+                    }
+                } catch (e) {}
                 try {
                     // ignorar si el ID del mensaje está en la lista de borrados recientes
                     if (data && data.id && deletedMessagesRef.current.has(String(data.id))) {
@@ -40,6 +59,24 @@ export const EventBusProvider = ({ children }) => {
                             }
                         }
                     }
+                } catch (e) {}
+            }
+
+            // Evitar notificaciones duplicadas (por ejemplo, layout y widget recibiendo el mismo evento)
+            if (name === 'newMessageNotification') {
+                try {
+                    const uid = data?.user?.id ?? data?.user ?? 'anon';
+                    const gid = data?.group_id ? `g_${data.group_id}` : 'u';
+                    const txt = (data?.message || '').toString().slice(0, 200);
+                    const key = `${uid}:${gid}:${txt}`;
+                    if (recentNotificationsRef.current.has(key)) {
+                        //console.debug('[EventBus] Ignoring duplicate newMessageNotification', key);
+                        return;
+                    }
+                    recentNotificationsRef.current.add(key);
+                    setTimeout(() => {
+                        try { recentNotificationsRef.current.delete(key); } catch (e) {}
+                    }, 20000);
                 } catch (e) {}
             }
 

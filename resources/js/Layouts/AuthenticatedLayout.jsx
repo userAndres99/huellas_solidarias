@@ -57,6 +57,34 @@ export default function AuthenticatedLayout({ header, children }) {
     }, [showSearch]);
 
     useEffect(() => {
+        // Escuchar eventos de WebSocket para mensajes nuevos y borrados
+        try {
+            if (user) {
+                Echo.private(`App.Models.User.${user.id}`)
+                    .listen('SocketMessage', (e) => {
+                        console.debug('[AuthenticatedLayout] SocketMessage (user channel)', e);
+                        const message = e.message;
+                        if (message) emit('message.created', message);
+                        if (message && message.sender_id !== user.id) {
+                            emit('newMessageNotification', {
+                                user: message.sender,
+                                group_id: message.group_id,
+                                message: message.message || (message.attachments ? `Shared ${message.attachments.length} attachments` : ''),
+                            });
+                        }
+                    })
+                    .listen('SocketMessageDeleted', (e) => {
+                        console.debug('[AuthenticatedLayout] SocketMessageDeleted (user channel)', e);
+                        const deletedMessage = e.deletedMessage || e.deleted_message || null;
+                        const prevMessage = e.prevMessage || e.prev_message || null;
+                        emit('message.deleted', { deletedMessage, prevMessage });
+                    })
+                    .error((err) => {
+                        // ignore
+                    });
+            }
+        } catch (e) {}
+
         conversations.forEach((conversation) => {
             let channel = `message.group.${conversation.id}`;
 

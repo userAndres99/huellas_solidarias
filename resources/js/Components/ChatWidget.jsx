@@ -33,6 +33,8 @@ export default function ChatWidget() {
     const [localConversations, setLocalConversations] = useState([]);
     const [unreadCounts, setUnreadCounts] = useState({});
     const subscribedChannels = useRef(new Set());
+    // evitar recargas repetidas para la misma conversación cuando falta avatar
+    const pendingConvReloads = useRef(new Set());
 
     useEffect(() => {
         if (!on) return;
@@ -89,14 +91,15 @@ export default function ChatWidget() {
                         const existingLocal = (prev || []).find((c) => parseInt(c.id) === parseInt(sender.id || senderId));
                         const name = sender.name || sender.display_name || existingLocal?.name || existingServerConv?.name || `Usuario ${senderId}`;
                         const avatarFromSender = sender.avatar || sender.avatar_url || sender.profile_photo_url || null;
-                        const avatar = existingLocal?.avatar || existingLocal?.avatar_url || avatarFromSender || existingServerConv?.avatar || existingServerConv?.avatar_url || existingServerConv?.profile_photo_url || null;
+                        const defaultAvatar = (typeof window !== 'undefined' && window.location ? `${window.location.origin}/images/DefaultPerfil.jpg` : '/images/DefaultPerfil.jpg');
+                        const avatar = existingLocal?.avatar || existingLocal?.avatar_url || avatarFromSender || existingServerConv?.avatar || existingServerConv?.avatar_url || existingServerConv?.profile_photo_url || defaultAvatar;
                         const convObj = {
                             is_user: true,
                             is_group: false,
                             id: sender.id || senderId,
                             name,
                             avatar,
-                            avatar_url: avatar || existingLocal?.avatar_url || existingServerConv?.avatar_url || existingServerConv?.profile_photo_url || null,
+                            avatar_url: avatar || existingLocal?.avatar_url || existingServerConv?.avatar_url || existingServerConv?.profile_photo_url || defaultAvatar,
                             last_message: message.message || '',
                             last_message_date: message.created_at || null,
                             conversation_id: message.conversation_id || null,
@@ -107,6 +110,18 @@ export default function ChatWidget() {
                         const filtered = prev.filter((c) => parseInt(c.id) !== parseInt(convObj.id));
                         return [convObj, ...filtered];
                     });
+                    // si no tenemos avatar confiable, pedir al servidor que refresque las `conversations`
+                    try {
+                        const serverHasAvatar = (page.props.conversations || []).some((c) => parseInt(c.id) === parseInt(sender.id || senderId) && (c.avatar || c.avatar_url || c.profile_photo_url));
+                        const createdAvatar = sender.avatar || sender.avatar_url || sender.profile_photo_url || null;
+                        const needReload = !createdAvatar && !serverHasAvatar && !pendingConvReloads.current.has(senderId);
+                        if (needReload) {
+                            pendingConvReloads.current.add(senderId);
+                            try { router.reload({ only: ['conversations'] }); } catch (e) {}
+                            // permitir reintento más tarde si algo falla
+                            setTimeout(() => pendingConvReloads.current.delete(senderId), 10000);
+                        }
+                    } catch (e) {}
                 }
                 
                     if (message.sender_id && parseInt(message.sender_id) === parseInt(authId)) {
@@ -142,13 +157,14 @@ export default function ChatWidget() {
                             const name = (receiver && (receiver.name || receiver.display_name)) || existingLocal?.name || existingServer?.name || `Usuario ${receiverId}`;
                             const avatarFromReceiver = (receiver && (receiver.avatar_url || receiver.avatar || receiver.profile_photo_url)) || null;
                             const avatar = existingLocal?.avatar || existingLocal?.avatar_url || avatarFromReceiver || existingServer?.avatar || existingServer?.avatar_url || existingServer?.profile_photo_url || null;
+                            const defaultAvatar = (typeof window !== 'undefined' && window.location ? `${window.location.origin}/images/DefaultPerfil.jpg` : '/images/DefaultPerfil.jpg');
                             const convObjMe = {
                                 is_user: true,
                                 is_group: false,
                                 id: receiverId,
                                 name,
-                                avatar,
-                                avatar_url: avatar || existingLocal?.avatar_url || existingServer?.avatar_url || existingServer?.profile_photo_url || null,
+                                avatar: avatar || defaultAvatar,
+                                avatar_url: avatar || existingLocal?.avatar_url || existingServer?.avatar_url || existingServer?.profile_photo_url || defaultAvatar,
                                 last_message: (message.message ? `Yo: ${message.message}` : 'Yo'),
                                 last_message_date: message.created_at || null,
                                 conversation_id: message.conversation_id || null,
@@ -156,7 +172,18 @@ export default function ChatWidget() {
                             };
 
                             const filtered = prev.filter((c) => parseInt(c.id) !== parseInt(convObjMe.id));
-                            return [convObjMe, ...filtered];
+                            const result = [convObjMe, ...filtered];
+                            // Si no hay avatar conocido, intentar recargar las `conversations` desde el servidor
+                            try {
+                                const createdAvatar = (message.receiver && (message.receiver.avatar || message.receiver.avatar_url || message.receiver.profile_photo_url)) || null;
+                                const serverHasAvatar = (page.props.conversations || []).some((c) => parseInt(c.id) === parseInt(receiverId) && (c.avatar || c.avatar_url || c.profile_photo_url));
+                                if (!createdAvatar && !serverHasAvatar && !pendingConvReloads.current.has(receiverId)) {
+                                    pendingConvReloads.current.add(receiverId);
+                                    try { router.reload({ only: ['conversations'] }); } catch (e) {}
+                                    setTimeout(() => pendingConvReloads.current.delete(receiverId), 10000);
+                                }
+                            } catch (e) {}
+                            return result;
                         });
                     }
                 }
