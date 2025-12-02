@@ -31,17 +31,28 @@ export default function Toast({}){
 
     
     return(
-        <div className="fixed top-4 left-0 right-0 flex justify-center pointer-events-none z-[9999]">
-            <div className="toast min-w-[280px] w-full xs:w-auto pointer-events-auto">
-                {toasts.map((toast, index)=>(
-                    <div
-                        key={toast.uuid}
-                        className="alert alert-success py-3 px-4 text-gray-100 rounded-md"
-                    >
-                        <span>{toast.message}</span>
-                    </div>
-                ))}
+        <>
+            {/* Mobile: centrado*/}
+            <div className="fixed top-4 left-0 right-0 flex justify-center pointer-events-none z-[9999] sm:hidden">
+                <div className="toast pointer-events-auto w-full max-w-[92vw]">
+                    {toasts.map((toast) => (
+                        <div key={toast.uuid} className="alert alert-success py-3 px-4 text-gray-100 rounded-md">
+                            <span className="text-sm break-words">{toast.message}</span>
+                        </div>
+                    ))}
+                </div>
             </div>
-        </div>
+
+            {/* Desktop/tablet: fijo a la derecha */}
+            <div className="hidden sm:block fixed top-4 right-4 pointer-events-none z-[9999]">
+                <div className="toast pointer-events-auto w-auto max-w-[9rem]">
+                    {toasts.map((toast) => (
+                        <div key={toast.uuid} className="alert alert-success py-3 px-4 text-gray-100 rounded-md">
+                            <span className="text-sm break-words">{toast.message}</span>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </>
     )
 }

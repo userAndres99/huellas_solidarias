@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Inertia\Middleware;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use App\Models\Conversation;
 
 class HandleInertiaRequests extends Middleware
@@ -60,7 +61,19 @@ class HandleInertiaRequests extends Middleware
                 'user' => $userData,
             ],
 
-            'conversations' => Auth::id() ? Conversation::getConversationsForSidebar(Auth::user()) : [],
+            // debug
+            'conversations' => Auth::id() ? tap(Conversation::getConversationsForSidebar(Auth::user()), function ($c) use ($user) {
+                try {
+                    $summary = collect($c->toArray())->map(fn($x) => [
+                        'id' => $x['id'] ?? null,
+                        'is_group' => $x['is_group'] ?? null,
+                        'last_message_date' => $x['last_message_date'] ?? $x['created_at'] ?? null,
+                    ])->values()->take(20)->toArray();
+                    Log::info('INERTIA_CONVERSATIONS_ORDER', ['user_id' => $user?->id ?? null, 'conversations' => $summary]);
+                } catch (\Throwable $e) {
+                   
+                }
+            }) : [],
 
             'canLogin' => Route::has('login'),
             'canRegister' => Route::has('register'),

@@ -415,15 +415,14 @@ const ChatLayouts = ({ children }) => {
                 const existing = prev.find((c) => c.id === group.id && c.is_group);
                 if (existing) return prev;
 
-                const newGroup = {
-                    ...group,
-                    is_group: true,
-                    last_message: null,        // <--- limpiar el last_message
-                    last_message_date: null,   // <--- limpiar la fecha
-                };
+                        const newGroup = {
+                            ...group,
+                            is_group: true,
+                            last_message_date: group.last_message_date || group.created_at || new Date().toISOString(),
+                        };
 
-                // Agregar al final del sidebar
-                return [...prev, newGroup];
+                        // Agregar al inicio del sidebar 
+                        return [newGroup, ...(prev || [])];
             });
 
             emit("toast.show", `Se ha creado un nuevo grupo: ${group.name}`);

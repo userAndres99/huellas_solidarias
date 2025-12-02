@@ -489,14 +489,14 @@ export default function ChatWidget() {
                         const existingLocal = (prev || []).find((c) => c && c.is_group && parseInt(c.id) === parseInt(group.id));
                         if (existingLocal) return prev;
 
+                        // Construir objeto de grupo mínimo
                         const newGroup = {
                             ...group,
                             is_group: true,
-                            last_message: null,
-                            last_message_date: null,
+                            last_message_date: group.last_message_date || group.created_at || new Date().toISOString(),
                         };
 
-                        // Insertar al frente para que sea visible inmediatamente
+                        // Insertar al frente para que sea visible inmediatamente 
                         return [newGroup, ...(prev || [])];
                     } catch (e) {
                         return prev;
@@ -897,11 +897,11 @@ export default function ChatWidget() {
                 </button>
 
                 {open && (
-                    <div className={`fixed ${panelBottom} right-4 w-[92vw] max-h-[85vh] h-auto rounded-lg bg-white shadow-xl ring-1 ring-black ring-opacity-5 z-50 sm:fixed sm:${panelBottom} sm:right-4 sm:left-auto sm:w-[760px] sm:max-h-[520px] sm:h-auto sm:rounded-lg`}>
+                    <div className={`fixed ${panelBottom} right-4 w-[92vw] max-h-[85vh] h-[85vh] rounded-lg bg-white shadow-xl ring-1 ring-black ring-opacity-5 z-50 sm:fixed sm:${panelBottom} sm:right-4 sm:left-auto sm:w-[760px] sm:max-h-[520px] sm:h-[520px] sm:rounded-lg`}>
                         <div className="h-full flex flex-col sm:flex-row">
 
                             {!(isMobile && selectedConversation) && (
-                                <div className="w-full sm:w-72 border-r bg-slate-800 text-white flex flex-col flex-1 overflow-y-auto">
+                                <div className="w-full sm:w-72 border-r bg-slate-800 text-white flex flex-col h-full">
                                     <div className="px-4 py-3 border-b border-slate-700 flex items-center justify-between">
                                         <h3 className="text-sm font-semibold text-white">Usuarios Conectados</h3>
                                         <div className="flex items-center gap-2">
@@ -958,13 +958,28 @@ export default function ChatWidget() {
 
                                             let combined = [...localConvs, ...filteredPageConvs];
 
-                                            // Ordenar por fecha del último mensaje 
+                                            // Ordenar por fecha del último mensaje usando timestamps (mezclar usuarios y grupos)
+                                            const timeOf = (c) => {
+                                                try {
+                                                    if (!c) return 0;
+                                                    if (c.last_message_date) {
+                                                        const t = Date.parse(c.last_message_date);
+                                                        if (!Number.isNaN(t)) return t;
+                                                    }
+                                                    if (c.created_at) {
+                                                        const t2 = Date.parse(c.created_at);
+                                                        if (!Number.isNaN(t2)) return t2;
+                                                    }
+                                                } catch (e) {}
+                                                return 0;
+                                            };
+
                                             combined = combined.sort((a, b) => {
                                                 try {
-                                                    if (a?.last_message_date && b?.last_message_date) return b.last_message_date.localeCompare(a.last_message_date);
-                                                    if (a?.last_message_date) return -1;
-                                                    if (b?.last_message_date) return 1;
-                                                    return 0;
+                                                    const ta = timeOf(a);
+                                                    const tb = timeOf(b);
+                                                    if (ta === tb) return 0;
+                                                    return tb - ta; // descendente
                                                 } catch (e) { return 0; }
                                             });
 

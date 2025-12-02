@@ -94,7 +94,24 @@ class Conversation extends Model
             return $arr;
         });
 
-        return $mapped->concat($groupMapped);
+        // Combinar las conversaciones de usuarios y los grupos 
+        $combined = $mapped->concat($groupMapped)
+            ->sortByDesc(function ($conv) {
+                try {
+                    $date = $conv['last_message_date'] ?? $conv['created_at'] ?? null;
+                    if (!$date) return 0;
+                    
+                    if (is_object($date) && method_exists($date, 'getTimestamp')) return $date->getTimestamp();
+                   
+                    $ts = strtotime((string)$date);
+                    return $ts ? $ts : 0;
+                } catch (\Throwable $e) {
+                    return 0;
+                }
+            })
+            ->values();
+
+        return $combined;
     }
 
 
