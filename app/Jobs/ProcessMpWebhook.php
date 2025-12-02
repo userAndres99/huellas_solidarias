@@ -12,6 +12,8 @@ use Illuminate\Support\Facades\Log;
 use App\Models\MpWebhookReceipt;
 use App\Models\MpCuenta;
 use App\Models\Donacion;
+use Illuminate\Support\Facades\Notification;
+use App\Notifications\NewDonationNotification;
 
 class ProcessMpWebhook implements ShouldQueue
 {
@@ -131,10 +133,47 @@ class ProcessMpWebhook implements ShouldQueue
                         $donacion->save();
                     }
 
+                    // marcar recibo como procesado
                     $receipt->processed = true;
                     $receipt->save();
 
                     Log::info('ProcessMpWebhook: payment fetched, stored and Donacion created/updated', ['receipt_id' => $receipt->id, 'payment_id' => $resourceId, 'donacion_id' => $donacion->id]);
+
+                    // Enviar notificación a los usuarios asociados a la organización
+                    try {
+                        // intentar obtener un nombre legible del donante
+                        $donorName = null;
+                        if (!empty($body['payer'])) {
+                            $p = $body['payer'];
+                            $parts = [];
+                            if (!empty($p['first_name'])) $parts[] = $p['first_name'];
+                            if (!empty($p['last_name'])) $parts[] = $p['last_name'];
+                            if (!empty($p['nickname']) && empty($parts)) $parts[] = $p['nickname'];
+                            if (!empty($p['email']) && empty($parts)) $parts[] = $p['email'];
+                            if (!empty($parts)) $donorName = implode(' ', $parts);
+                        }
+
+                        // fallback al campo email_donante o null
+                        if (empty($donorName)) $donorName = $donacion->email_donante ?? null;
+
+                        // obtener todos los usuarios que pertenecen a esta organización (users.organizacion_id == organizacion.id)
+                        $users = \App\Models\User::where('organizacion_id', $donacion->organizacion_id)->get();
+                        if ($users->isNotEmpty()) {
+                            Notification::send($users, new NewDonationNotification($donacion, $donorName));
+                        } else {
+                            // como fallback, si existe un owner/creador registrado en la tabla organizaciones, notificar a ese usuario
+                            try {
+                                $org = \App\Models\Organizacion::find($donacion->organizacion_id);
+                                if ($org && $org->usuario_creador_id) {
+                                    $owner = \App\Models\User::find($org->usuario_creador_id);
+                                    if ($owner) Notification::send($owner, new NewDonationNotification($donacion, $donorName));
+                                }
+                            } catch (\Throwable $_) {}
+                        }
+                    } catch (\Throwable $e) {
+                        Log::warning('ProcessMpWebhook: failed to send donation notification: ' . $e->getMessage(), ['donacion_id' => $donacion->id]);
+                    }
+
                     return;
                 } catch (\Exception $e) {
                     Log::error('ProcessMpWebhook: error saving Donacion: ' . $e->getMessage(), ['receipt_id' => $receipt->id]);
