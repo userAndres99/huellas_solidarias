@@ -54,6 +54,9 @@ class BuscadorUsuariosController extends Controller
             'casos' => function ($q) {
                 $q->orderBy('fechaPublicacion', 'desc')->limit(12);
             },
+            'historias' => function ($q) {
+                $q->orderBy('created_at', 'desc')->limit(12);
+            },
         ]);
 
         //URL pública de la foto 
@@ -63,6 +66,22 @@ class BuscadorUsuariosController extends Controller
             $arr['foto_url'] = $url;
             // también sobreescribimos fotoAnimal 
             $arr['fotoAnimal'] = $url;
+            return $arr;
+        });
+
+        // Mapear historias para exponer URLs públicas de las imágenes
+        $user->historias = $user->historias->map(function ($h) {
+            $arr = $h->toArray();
+            $arr['imagen_antes'] = $h->imagen_antes ? Storage::url($h->imagen_antes) : null;
+            $arr['imagen_despues'] = $h->imagen_despues ? Storage::url($h->imagen_despues) : null;
+            // incluir también información del usuario si es necesaria en frontend
+            if ($h->user) {
+                $arr['usuario'] = [
+                    'id' => $h->user->id,
+                    'name' => $h->user->name,
+                    'profile_photo_url' => $h->user->profile_photo_path ? Storage::url($h->user->profile_photo_path) : $h->user->profile_photo_url,
+                ];
+            }
             return $arr;
         });
 

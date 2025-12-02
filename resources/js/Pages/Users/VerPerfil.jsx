@@ -4,6 +4,8 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { useState } from 'react';
 import DonationModal from '@/Components/DonationModal';
 import TarjetaPublicaciones from '@/Components/TarjetaPublicaciones';
+import TarjetaHistorias from '@/Components/TarjetaHistorias';
+import Carrusel3D from '@/Components/Carrusel3D';
 
 export default function VerPerfil(props){
     const page = usePage();
@@ -109,15 +111,49 @@ export default function VerPerfil(props){
                             userEmail={authUser?.email ?? null}
                         />
             <div className="mt-8">
-                <h2 className="text-lg font-semibold">Publicaciones</h2>
+                <h2 className="text-2xl font-extrabold text-sky-700 flex items-center gap-3">
+                    <span className="inline-block w-10 h-1 bg-sky-400 rounded-full" />
+                    Publicaciones
+                </h2>
                 {usuario.casos && usuario.casos.length > 0 ? (
-                    <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                        {usuario.casos.map((caso) => (
-                            <TarjetaPublicaciones key={caso.id} caso={caso} />
-                        ))}
+                    <div className="mt-4">
+                        <Carrusel3D
+                            items={usuario.casos}
+                            renderItem={(caso) => (
+                                <div className="mx-auto h-[420px] w-[260px] overflow-hidden">
+                                    <div className="scale-[0.92] origin-top">
+                                        <TarjetaPublicaciones caso={caso} />
+                                    </div>
+                                </div>
+                            )}
+                        />
                     </div>
                 ) : (
                     <div className="mt-4 text-sm text-gray-500">Este usuario no tiene publicaciones.</div>
+                )}
+            </div>
+            {/* Historias de éxito del usuario */}
+            <div className="mt-8">
+                <h2 className="text-2xl font-extrabold text-sky-700 flex items-center gap-3">
+                    <span className="inline-block w-10 h-1 bg-sky-400 rounded-full" />
+                    Historias de Éxito
+                </h2>
+                {usuario.historias && usuario.historias.length > 0 ? (
+                    <div className="mt-4">
+                        <Carrusel3D
+                            horizontal
+                            items={usuario.historias}
+                            renderItem={(h) => (
+                                <div className="mx-auto w-[90%] h-[340px] max-w-[480px] overflow-hidden md:h-[320px] md:w-[480px]">
+                                    <div className="scale-[0.92] origin-top">
+                                        <TarjetaHistorias historia={h} />
+                                    </div>
+                                </div>
+                            )}
+                        />
+                    </div>
+                ) : (
+                    <div className="mt-4 text-sm text-gray-500">Este usuario no tiene historias de éxito.</div>
                 )}
             </div>
                         </div>

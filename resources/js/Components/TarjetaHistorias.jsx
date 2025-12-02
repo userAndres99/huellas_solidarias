@@ -10,17 +10,21 @@ export default function TarjetaHistorias({ historia, showDelete = false, onRemov
   const usuario = historia.usuario || historia.user || null;
   const [confirmModal, setConfirmModal] = useState({ open: false });
 
+  // normalizar fuentes de imagenes
+  const antesSrc = historia.imagen_antes || historia.antes || historia.imagenAntes || historia.imagen_antes_url || historia.imagenAntesUrl || null;
+  const despuesSrc = historia.imagen_despues || historia.despues || historia.imagenDespues || historia.imagen_despues_url || historia.imagenDespuesUrl || null;
+
   return (
     <article key={historia.id} className="relative bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-shadow duration-300 flex flex-col">
       <div className="relative grid grid-cols-2 gap-1">
-        {historia.imagen_antes ? (
-          <LoadingImagenes src={historia.imagen_antes} alt="Antes" wrapperClass="w-full h-40" imgClass="w-full h-40 object-cover" placeholderText={null} />
+        {antesSrc ? (
+          <LoadingImagenes src={antesSrc} alt="Antes" wrapperClass="w-full h-40" imgClass="w-full h-40 object-cover" placeholderText={null} />
         ) : (
           <div className="w-full h-40 bg-gray-100 flex items-center justify-center text-gray-400">Sin Imagen</div>
         )}
 
-        {historia.imagen_despues ? (
-          <LoadingImagenes src={historia.imagen_despues} alt="Después" wrapperClass="w-full h-40" imgClass="w-full h-40 object-cover" placeholderText={null} />
+        {despuesSrc ? (
+          <LoadingImagenes src={despuesSrc} alt="Después" wrapperClass="w-full h-40" imgClass="w-full h-40 object-cover" placeholderText={null} />
         ) : (
           <div className="w-full h-40 bg-gray-100 flex items-center justify-center text-gray-400">Sin Imagen</div>
         )}

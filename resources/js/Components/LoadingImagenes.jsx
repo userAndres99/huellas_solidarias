@@ -53,7 +53,7 @@ export default function LoadingImagenes({ src, alt = '', imgClass = '', wrapperC
               finalSrc = s;
             } else if (s.startsWith('storage/')) {
               finalSrc = '/' + s;
-            } else if (s.startsWith('foto_animales/') || s.startsWith('usuarios/foto_animales/') || s.startsWith('uploads/') || s.startsWith('images/')) {
+            } else if (s.startsWith('foto_animales/') || s.startsWith('usuarios/foto_animales/') || s.startsWith('uploads/') || s.startsWith('images/') || s.startsWith('historias/') || s.startsWith('historias\\')) {
               finalSrc = '/storage/' + s;
             } else if (s.indexOf('/') !== -1) {
               finalSrc = '/' + s;
@@ -110,7 +110,7 @@ export default function LoadingImagenes({ src, alt = '', imgClass = '', wrapperC
               finalSrc = s;
             } else if (s.startsWith('storage/')) {
               finalSrc = '/' + s;
-            } else if (s.startsWith('foto_animales/') || s.startsWith('usuarios/foto_animales/') || s.startsWith('uploads/') || s.startsWith('images/')) {
+            } else if (s.startsWith('foto_animales/') || s.startsWith('usuarios/foto_animales/') || s.startsWith('uploads/') || s.startsWith('images/') || s.startsWith('historias/') || s.startsWith('historias\\')) {
               finalSrc = '/storage/' + s;
             } else if (s.indexOf('/') !== -1) {
               finalSrc = '/' + s;
