@@ -297,13 +297,24 @@ export default function ChatWidget() {
                             }
                         }
 
-                        // Si no hay mensaje previo, mostramos indicador de mensaje borrado pero preservamos avatar (o fallback)
+                        // Si no hay mensaje previo, comportamiento según si fue moderación
+                        if (payload?.moderated) {
+                            return {
+                                ...u,
+                                avatar: u.avatar || u.avatar_url || u.profile_photo_url || defaultAvatar,
+                                avatar_url: u.avatar_url || u.avatar || u.profile_photo_url || defaultAvatar,
+                                last_message: 'Mensaje borrado',
+                                last_message_date: deletedMessage.created_at || u.last_message_date,
+                            };
+                        }
+
+                        // Borrado manual: limpiar preview en lugar de mostrar 'Mensaje borrado'
                         return {
                             ...u,
                             avatar: u.avatar || u.avatar_url || u.profile_photo_url || defaultAvatar,
                             avatar_url: u.avatar_url || u.avatar || u.profile_photo_url || defaultAvatar,
-                            last_message: 'Mensaje borrado',
-                            last_message_date: deletedMessage.created_at || u.last_message_date,
+                            last_message: '',
+                            last_message_date: null,
                         };
                     });
 
@@ -348,8 +359,8 @@ export default function ChatWidget() {
                                 // preservar avatar si existe en local antes de sobreescribir
                                 avatar: existingLocal?.avatar ?? match.avatar ?? match.profile_photo_url ?? null,
                                 avatar_url: existingLocal?.avatar_url ?? match.avatar_url ?? match.profile_photo_url ?? null,
-                                last_message: prevMessage ? displayPrev : 'Mensaje borrado',
-                                last_message_date: prevMessage ? prevMessage.created_at : deletedMessage.created_at || match.last_message_date,
+                                last_message: prevMessage ? displayPrev : (payload?.moderated ? 'Mensaje borrado' : ''),
+                                last_message_date: prevMessage ? prevMessage.created_at : (payload?.moderated ? (deletedMessage.created_at || match.last_message_date) : null),
                             };
                             const newConvId = parseInt(newConv.id);
                             const newConvIsGroup = !!newConv.is_group;

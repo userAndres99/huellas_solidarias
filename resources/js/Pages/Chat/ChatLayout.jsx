@@ -310,12 +310,23 @@ const ChatLayouts = ({ children }) => {
                     console.debug('[ChatLayout] Tombstoned conversation', { key, at: now });
                 } catch (e) { }
 
+                // Si el borrado fue por moderación, mostrar "Mensaje borrado"
+                if (payload?.moderated) {
+                    return {
+                        ...u,
+                        avatar: u.avatar || u.avatar_url || u.profile_photo_url || defaultAvatar,
+                        avatar_url: u.avatar_url || u.avatar || u.profile_photo_url || defaultAvatar,
+                        last_message: 'Mensaje borrado',
+                        last_message_date: deletedMessage.created_at || u.last_message_date,
+                    };
+                }
+
                 return {
                     ...u,
                     avatar: u.avatar || u.avatar_url || u.profile_photo_url || defaultAvatar,
                     avatar_url: u.avatar_url || u.avatar || u.profile_photo_url || defaultAvatar,
-                    last_message: 'Mensaje borrado',
-                    last_message_date: deletedMessage.created_at || u.last_message_date,
+                    last_message: '',
+                    last_message_date: null,
                 };
             })
         );
