@@ -35,14 +35,14 @@ export default function GroupModal ({ show = false, onClose = () => {}}) {
             put(route("group.update", group.id),{
                 onSuccess: () => {
                     closeModal();
-                    emit("toast.show", `Group "${data.name}" was updated`);
+                    emit("toast.show", `Se actualizó el grupo: ${data.name}`);
                 }
             });
             return;
         }
         post(route("group.store"), {
             onSuccess: () => {
-                emit("toast.show", `Group "${data.name}" was created`);
+                emit("toast.show", `Se ha creado el grupo: ${data.name}`);
                 closeModal();
             },
         });
@@ -147,7 +147,7 @@ export default function GroupModal ({ show = false, onClose = () => {}}) {
                 <div className="mt-6 flex justify-end gap-2 pt-3 border-t border-gray-200">
                     <SecondaryButton onClick={closeModal}>Cancelar</SecondaryButton>
 
-                    <PrimaryButton disabled={processing}>{group.id ? 'Actualizar' : 'Crear'}</PrimaryButton>
+                        <PrimaryButton disabled={processing}>{group.id ? 'Actualizar' : 'Crear'}</PrimaryButton>
                 </div>
             </form>
         </Modal>

@@ -15,17 +15,8 @@ const ConversationHeader = ({ selectedConversation }) => {
     console.log("selectedConversation:" ,selectedConversation);
 
     const onDeleteGroup = () => {
-      if (!window.confirm("¿Estas seguro de que quiere eliminar este grupo?")){
-          return;
-      }
-
-      axios.delete(route("group.destroy", selectedConversation.id))
-      .then((res) => {
-        console.log(res)
-        emit("toast.show", res.data.message);
-      }).catch((err) => {
-        console.log(err);
-      })
+      // Mostrar un modal de confirmación antes de eliminar
+      try { emit('GroupDelete.show', selectedConversation); } catch (e) {}
 
 
 
@@ -53,12 +44,12 @@ const ConversationHeader = ({ selectedConversation }) => {
               </h3>
               {selectedConversation.is_group && (
                 <p className="text-xs text-gray-500">
-                  {selectedConversation.user_ids.length} members
+                  {selectedConversation.user_ids.length} miembros
                 </p>
               )}
             </div>
           </div>
-              {selectedConversation.is_group &&(
+                    {selectedConversation.is_group && (
                 <div className="flex gap-3">
                     <GroupDescriptionPopover
                       description = {selectedConversation.description}
@@ -70,7 +61,7 @@ const ConversationHeader = ({ selectedConversation }) => {
                       <>
                         <div
                           className="tooltip tooltip-left"
-                          data-tip = "Edit Group"
+                          data-tip = "Editar grupo"
                         >
                           <button
                             onClick={(ev) => 
@@ -87,7 +78,7 @@ const ConversationHeader = ({ selectedConversation }) => {
                         </div>
                         <div
                           className="tooltip tooltip-left"
-                          data-tip ="Delete Group"
+                          data-tip ="Eliminar grupo"
                         >
                           <button
                             onClick={onDeleteGroup}

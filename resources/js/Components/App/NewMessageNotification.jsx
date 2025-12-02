@@ -9,13 +9,21 @@ export default function NewMessageNotification({}){
     const { on } = useEventBus();
 
     useEffect(() => {
-        on('newMessageNotification', ({message, user, group_id}) => {
+        const off = on('newMessageNotification', ({message, user, group_id}) => {
             const uuid = uuidv4();
 
-            setToasts((oldToasts) => [
-                ...oldToasts, 
-                {message, uuid, user, group_id},
-            ]);
+            setToasts((oldToasts) => {
+                try {
+                    // evitar duplicados iguales que lleguen en ráfaga
+                    const exists = oldToasts.some((t) => t.message === message && (t.user?.id || null) === (user?.id || null) && (t.group_id || null) === (group_id || null));
+                    if (exists) return oldToasts;
+                } catch (e) {}
+
+                return [
+                    ...oldToasts,
+                    {message, uuid, user, group_id},
+                ];
+            });
 
             setTimeout(() => {
                 setToasts((oldToasts) => 
@@ -23,9 +31,12 @@ export default function NewMessageNotification({}){
                 );
             }, 5000);
         });
+
+        return () => { try { off(); } catch (e) {} };
     }, [on]);
     return(
-        <div className="toast toast-top toast-center min-w-[280px]">
+        <div className="fixed top-4 left-0 right-0 flex justify-center pointer-events-none z-[9999]">
+            <div className="toast toast-top toast-center min-w-[280px] pointer-events-auto">
             {toasts.map((toast, index)=>(
                 <div
                     key={toast.uuid}
@@ -44,6 +55,7 @@ export default function NewMessageNotification({}){
                     </Link>
                 </div>
             ))}
+            </div>
         </div>
     );
 }

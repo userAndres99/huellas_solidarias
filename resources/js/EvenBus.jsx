@@ -14,6 +14,8 @@ export const EventBusProvider = ({ children }) => {
     const recentNotificationsRef = React.useRef(new Set());
     // Guardar conversaciones borradas recientemente: key -> timestamp
     const deletedConversationsRef = React.useRef(new Map());
+    // Guardar grupos borrados recientemente para evitar duplicados de evento
+    const recentDeletedGroupsRef = React.useRef(new Set());
 
     const emit = (name, data ) => {
         try {
@@ -80,7 +82,7 @@ export const EventBusProvider = ({ children }) => {
                 } catch (e) {}
             }
 
-            // Si se emite un evento de borrado, registramos el ID y la conversación en caches temporales
+            // Si se emite un evento de borrado de mensaje, registramos el ID y la conversación en caches temporales
             if (name === 'message.deleted') {
                 try {
                     const deleted = data?.deletedMessage || data?.message || data?.deleted_message || null;
@@ -113,6 +115,23 @@ export const EventBusProvider = ({ children }) => {
                             console.debug('[EventBus] Registered deleted conversation key=', k, 'at', now);
                         }
                     } catch (e) {}
+                } catch (e) {}
+            }
+
+            // Si se emite un evento de borrado de grupo, evitar procesarlo en ráfaga
+            if (name === 'group.deleted') {
+                try {
+                    const gid = data?.id;
+                    if (gid) {
+                        if (recentDeletedGroupsRef.current.has(String(gid))) {
+                            console.debug('[EventBus] Ignoring duplicate group.deleted for id=', gid);
+                            return;
+                        }
+                        recentDeletedGroupsRef.current.add(String(gid));
+                        setTimeout(() => {
+                            try { recentDeletedGroupsRef.current.delete(String(gid)); } catch (e) {}
+                        }, 20000);
+                    }
                 } catch (e) {}
             }
 

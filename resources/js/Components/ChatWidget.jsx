@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { useEventBus } from '@/EvenBus';
 import { router, usePage } from '@inertiajs/react';
 import axios from 'axios';
-import { XMarkIcon } from '@heroicons/react/24/solid';
+import { XMarkIcon, TrashIcon } from '@heroicons/react/24/solid';
 import MessageItem from '@/Components/App/MessageItem';
 import MessageInput from '@/Components/App/MessageInput';
 import ConversationItem from '@/Components/App/ConversationItem';
@@ -19,6 +19,7 @@ export default function ChatWidget() {
     const [open, setOpen] = useState(false);
     const [unread, setUnread] = useState(0);
     const [selectedConversation, setSelectedConversation] = useState(null);
+    const selectedConversationRef = useRef(null);
     const [messages, setMessages] = useState([]);
     const [loadingMessages, setLoadingMessages] = useState(false);
     const messagesRef = useRef(null);
@@ -437,12 +438,65 @@ export default function ChatWidget() {
             } catch (e) {}
         });
 
+        const offGroupCreated = on("group.created", (group) => {
+            try {
+                setLocalConversations((prev) => {
+                    try {
+                        const existsServer = (conversations || []).some((c) => c && c.is_group && parseInt(c.id) === parseInt(group.id));
+                        if (existsServer) return prev;
+                        const existingLocal = (prev || []).find((c) => c && c.is_group && parseInt(c.id) === parseInt(group.id));
+                        if (existingLocal) return prev;
+
+                        const newGroup = {
+                            ...group,
+                            is_group: true,
+                            last_message: null,
+                            last_message_date: null,
+                        };
+
+                        // Insertar al frente para que sea visible inmediatamente
+                        return [newGroup, ...(prev || [])];
+                    } catch (e) {
+                        return prev;
+                    }
+                });
+
+                try { if (emit) emit('toast.show', `Se ha creado un nuevo grupo: ${group.name}`); } catch (e) {}
+            } catch (e) {}
+        });
+
+        const offGroupDeleted = on('group.deleted', ({ id, name }) => {
+            try {
+                setLocalConversations((oldConversations) => (oldConversations || []).filter((con) => parseInt(con.id) !== parseInt(id)));
+                // ocultar también cualquier conversation que venga desde page.props.conversations
+                try {
+                    setHiddenConversations((prev) => {
+                        if (!prev.includes(id)) return [...prev, id];
+                        return prev;
+                    });
+                } catch (e) {}
+                try { if (emit) emit('toast.show', `El Grupo "${name}" ha sido eliminado`); } catch (e) {}
+
+                // Si la conversación actualmente abierta es la que se eliminó, cerrarla
+                try {
+                    const sel = selectedConversationRef.current;
+                    if (sel && sel.is_group && parseInt(sel.id) === parseInt(id)) {
+                        setSelectedConversation(null);
+                        setMessages([]);
+                        setOpen(false);
+                    }
+                } catch (e) {}
+            } catch (e) {}
+        });
+
         return () => {
             off();
             try { offHidden(); } catch (e) {}
             try { offManualUnhide(); } catch (e) {}
             try { offUnhide(); } catch (e) {}
             try { offDeleted(); } catch (e) {}
+            try { offGroupCreated(); } catch (e) {}
+            try { offGroupDeleted(); } catch (e) {}
         };
     }, [on]);
 
@@ -516,6 +570,12 @@ export default function ChatWidget() {
 
     useEffect(() => setMounted(true), []);
 
+    // Mantener un ref con la conversación seleccionada para que los handlers
+    // registrados una vez puedan acceder siempre al valor más reciente.
+    useEffect(() => {
+        selectedConversationRef.current = selectedConversation;
+    }, [selectedConversation]);
+
     // Manejo de apertura de conversación 
     useEffect(() => {
         if (!on) return;
@@ -533,6 +593,15 @@ export default function ChatWidget() {
                 };
 
                 setOpen(true);
+                try {
+                    // Enriquecer la conversación con datos del servidor si existen
+                    const serverConv = (conversations || []).find((c) => {
+                        try { return parseInt(c.id) === parseInt(conversation.id) && (!!c.is_group) === !!conversation.is_group; } catch (e) { return false; }
+                    });
+                    if (serverConv) {
+                        conversation = { ...serverConv, ...conversation };
+                    }
+                } catch (e) {}
                 setSelectedConversation(conversation);
 
                 try {
@@ -942,8 +1011,31 @@ export default function ChatWidget() {
                                                 >
                                                     Volver
                                                 </button>
-                                                <div className="text-sm font-medium truncate">
-                                                    {selectedConversation.title ?? selectedConversation.name ?? (selectedConversation.is_user ? selectedConversation.other_name : `Grupo ${selectedConversation.id}`)}
+
+                                                <div className="flex items-center gap-3">
+                                                    <div className="text-sm font-medium truncate">
+                                                        {selectedConversation.title ?? selectedConversation.name ?? (selectedConversation.is_user ? selectedConversation.other_name : `Grupo ${selectedConversation.id}`)}
+                                                    </div>
+
+                                                    {selectedConversation.is_group && (
+                                                        (() => {
+                                                            try {
+                                                                const authId = page.props.auth?.user?.id;
+                                                                if (authId && parseInt(selectedConversation.owner_id) === parseInt(authId)) {
+                                                                    return (
+                                                                        <button
+                                                                            onClick={() => { try { if (emit) emit('GroupDelete.show', selectedConversation); } catch(e){} }}
+                                                                            className="text-sm text-white bg-red-600 hover:bg-red-700 px-2 py-1 rounded-md"
+                                                                            title="Eliminar grupo"
+                                                                        >
+                                                                            <TrashIcon className="w-4 h-4" />
+                                                                        </button>
+                                                                    );
+                                                                }
+                                                            } catch (e) { }
+                                                            return null;
+                                                        })()
+                                                    )}
                                                 </div>
                                             </div>
 

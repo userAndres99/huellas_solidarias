@@ -26,7 +26,7 @@ export default function NewUserModal({ show = false, onClose = () => { } }) {
 
         post(route("user.name"), {
             onSuccess: () => {
-                emit("toast.show", `User "${data.name}" was created`);
+                emit("toast.show", `Se creó el usuario: ${data.name}`);
                 closeModal();
             },
         });

@@ -14,6 +14,7 @@ import ChatWidget from '@/Components/ChatWidget';
 import PrimaryButton from '@/Components/PrimaryButton';
 import { UserPlusIcon } from '@heroicons/react/24/solid';
 import NewUserModal from '@/Components/App/NewUserModal';
+import ConfirmDeleteGroup from '@/Components/App/ConfirmDeleteGroup';
 
 export default function AuthenticatedLayout({ header, children }) {
     // obtener user 
@@ -92,6 +93,12 @@ export default function AuthenticatedLayout({ header, children }) {
                             if (e?.moderated && deletedMessage && deletedMessage.sender_id && parseInt(deletedMessage.sender_id) === parseInt(user.id)) {
                                 if (emit) emit('toast.show', 'Por favor, evita enviar mensajes inapropiados en la web. Tu mensaje ha sido eliminado por moderación.');
                             }
+                        } catch (err) {}
+                    })
+                    .listen('GroupDeleted', (e) => {
+                        try {
+                            console.debug('[AuthenticatedLayout] GroupDeleted (user channel)', e);
+                            emit('group.deleted', { id: e.id, name: e.name });
                         } catch (err) {}
                     })
                     .error((err) => {
@@ -617,6 +624,7 @@ export default function AuthenticatedLayout({ header, children }) {
             <Toast/>
             <NewMessageNotification/>
             {user && <ChatWidget />}
+            <ConfirmDeleteGroup />
             <NewUserModal show={showNewUserModal} onClose={(ev) => setShowNewUserModal(false)} />
 
         </>

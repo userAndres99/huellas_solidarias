@@ -499,7 +499,7 @@ const ChatLayouts = ({ children }) => {
                     <div className="p-3">
                         <TextInput
                             onKeyUp={onSearch}
-                            placeholder="Filter users and group"
+                            placeholder="Filtrar usuarios y grupos"
                             className="w-full"
                         />
                     </div>

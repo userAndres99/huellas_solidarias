@@ -18,9 +18,9 @@ class GroupDeleted implements ShouldBroadcastNow
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
     /**
-     * Create a new event instance.
+     * Crea una nueva instancia del evento.
      */
-    public function __construct(public int $id, public string $name)
+    public function __construct(public int $id, public string $name, public array $userIds = [])
     {
         //
     }
@@ -28,14 +28,31 @@ class GroupDeleted implements ShouldBroadcastNow
   
 
     /**
-     * Get the channels the event should broadcast on.
+     * Obtiene los canales en los que se debe transmitir el evento.
      *
      * @return array<int, \Illuminate\Broadcasting\Channel>
      */
     public function broadcastOn(): array
     {
+        $channels = [new PrivateChannel('group.deleted.' . $this->id)];
+
+        try {
+            foreach ($this->userIds as $uid) {
+                $channels[] = new PrivateChannel("App.Models.User.{$uid}");
+            }
+        } catch (\Throwable $e) {
+            
+        }
+
+        return $channels;
+    }
+
+    public function broadcastWith(): array
+    {
         return [
-            new PrivateChannel('group.deleted.' . $this->id),
+            'id' => $this->id,
+            'name' => $this->name,
+            'user_ids' => $this->userIds,
         ];
     }
 }

@@ -7,10 +7,17 @@ export default function Toast({}){
     const { on } = useEventBus();
 
     useEffect(() => {
-        on('toast.show', (message) => {
+        const off = on('toast.show', (message) => {
             const uuid = uuidv4();
 
-            setToasts((oldToasts) => [...oldToasts, {message, uuid}]);
+            setToasts((oldToasts) => {
+                try {
+                    // evitar toasts duplicados en ráfaga (mismo texto)
+                    const exists = oldToasts.some((t) => (t.message || '') === (message || ''));
+                    if (exists) return oldToasts;
+                } catch (e) {}
+                return [...oldToasts, {message, uuid}];
+            });
 
             setTimeout(() => {
                 setToasts((oldToasts) => 
@@ -18,19 +25,23 @@ export default function Toast({}){
                 );
             }, 5000);
         });
+
+        return () => { try { off(); } catch (e) {} };
     }, [on]);
 
     
     return(
-        <div className="toast min-w-[280px] w-full xs:w-auto">
-            {toasts.map((toast, index)=>(
-                <div
-                    key={toast.uuid}
-                    className="alert alert-success py-3 px-4 text-gray-100 rounded-md"
-                >
-                    <span>{toast.message}</span>
-                </div>
-            ))}
+        <div className="fixed top-4 left-0 right-0 flex justify-center pointer-events-none z-[9999]">
+            <div className="toast min-w-[280px] w-full xs:w-auto pointer-events-auto">
+                {toasts.map((toast, index)=>(
+                    <div
+                        key={toast.uuid}
+                        className="alert alert-success py-3 px-4 text-gray-100 rounded-md"
+                    >
+                        <span>{toast.message}</span>
+                    </div>
+                ))}
+            </div>
         </div>
     )
 }

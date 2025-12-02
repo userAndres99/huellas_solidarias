@@ -1,4 +1,5 @@
 import React from 'react';
+import LoadingImagenes from '@/Components/LoadingImagenes';
 
 const UserAvatar = ({ user, online = null, profile = false}) => {
 
@@ -39,7 +40,14 @@ const UserAvatar = ({ user, online = null, profile = false}) => {
             {avatarUrl ? (
                 <div className={`avatar ${onlineClass}`}>
                     <div className={`rounded-full overflow-hidden ${sizeClass}`}>
-                        <img src={avatarUrl} alt={displayName || 'avatar'} className="w-full h-full object-cover rounded-full" />
+                        <LoadingImagenes
+                            src={avatarUrl}
+                            alt={displayName || 'avatar'}
+                            imgClass={`w-full h-full object-cover rounded-full`}
+                            wrapperClass={"w-full h-full"}
+                            avatar={true}
+                            fallback={(typeof window !== 'undefined' && window.location ? `${window.location.origin}/images/DefaultPerfil.jpg` : '/images/DefaultPerfil.jpg')}
+                        />
                     </div>
                 </div>
             ) : (

@@ -27,6 +27,9 @@ class DeleteGroupJob implements ShouldQueue
         $id = $this->group->id;
         $name =  $this->group->name;
 
+        // recolectar los ids de usuarios antes de quitar relaciones
+        $userIds = $this->group->users->pluck('id')->toArray();
+
         $this->group->last_message_id = null;
         $this->group->save();
 
@@ -41,6 +44,6 @@ class DeleteGroupJob implements ShouldQueue
         $this->group->delete();
 
 
-        GroupDeleted::dispatch($id, $name);
+        GroupDeleted::dispatch($id, $name, $userIds);
     }
 }

@@ -21,7 +21,12 @@ class GroupCreated implements ShouldBroadcastNow
     public function broadcastOn(): array
     {
         // Emitimos a todos los usuarios que pertenecen al grupo
-        return $this->group->users->map(fn($user) => new PrivateChannel("group.created.{$user->id}"))->toArray();
+        return $this->group->users->flatMap(function($user) {
+            return [
+                new PrivateChannel("group.created.{$user->id}"),
+                new PrivateChannel("App.Models.User.{$user->id}"),
+            ];
+        })->toArray();
     }
 
     public function broadcastWith(): array
@@ -31,6 +36,8 @@ class GroupCreated implements ShouldBroadcastNow
                 'id' => $this->group->id,
                 'name' => $this->group->name,
                 'user_ids' => $this->group->users->pluck('id'),
+                'owner_id' => $this->group->owner_id,
+                'users' => $this->group->users->map(fn($u) => ['id' => $u->id, 'name' => $u->name]),
             ],
         ];
     }
