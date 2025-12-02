@@ -82,8 +82,16 @@ class Conversation extends Model
             return !in_array($conv['id'], $hiddenIds);
         })->values();
 
-        $groupMapped = $groups->map(function (Group $group) {
-            return $group->toConversationArray();
+        $groupMapped = $groups->map(function (Group $group) use ($user) {
+            $arr = $group->toConversationArray();
+            try {
+                if (isset($group->last_message_sender_id) && $group->last_message_sender_id == $user->id) {
+                    $arr['last_message'] = 'Yo: ' . ($arr['last_message'] ?? '');
+                }
+            } catch (\Throwable $e) {
+                
+            }
+            return $arr;
         });
 
         return $mapped->concat($groupMapped);

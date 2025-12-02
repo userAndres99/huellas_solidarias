@@ -50,7 +50,7 @@ public static function getGroupsForUser(User $user)
          * El texto del último mensaje del grupo (messages.message)
          * la fecha en la que se envió ese mensaje (messages.created_at)
          */
-        $query = self::select(['groups.*', 'messages.message as last_message', 'messages.created_at as last_message_date'])
+        $query = self::select(['groups.*', 'messages.message as last_message', 'messages.created_at as last_message_date', 'messages.sender_id as last_message_sender_id'])
         // La tabla group_users es la tabla intermedia que indic qué usuarios pertenecen a qué grupos.
         ->join('group_users', 'group_users.group_id', '=', 'groups.id')
         /**
@@ -87,6 +87,7 @@ public static function getGroupsForUser(User $user)
             'updated_at' => $this->updated_at,
             'last_message' => $this->last_message,
             'last_message_date' => $this->last_message_date,
+            'last_message_sender_id' => $this->last_message_sender_id ?? null,
 
         ];
     }
