@@ -48,11 +48,15 @@ const MessageInput = ({ conversation = null, onFocus = null, onBlur = null, isMo
             setTimeout(() => setInputErrorMessage(""), 3000);
             return;
         }
+        // Capturar el texto actual y limpiar el input inmediatamente para mejor UX.
+        const messageText = newMessage;
+        setNewMessage("");
+
         const formData = new FormData();
         chosenFiles.forEach((f) => {
             if (f && f.file) formData.append("attachments[]", f.file);
         });
-        formData.append("message", newMessage);
+        formData.append("message", messageText);
         // determina receiver_id o group_id segun el tipo de conversacion
         const receiverId = conversation?.id || conversation?.with_user_id || conversation?.user_id || null;
         const groupId = conversation?.id || conversation?.conversation_id || null;
@@ -134,7 +138,7 @@ const MessageInput = ({ conversation = null, onFocus = null, onBlur = null, isMo
                                 name,
                                 avatar,
                                 avatar_url: avatar || (conversation && (conversation.avatar_url || conversation.profile_photo_url)) || null,
-                                last_message: created?.message || (newMessage || ''),
+                                last_message: created?.message || (messageText || ''),
                                 last_message_date: created?.created_at || null,
                                 conversation_id: created?.conversation_id || conversation?.conversation_id || null,
                             };
@@ -143,7 +147,7 @@ const MessageInput = ({ conversation = null, onFocus = null, onBlur = null, isMo
                     } catch (e) {}
                 }
             } catch (e) {}
-            setNewMessage("");
+            // limpiar attachments e input ya fueron manejados antes; asegurar reset de progreso
             setChosenFiles([]);
             setUploadProgress(0);
         } catch (err) {
@@ -158,6 +162,8 @@ const MessageInput = ({ conversation = null, onFocus = null, onBlur = null, isMo
             }
             // registrar error 
             try { console.error('Message send error', err); } catch (e) {}
+            // Restaurar el texto en caso de error para que el usuario no lo pierda
+            setNewMessage(messageText);
         } finally {
             setMessageSending(false);
         }

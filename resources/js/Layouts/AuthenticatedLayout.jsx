@@ -85,6 +85,14 @@ export default function AuthenticatedLayout({ header, children }) {
                         const deletedMessage = e.deletedMessage || e.deleted_message || null;
                         const prevMessage = e.prevMessage || e.prev_message || null;
                         emit('message.deleted', { deletedMessage, prevMessage });
+
+                        // Si el borrado fue por moderación y el current user es el remitente,
+                        // mostrar un aviso 
+                        try {
+                            if (e?.moderated && deletedMessage && deletedMessage.sender_id && parseInt(deletedMessage.sender_id) === parseInt(user.id)) {
+                                if (emit) emit('toast.show', 'Por favor, evita enviar mensajes inapropiados en la web. Tu mensaje ha sido eliminado por moderación.');
+                            }
+                        } catch (err) {}
                     })
                     .error((err) => {
                         // ignore

@@ -30,12 +30,22 @@ class SocketMessageDeleted implements ShouldBroadcastNow
         $channels = [];
         if (! $p) return $channels;
 
+        // Siempre notificar al canal correspondiente (grupo o conversación entre usuarios)
         if (! empty($p['group_id'])) {
             $channels[] = new PrivateChannel('message.group.' . $p['group_id']);
         } else {
             $channels[] = new PrivateChannel(
                 'message.user.' . collect([$p['sender_id'], $p['receiver_id']])->sort()->implode('-')
             );
+        }
+
+        // Notificar al canal por usuario si es posible
+        try {
+            if (! empty($this->payload['moderated']) && ! empty($p['sender_id'])) {
+                $channels[] = new PrivateChannel('App.Models.User.' . $p['sender_id']);
+            }
+        } catch (\Throwable $e) {
+            // noop
         }
 
         return $channels;
