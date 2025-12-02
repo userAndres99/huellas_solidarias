@@ -120,7 +120,11 @@ export default function DonationModal({ open, onClose, organizacion, userEmail =
         <form onSubmit={handleSubmit} className="space-y-3">
           <div>
             <label className="text-sm">Monto (ARS)</label>
-            <input type="number" min="1" required value={monto} onChange={e => setMonto(e.target.value)} className="w-full border p-2 rounded" />
+            <div className="mt-1 flex items-center gap-3">
+              <img src="/images/mercadopagologo.png" alt="Mercado Pago" className="h-6 w-auto" />
+              <input type="number" min="1" required value={monto} onChange={e => setMonto(e.target.value)} className="flex-1 border p-2 rounded" />
+            </div>
+            <p className="text-xs text-gray-600 mt-2">El pago se realiza mediante Mercado Pago. La web retiene una comisión del 5% sobre lo donado.</p>
           </div>
           {requireEmail && !userEmail && (
             <div>
@@ -133,7 +137,7 @@ export default function DonationModal({ open, onClose, organizacion, userEmail =
           )}
           <div className="flex items-center gap-2 justify-end">
             <button type="button" onClick={() => onClose && onClose(false)} className="px-3 py-1.5 bg-gray-200 rounded">Cancelar</button>
-            <button type="submit" disabled={loading} className="px-3 py-1.5 bg-[var(--color-primary)] text-white rounded">{loading ? 'Procesando…' : 'Donar'}</button>
+            <button type="submit" disabled={loading} className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded">{loading ? 'Procesando…' : 'Donar'}</button>
           </div>
         </form>
       </div>

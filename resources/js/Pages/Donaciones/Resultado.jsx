@@ -12,6 +12,31 @@ export default function Resultado() {
   const isSuccess = status === 'success' || query.collection_status === 'approved' || query.status === 'approved';
   const [showRaw, setShowRaw] = useState(false);
 
+  const mapStatus = (s) => {
+    const st = (s || '').toString().toLowerCase();
+    if (!st || st === 'unknown' || st === 'null') return 'Desconocido';
+    if (st === 'approved' || st === 'success') return 'Aprobada';
+    if (st === 'pending') return 'Pendiente';
+    if (st === 'in_process') return 'En proceso';
+    if (st === 'rejected' || st === 'failure') return 'Rechazada';
+    if (st === 'cancelled' || st === 'canceled') return 'Cancelada';
+    return s;
+  };
+
+  const mapPaymentType = (t) => {
+    const tt = (t || '').toString().toLowerCase();
+    if (!tt) return t;
+    if (tt === 'credit_card') return 'Tarjeta de crédito';
+    if (tt === 'debit_card') return 'Tarjeta de débito';
+    if (tt === 'account_money') return 'Saldo de Mercado Pago';
+    if (tt === 'pix') return 'PIX';
+    if (tt === 'bank_transfer') return 'Transferencia bancaria';
+    if (tt === 'atm' || tt === 'ticket' || tt === 'ticket_voucher') return 'Pago en efectivo / cupón';
+    return t;
+  };
+
+  const displayStatus = mapStatus(query.collection_status || query.status || status);
+
   return (
     <>
       <Head title="Resultado de donación" />
@@ -19,7 +44,7 @@ export default function Resultado() {
       <div className="max-w-3xl mx-auto p-6 card-surface min-h-full flex flex-col justify-center pt-8">
         <div className="flex flex-col items-center text-center">
           <h1 className="text-2xl font-bold mb-4">{isSuccess ? '¡Gracias por tu donación!' : 'Estado de la donación'}</h1>
-          <p className="mb-4">Estado: <strong>{status}</strong></p>
+          <p className="mb-4">Estado: <strong>{displayStatus}</strong></p>
 
           {isSuccess ? (
             <div className="mb-4 text-green-700">
@@ -39,11 +64,11 @@ export default function Resultado() {
           <div className="w-full text-left bg-gray-50 border rounded p-3 mb-4">
             <h3 className="font-medium mb-2">Resumen de la transacción</h3>
             <ul className="text-sm space-y-1 mb-2">
-              <li><strong>Estado:</strong> {status}</li>
+              <li><strong>Estado:</strong> {displayStatus}</li>
               {query.collection_id && <li><strong>ID de colección:</strong> {query.collection_id}</li>}
               {(query.payment_id || query.collection_id) && <li><strong>ID de pago:</strong> {query.payment_id || query.collection_id}</li>}
-              {query.payment_type && <li><strong>Tipo de pago:</strong> {query.payment_type}</li>}
-              {query.preference_id && <li><strong>Preference ID:</strong> {query.preference_id}</li>}
+              {query.payment_type && <li><strong>Tipo de pago:</strong> {mapPaymentType(query.payment_type)}</li>}
+              {query.preference_id && <li><strong>ID de preferencia:</strong> {query.preference_id}</li>}
               {query.site_id && <li><strong>Sitio:</strong> {query.site_id}</li>}
               {donacion && (
                 <>

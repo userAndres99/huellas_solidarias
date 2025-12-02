@@ -50,10 +50,10 @@ export default function TarjetaPublicacion({ publicacion, showEdit = true, onRem
 
       <div className="p-4 pb-4 sm:pb-20 space-y-3 flex-1 flex flex-col">
         <div className="flex items-center gap-3">
-          <span className="text-sm text-slate-600">{formatDate(p.fechaPublicacion)}</span>
+          <span className="text-sm font-semibold text-slate-800">{formatDate(p.fechaPublicacion)}</span>
         </div>
 
-        <p className="mt-2 text-sm text-slate-800 line-clamp-3">{p.descripcion}</p>
+        <p className="mt-2 text-sm text-slate-600 line-clamp-3">{p.descripcion}</p>
         
         {/* Footer*/}
         <div className="sm:hidden mt-auto border-t pt-3">

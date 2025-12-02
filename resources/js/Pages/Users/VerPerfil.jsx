@@ -3,6 +3,7 @@ import { useEventBus } from '@/EvenBus';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { useState } from 'react';
 import DonationModal from '@/Components/DonationModal';
+import TarjetaPublicaciones from '@/Components/TarjetaPublicaciones';
 
 export default function VerPerfil(props){
     const page = usePage();
@@ -72,23 +73,26 @@ export default function VerPerfil(props){
                                         const conv = { is_user: true, is_group: false, id: usuario.id, name: usuario.name, avatar: usuario.profile_photo_url };
                                         emit('chat.openConversation', conv);
                                     }}
-                                    className="inline-flex items-center rounded-md bg-[var(--color-primary)] px-4 py-2 text-sm font-medium text-white"
+                                    className="inline-flex items-center rounded-md bg-blue-600 hover:bg-blue-700 px-4 py-2 text-sm font-medium text-white"
                                 >Enviar mensaje</button>
 
                         <button onClick={toggleFollow}
-                            className={`inline-flex items-center rounded-md px-4 py-2 text-sm font-medium ${following ? 'bg-gray-200 text-slate-800' : 'bg-[var(--color-primary)] text-white'}`}>
+                            className={`inline-flex items-center rounded-md px-4 py-2 text-sm font-medium ${following ? 'bg-red-600 hover:bg-red-700 text-white' : 'bg-blue-600 hover:bg-blue-700 text-white'}`}>
                             {following ? 'Dejar de seguir' : 'Seguir'}
                         </button>
 
                         {usuario?.organizacion && (usuario.organizacion.mp_user_id || usuario.organizacion.mp_cuenta?.mp_user_id) ? (
-                            <button onClick={() => { setDonationTarget({ id: usuario.organizacion.id, nombre: usuario.organizacion.nombre }); setDonationModalOpen(true); }} className="inline-flex items-center rounded-md px-4 py-2 text-sm font-medium bg-yellow-500 text-white">Donar</button>
+                            <button onClick={() => { setDonationTarget({ id: usuario.organizacion.id, nombre: usuario.organizacion.nombre }); setDonationModalOpen(true); }} className="inline-flex items-center rounded-md bg-blue-600 hover:bg-blue-700 px-4 py-2 text-sm font-medium text-white">
+                                <img src="/images/mercadopagologo.png" alt="Mercado Pago" className="h-4 w-auto mr-2 object-contain" />
+                                Donar
+                            </button>
                         ) : null}
 
                         <div className="text-sm text-gray-600">{followersCount} seguidores</div>
                     </>
                 )}
                 {isSelf && (
-                    <Link href={route('profile.edit')} className="inline-flex items-center rounded-md border px-4 py-2 text-sm">Editar perfil</Link>
+                    <Link href={route('profile.edit')} className="inline-flex items-center rounded-md bg-blue-600 hover:bg-blue-700 px-4 py-2 text-sm font-medium text-white">Editar perfil</Link>
                 )}
             </div>
 
@@ -107,16 +111,9 @@ export default function VerPerfil(props){
             <div className="mt-8">
                 <h2 className="text-lg font-semibold">Publicaciones</h2>
                 {usuario.casos && usuario.casos.length > 0 ? (
-                    <div className="mt-4 grid grid-cols-1 gap-4">
+                    <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                         {usuario.casos.map((caso) => (
-                            <Link key={caso.id} href={route('casos.show', caso.id)} className="flex items-center gap-4 rounded-md border p-3 hover:shadow">
-                                <img src={caso.foto_url || caso.fotoAnimal || '/images/default-caso.jpg'} alt="foto" className="h-20 w-28 rounded object-cover" />
-                                <div className="flex-1">
-                                    <div className="text-sm font-medium text-slate-800">{caso.tipoAnimal ?? 'Caso'}</div>
-                                    <div className="text-xs text-gray-500 truncate">{caso.descripcion}</div>
-                                    <div className="text-xs text-gray-400 mt-1">{caso.ciudad ? caso.ciudad + ' · ' : ''}{caso.fechaPublicacion ? new Date(caso.fechaPublicacion).toLocaleString() : ''}</div>
-                                </div>
-                            </Link>
+                            <TarjetaPublicaciones key={caso.id} caso={caso} />
                         ))}
                     </div>
                 ) : (

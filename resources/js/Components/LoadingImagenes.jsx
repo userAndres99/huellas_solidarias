@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 /**
  * LoadingImagenes
  */
-export default function LoadingImagenes({ src, alt = '', imgClass = '', wrapperClass = '', placeholderText = 'Cargando imagen...', onLoad = null, avatar = false, fallback = null, forceLoading = false, ...rest }) {
+export default function LoadingImagenes({ src, alt = '', imgClass = '', wrapperClass = '', placeholderText = 'Cargando imagen...', onLoad = null, avatar = false, fallback = null, forceLoading = false, overlay = true, ...rest }) {
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
@@ -35,16 +35,47 @@ export default function LoadingImagenes({ src, alt = '', imgClass = '', wrapperC
   return (
     <div className={wrapperClass + ' relative overflow-hidden'}>
       
-      {!avatar && src && (
-        <div
-          aria-hidden
-          className="absolute inset-0 bg-center bg-cover blur-lg scale-105"
-          style={{ backgroundImage: `url(${src})` }}
-        />
-      )}
+      {(() => {
+        try {
+          // try para ver si es URL absoluta
+        } catch (e) {}
+        return null;
+      })()}
+      
+      {!avatar && src && (() => {
+        let finalSrc = src;
+        try {
+          if (typeof finalSrc === 'string') {
+            const s = finalSrc.trim();
+            if (/^https?:\/\//i.test(s) || /^\/\//.test(s)) {
+              finalSrc = s;
+            } else if (s.startsWith('/')) {
+              finalSrc = s;
+            } else if (s.startsWith('storage/')) {
+              finalSrc = '/' + s;
+            } else if (s.startsWith('foto_animales/') || s.startsWith('usuarios/foto_animales/') || s.startsWith('uploads/') || s.startsWith('images/')) {
+              finalSrc = '/storage/' + s;
+            } else if (s.indexOf('/') !== -1) {
+              finalSrc = '/' + s;
+            } else {
+              finalSrc = '/storage/foto_animales/' + s;
+            }
+          }
+        } catch (e) {
+          finalSrc = src;
+        }
+
+        return (
+          <div
+            aria-hidden
+            className="absolute inset-0 bg-center bg-cover blur-lg scale-105"
+            style={{ backgroundImage: `url(${finalSrc})` }}
+          />
+        );
+      })()}
 
       
-      {!avatar && src && (
+      {!avatar && src && overlay && (
         <div aria-hidden className="absolute inset-0 bg-gray-800/30" />
       )}
       {!loaded && (
@@ -68,9 +99,32 @@ export default function LoadingImagenes({ src, alt = '', imgClass = '', wrapperC
         )
       )}
 
-      {!forceLoading && (
-        <img
-          src={src}
+      {!forceLoading && (() => {
+        let finalSrc = src;
+        try {
+          if (typeof finalSrc === 'string') {
+            const s = finalSrc.trim();
+            if (/^https?:\/\//i.test(s) || /^\/\//.test(s)) {
+              finalSrc = s;
+            } else if (s.startsWith('/')) {
+              finalSrc = s;
+            } else if (s.startsWith('storage/')) {
+              finalSrc = '/' + s;
+            } else if (s.startsWith('foto_animales/') || s.startsWith('usuarios/foto_animales/') || s.startsWith('uploads/') || s.startsWith('images/')) {
+              finalSrc = '/storage/' + s;
+            } else if (s.indexOf('/') !== -1) {
+              finalSrc = '/' + s;
+            } else {
+              finalSrc = '/storage/foto_animales/' + s;
+            }
+          }
+        } catch (e) {
+          finalSrc = src;
+        }
+
+        return (
+          <img
+            src={finalSrc}
           alt={alt}
           className={`${imgClass} transition-opacity duration-300 ${loaded ? 'opacity-100' : 'opacity-0'} relative z-20`}
           onLoad={async (e) => {
@@ -101,8 +155,9 @@ export default function LoadingImagenes({ src, alt = '', imgClass = '', wrapperC
             if (typeof onLoad === 'function') onLoad(e);
           }}
           {...rest}
-        />
-      )}
+          />
+        );
+      })()}
     </div>
   );
 }

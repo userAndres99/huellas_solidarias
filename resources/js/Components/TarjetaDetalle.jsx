@@ -29,14 +29,14 @@ export default function TarjetaDetalle({ caso }) {
 
       {/* Imagen de portada */}
       <div className="relative h-96 md:h-[520px] bg-gray-100">
-
         {caso.fotoAnimal ? (
           <LoadingImagenes
             src={caso.fotoAnimal}
             alt={caso.tipoAnimal || 'Foto'}
             wrapperClass="w-full h-full"
-            imgClass="object-cover w-full h-full"
+            imgClass="object-contain object-center w-full h-full"
             placeholderText={null}
+            overlay={false}
           />
         ) : (
           <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-50 flex items-center justify-center text-gray-500">
@@ -44,36 +44,9 @@ export default function TarjetaDetalle({ caso }) {
           </div>
         )}
 
-        <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-transparent" />
-
         {usuario && (
           <Usuario usuario={usuario} caso={caso} userPhoto={userPhoto} userName={userName} />
         )}
-
-        {/* Título y ciudad */}
-        <div className="absolute left-6 bottom-20 text-white">
-          <h1 className="text-2xl md:text-3xl font-bold drop-shadow">
-            {caso.tipoAnimal || 'Animal'}
-          </h1>
-          <p className="text-sm md:text-base mt-1 drop-shadow flex items-center gap-1">
-            {caso.ciudad && (
-              <>
-                <FiMapPin className="text-white/90" />
-                {caso.ciudad} ·
-              </>
-            )}
-            {new Date(caso.fechaPublicacion || caso.created_at).toLocaleString()}
-          </p>
-        </div>
-
-        {/* Badges */}
-        <div className="absolute right-6 top-6 flex items-center gap-2">
-          <EstadoBadge situacion={caso.situacion} />
-
-          <span className="px-3 py-1 bg-white/90 rounded-full text-sm text-gray-800 flex items-center gap-1">
-            <FiMapPin className="text-emerald-600" /> {caso.tipoAnimal || 'Animal'}
-          </span>
-        </div>
       </div>
 
       {/* Contenido */}

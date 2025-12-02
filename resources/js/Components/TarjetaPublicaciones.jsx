@@ -19,12 +19,13 @@ export default function TarjetaPublicaciones({ caso }) {
   const usuario = caso.usuario || caso.user || null;
   const userName = usuario?.name ?? 'Anónimo';
   const userPhoto = usuario?.profile_photo_url ?? null;
+  const fotoSrc = caso.fotoAnimal || caso.foto_url || caso.foto || caso.fotoUrl || null;
 
   return (
     <article key={caso.id} className="card-surface-alt rounded-xl overflow-hidden fade-in card-hover relative flex flex-col h-full">
       <div className="relative h-56 md:h-48 lg:h-56">
-        {caso.fotoAnimal ? (
-          <LoadingImagenes src={caso.fotoAnimal} alt={caso.tipoAnimal || 'Foto'} wrapperClass="h-full w-full" imgClass="object-contain object-center w-full h-full" placeholderText={null} />
+        {fotoSrc ? (
+          <LoadingImagenes src={fotoSrc} alt={caso.tipoAnimal || 'Foto'} wrapperClass="h-full w-full" imgClass="object-contain object-center w-full h-full" placeholderText={null} />
         ) : (
           <div className="h-full w-full bg-[rgba(2,132,199,0.06)] flex items-center justify-center text-slate-500">Sin imagen</div>
         )}
@@ -40,14 +41,14 @@ export default function TarjetaPublicaciones({ caso }) {
 
       <div className="p-4 flex-1 flex flex-col">
         <div className="flex items-center gap-3">
-          <p className="text-sm text-slate-600">
+          <p className="text-sm font-semibold text-slate-800">
             {new Date(caso.fechaPublicacion || caso.created_at).toLocaleDateString()}
             {caso.ciudad ? (
-              <span className="text-sm text-slate-500"> · {caso.ciudad}</span>
+              <span className="text-sm font-semibold text-slate-700"> · {caso.ciudad}</span>
             ) : null}
           </p>
         </div>
-        <h3 className="text-lg font-bold text-slate-900 line-clamp-3">{caso.descripcion}</h3>
+        <h3 className="text-base text-slate-600 line-clamp-3">{caso.descripcion}</h3>
 
         <div className="flex items-center justify-between mt-auto">
           <div className="flex items-center gap-3">
