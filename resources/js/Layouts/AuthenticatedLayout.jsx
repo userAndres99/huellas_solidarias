@@ -195,6 +195,20 @@ export default function AuthenticatedLayout({ header, children }) {
         };
     }, [conversations]);
 
+
+    useEffect(() => {
+    if (!user) return;
+
+    Echo.private(`group.created.${user.id}`)
+        .listen("GroupCreated", (e) => {
+            emit("group.created", e.group); // disparar evento local
+        })
+        .error((err) => console.log(err));
+
+    return () => Echo.leave(`group.created.${user.id}`);
+}, [user]);
+
+
     return (
         <>
             <div className="min-h-screen bg-[var(--color-bg)] flex flex-col">

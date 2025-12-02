@@ -14,7 +14,7 @@ const ChatLayouts = ({ children }) => {
     const users = page.props.users;
 
     const selectedConversationRef = useRef(selectedConversation);
-    
+
     const tombstonedConversationsRef = useRef(new Map());
     // evitar recargas repetidas para la misma conversación cuando falta avatar
     const pendingConvReloads = useRef(new Set());
@@ -49,7 +49,7 @@ const ChatLayouts = ({ children }) => {
                     console.debug('[ChatLayout] Skipping message.created because id is recently deleted', message.id);
                     return;
                 }
-            } catch (e) {}
+            } catch (e) { }
             const createdAt = message?.created_at ? Date.parse(message.created_at) : null;
             const keysToCheck = [];
             if (message?.group_id) keysToCheck.push(`g_${message.group_id}`);
@@ -72,7 +72,7 @@ const ChatLayouts = ({ children }) => {
                     }
                 }
             }
-        } catch (e) {}
+        } catch (e) { }
 
         setLocalConversations((oldUsers) =>
             oldUsers.map((u) => {
@@ -145,33 +145,33 @@ const ChatLayouts = ({ children }) => {
                         if (existsServer) return;
 
                         setLocalConversations((prev) => {
-                            const existingLocal = (prev || []).find((c) => !c.is_group && parseInt(c.id) === parseInt(senderId));
+                            const existingLocal = (prev || []).find((c) => parseInt(c.id) === parseInt(senderId));
                             if (existingLocal) return prev;
-                                const defaultAvatar = (typeof window !== 'undefined' && window.location ? `${window.location.origin}/images/DefaultPerfil.jpg` : '/images/DefaultPerfil.jpg');
-                                const convObj = {
-                                    is_user: true,
-                                    is_group: false,
-                                    id: senderId,
-                                    name,
-                                    avatar: avatar || defaultAvatar,
-                                    avatar_url: avatar || defaultAvatar,
-                                    last_message: message.message || '',
-                                    last_message_date: message.created_at || null,
-                                    conversation_id: message.conversation_id || null,
-                                    with_user_id: senderId,
-                                };
+                            const defaultAvatar = (typeof window !== 'undefined' && window.location ? `${window.location.origin}/images/DefaultPerfil.jpg` : '/images/DefaultPerfil.jpg');
+                            const convObj = {
+                                is_user: true,
+                                is_group: false,
+                                id: senderId,
+                                name,
+                                avatar: avatar || defaultAvatar,
+                                avatar_url: avatar || defaultAvatar,
+                                last_message: message.message || '',
+                                last_message_date: message.created_at || null,
+                                conversation_id: message.conversation_id || null,
+                                with_user_id: senderId,
+                            };
                             return [convObj, ...(prev || [])];
                         });
 
                         try {
-                                const createdAvatar = sender.avatar || sender.avatar_url || sender.profile_photo_url || null;
-                            const serverHasAvatar = (page.props.conversations || []).some((c) => !c.is_group && parseInt(c.id) === parseInt(senderId) && (c.avatar || c.avatar_url || c.profile_photo_url));
+                            const createdAvatar = sender.avatar || sender.avatar_url || sender.profile_photo_url || null;
+                            const serverHasAvatar = (page.props.conversations || []).some((c) => parseInt(c.id) === parseInt(senderId) && (c.avatar || c.avatar_url || c.profile_photo_url));
                             if (!createdAvatar && !serverHasAvatar && !pendingConvReloads.current.has(senderId)) {
                                 pendingConvReloads.current.add(senderId);
-                                try { router.reload({ only: ['conversations'] }); } catch (e) {}
+                                try { router.reload({ only: ['conversations'] }); } catch (e) { }
                                 setTimeout(() => pendingConvReloads.current.delete(senderId), 10000);
                             }
-                        } catch (e) {}
+                        } catch (e) { }
                     }
 
                     if (sentByMe) {
@@ -179,10 +179,10 @@ const ChatLayouts = ({ children }) => {
                         if (!receiverId) return;
                         const receiver = message.receiver || {};
                         const createdAvatar = receiver.avatar || receiver.avatar_url || receiver.profile_photo_url || null;
-                        const serverHasAvatar = (page.props.conversations || []).some((c) => !c.is_group && parseInt(c.id) === parseInt(receiverId) && (c.avatar || c.avatar_url || c.profile_photo_url));
+                        const serverHasAvatar = (page.props.conversations || []).some((c) => parseInt(c.id) === parseInt(receiverId) && (c.avatar || c.avatar_url || c.profile_photo_url));
 
                         setLocalConversations((prev) => {
-                            const existingLocal = (prev || []).find((c) => !c.is_group && parseInt(c.id) === parseInt(receiverId));
+                            const existingLocal = (prev || []).find((c) => parseInt(c.id) === parseInt(receiverId));
                             if (existingLocal) return prev;
                             const name = (receiver && (receiver.name || receiver.display_name)) || `Usuario ${receiverId}`;
                             const avatar = createdAvatar || null;
@@ -205,15 +205,15 @@ const ChatLayouts = ({ children }) => {
                         try {
                             if (!createdAvatar && !serverHasAvatar && !pendingConvReloads.current.has(receiverId)) {
                                 pendingConvReloads.current.add(receiverId);
-                                try { router.reload({ only: ['conversations'] }); } catch (e) {}
+                                try { router.reload({ only: ['conversations'] }); } catch (e) { }
                                 setTimeout(() => pendingConvReloads.current.delete(receiverId), 10000);
                             }
-                        } catch (e) {}
+                        } catch (e) { }
                     }
-                } catch (e) {}
+                } catch (e) { }
             });
         }
-    } catch (e) {}
+    } catch (e) { }
 
     const messageDeleted = (payload) => {
         const deletedMessage = payload.deletedMessage || payload.message || payload.deleted_message || null;
@@ -228,26 +228,18 @@ const ChatLayouts = ({ children }) => {
         if (convPayload) {
             try {
                 setLocalConversations((prev) => {
-                    const convId = parseInt(convPayload.id);
-                    const convIsGroup = !!convPayload.is_group;
-                    const filtered = (prev || []).filter((c) => {
-                        try {
-                            const cid = parseInt(c.id);
-                            const cisGroup = !!c.is_group;
-                            return !(cid === convId && cisGroup === convIsGroup);
-                        } catch (e) { return true; }
-                    });
-                    const existingLocal = (prev || []).find((c) => { try { return parseInt(c.id) === convId && (!!c.is_group) === convIsGroup; } catch (e) { return false; } });
+                    const filtered = (prev || []).filter((c) => parseInt(c.id) !== parseInt(convPayload.id));
+                    const existingLocal = (prev || []).find((c) => parseInt(c.id) === parseInt(convPayload.id));
                     const defaultAvatar = (typeof window !== 'undefined' && window.location ? `${window.location.origin}/images/DefaultPerfil.jpg` : '/images/DefaultPerfil.jpg');
                     const avatar = existingLocal?.avatar || existingLocal?.avatar_url || convPayload.avatar || convPayload.avatar_url || existingLocal?.profile_photo_url || defaultAvatar;
-                    const avatar_url = existingLocal?.avatar_url || existingLocal?.avatar || convPayload?.avatar_url || convPayload?.avatar || existingLocal?.profile_photo_url || defaultAvatar;
+                    const avatar_url = existingLocal?.avatar_url || existingLocal?.avatar || convPayload.avatar_url || convPayload.avatar || existingLocal?.profile_photo_url || defaultAvatar;
                     const merged = { ...convPayload, avatar, avatar_url };
                     return [merged, ...filtered];
                 });
                 // Forzar recarga parcial de Inertia para actualizar la prop `conversations` en otras partes de la UI
-                try { router.reload({ only: ['conversations'] }); } catch (e) {}
+                try { router.reload({ only: ['conversations'] }); } catch (e) { }
                 return;
-            } catch (e) {}
+            } catch (e) { }
         }
 
         setLocalConversations((oldUsers) =>
@@ -272,7 +264,7 @@ const ChatLayouts = ({ children }) => {
                 const normalizedLast = normalize(lastText);
                 const normalizedDeleted = normalize(deletedText);
 
-                const isDeletedTheLast = 
+                const isDeletedTheLast =
                     (lastDate && deletedDate && lastDate === deletedDate) ||
                     (normalizedLast && normalizedDeleted && normalizedLast === normalizedDeleted) ||
                     (normalizedLast && normalizedDeleted && normalizedLast.includes(normalizedDeleted));
@@ -309,34 +301,21 @@ const ChatLayouts = ({ children }) => {
                     }
                 }
 
-                // Si no hay mensaje previo, comportamientos distintos según si fue moderación
+                // Si no hay mensaje previo, mostramos un placeholder indicando eliminación
                 try {
                     const key = deletedMessage.group_id ? `g_${deletedMessage.group_id}` : `u_${deletedMessage.sender_id}_${deletedMessage.receiver_id}`;
                     const now = Date.now();
                     tombstonedConversationsRef.current.set(key, now);
                     setTimeout(() => tombstonedConversationsRef.current.delete(key), 20000);
                     console.debug('[ChatLayout] Tombstoned conversation', { key, at: now });
-                } catch (e) {}
+                } catch (e) { }
 
-                // Mostrar 'Mensaje borrado' solo si fue moderación (o si el backend envió un conversation payload).
-                if (payload?.moderated) {
-                    return {
-                        ...u,
-                        avatar: u.avatar || u.avatar_url || u.profile_photo_url || defaultAvatar,
-                        avatar_url: u.avatar_url || u.avatar || u.profile_photo_url || defaultAvatar,
-                        last_message: 'Mensaje borrado',
-                        last_message_date: deletedMessage.created_at || u.last_message_date,
-                    };
-                }
-
-                // Para borrados manuales (no moderados) preferimos no reemplazar el preview por 'Mensaje borrado'.
-                // En ausencia de un prevMessage dejamos el last_message vacio y limpiamos la fecha.
                 return {
                     ...u,
                     avatar: u.avatar || u.avatar_url || u.profile_photo_url || defaultAvatar,
                     avatar_url: u.avatar_url || u.avatar || u.profile_photo_url || defaultAvatar,
-                    last_message: '',
-                    last_message_date: null,
+                    last_message: 'Mensaje borrado',
+                    last_message_date: deletedMessage.created_at || u.last_message_date,
                 };
             })
         );
@@ -363,27 +342,13 @@ const ChatLayouts = ({ children }) => {
                         console.debug('[ChatLayout] Ignoring conversation.last_message due tombstone', { conv: conv.id, keys, createdAt });
                         return;
                     }
-                } catch (e) {}
+                } catch (e) { }
 
                 setLocalConversations((prev) => {
                     try {
-                        const convId = parseInt(conv.id);
-                        const convIsGroup = !!conv.is_group;
-                        const filtered = (prev || []).filter((c) => {
-                            try {
-                                const cid = parseInt(c.id);
-                                const cisGroup = !!c.is_group;
-                                return !(cid === convId && cisGroup === convIsGroup);
-                            } catch (e) {
-                                return true;
-                            }
-                        });
-                        const existingLocal = (prev || []).find((c) => {
-                            try { return parseInt(c.id) === convId && (!!c.is_group) === convIsGroup; } catch (e) { return false; }
-                        });
-                        const existingServer = (conversations || []).find((c) => {
-                            try { return parseInt(c.id) === convId && (!!c.is_group) === convIsGroup; } catch (e) { return false; }
-                        });
+                        const filtered = (prev || []).filter((c) => parseInt(c.id) !== parseInt(conv.id));
+                        const existingLocal = (prev || []).find((c) => parseInt(c.id) === parseInt(conv.id));
+                        const existingServer = (conversations || []).find((c) => parseInt(c.id) === parseInt(conv.id));
                         const defaultAvatar = (typeof window !== 'undefined' && window.location ? `${window.location.origin}/images/DefaultPerfil.jpg` : '/images/DefaultPerfil.jpg');
 
                         const avatarFromConv = conv.avatar || conv.avatar_url || conv.profile_photo_url || null;
@@ -401,7 +366,7 @@ const ChatLayouts = ({ children }) => {
                         return prev;
                     }
                 });
-            } catch (e) {}
+            } catch (e) { }
         });
 
         const offGroupDelete = on("group.deleted", ({ id, name }) => {
@@ -409,7 +374,7 @@ const ChatLayouts = ({ children }) => {
                 oldConversations.filter((con) => con.id != id)
             );
 
-            emit("toast.show", `Group "${name}" was deleted`);
+            emit("toast.show", `El Grupo "${name}" ha sido eliminado`);
 
             // Usamos el ref para acceder al selectedConversation actualizado
             const selConv = selectedConversationRef.current;
@@ -421,13 +386,35 @@ const ChatLayouts = ({ children }) => {
 
         const offStarChat = on("StartChat.show", () => setShowStartChatModal(true));
 
+
+        const offGroupCreated = on("group.created", (group) => {
+            setLocalConversations((prev) => {
+                const existing = prev.find((c) => c.id === group.id && c.is_group);
+                if (existing) return prev;
+
+                const newGroup = {
+                    ...group,
+                    is_group: true,
+                    last_message: null,        // <--- limpiar el last_message
+                    last_message_date: null,   // <--- limpiar la fecha
+                };
+
+                // Agregar al final del sidebar
+                return [...prev, newGroup];
+            });
+
+            emit("toast.show", `Se ha creado un nuevo grupo: ${group.name}`);
+        });
+
+
         return () => {
             offCreated();
             offDeleted();
             offModalShow();
-            try { offLastMessage(); } catch (e) {}
+            try { offLastMessage(); } catch (e) { }
             offGroupDelete();
             offStarChat();
+            offGroupCreated();
         };
     }, [on, emit]);
 
@@ -524,8 +511,8 @@ const ChatLayouts = ({ children }) => {
             <StartChatModal
                 show={showStartChatModal}
                 onClose={() => setShowStartChatModal(false)}
-                users = {users}
-            
+                users={users}
+
             />
         </>
     );
