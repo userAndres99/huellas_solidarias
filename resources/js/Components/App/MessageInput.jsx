@@ -11,6 +11,7 @@ import {
 import axios from "axios";
 import NewMessageInput from "./NewMessageInput";
 import { useEventBus } from '@/EvenBus';
+import { usePage } from '@inertiajs/react';
 import EmojiPicker from "emoji-picker-react";
 import { Popover, Transition } from "@headlessui/react";
 import { isAudio, isImage } from "@/helpers";
@@ -40,6 +41,8 @@ const MessageInput = ({ conversation = null, onFocus = null, onBlur = null, isMo
     };
 
     const { emit } = useEventBus();
+    const page = usePage();
+    const authId = page.props.auth?.user?.id;
 
     const onSendClick = async () => {
         if (messageSending) return;
@@ -131,6 +134,14 @@ const MessageInput = ({ conversation = null, onFocus = null, onBlur = null, isMo
                             const grp = created?.group || null;
                             const name = (grp && (grp.name || grp.title)) || (conversation && (conversation.name || conversation.title)) || `Grupo ${gid}`;
                             const avatar = (grp && (grp.avatar || grp.avatar_url || grp.profile_photo_url)) || (conversation && (conversation.avatar || conversation.profile_photo_url)) || null;
+                            let lastMsg = created?.message || (messageText || '');
+                            try {
+                                const senderId = created?.sender_id || created?.sender?.id || null;
+                                if (senderId && authId && parseInt(senderId) === parseInt(authId)) {
+                                    if (lastMsg && !lastMsg.startsWith('Yo:')) lastMsg = `Yo: ${lastMsg}`;
+                                    if (!lastMsg) lastMsg = 'Yo';
+                                }
+                            } catch (e) {}
                             const convObj = {
                                 is_user: false,
                                 is_group: true,
@@ -138,7 +149,7 @@ const MessageInput = ({ conversation = null, onFocus = null, onBlur = null, isMo
                                 name,
                                 avatar,
                                 avatar_url: avatar || (conversation && (conversation.avatar_url || conversation.profile_photo_url)) || null,
-                                last_message: created?.message || (messageText || ''),
+                                last_message: lastMsg,
                                 last_message_date: created?.created_at || null,
                                 conversation_id: created?.conversation_id || conversation?.conversation_id || null,
                             };

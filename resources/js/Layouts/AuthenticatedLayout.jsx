@@ -22,7 +22,8 @@ export default function AuthenticatedLayout({ header, children }) {
     const user = page.props.auth?.user;
     const conversations = page.props.conversations;
     const logoHref = user ? route('dashboard') : '/';
-    const { emit } = useEventBus();
+    const { emit, on } = useEventBus();
+    const subscribedChannelsRef = useRef(new Set());
 
     const [showingNavigationDropdown, setShowingNavigationDropdown] =
         useState(false);
@@ -126,7 +127,7 @@ export default function AuthenticatedLayout({ header, children }) {
                         .error((error) => {
                             console.log(error);
                         })
-                        .listen("SocketMessage", (e) => {
+                            .listen("SocketMessage", (e) => {
                             console.log("SocketMessage", e);
                             const message = e.message;
                             console.debug('[AuthenticatedLayout] SocketMessage received', message && message.id ? {id: message.id, sender_id: message.sender_id, receiver_id: message.receiver_id, group_id: message.group_id, channel: _channel} : message);
@@ -155,6 +156,8 @@ export default function AuthenticatedLayout({ header, children }) {
                                     }`,
                             });
                         });
+                            // marcar canal como suscrito para evitar duplicados
+                            try { subscribedChannelsRef.current.add(_channel); } catch (e) {}
                 }
 
                 // Escuchar evento de mensaje borrado 
@@ -177,6 +180,7 @@ export default function AuthenticatedLayout({ header, children }) {
                      .error((err) => {
                         console.log(err);
                     });
+                try { subscribedChannelsRef.current.add(`group.deleted.${conversation.id}`); } catch (e) {}
             }
 
         });
@@ -194,13 +198,59 @@ export default function AuthenticatedLayout({ header, children }) {
                         .join("-")}`;
                 }
                 Echo.leave(channel);
+                try { subscribedChannelsRef.current.delete(channel); } catch (e) {}
 
                 if (conversation.is_group) {
                     Echo.leave(`group.deleted.${conversation.id}`);
+                    try { subscribedChannelsRef.current.delete(`group.deleted.${conversation.id}`); } catch (e) {}
                 }
             });
         };
     }, [conversations]);
+
+    useEffect(() => {
+        if (!on) return;
+
+        const off = on('group.created', (group) => {
+            try {
+                if (!group || !group.id) return;
+                const channel = `message.group.${group.id}`;
+                if (subscribedChannelsRef.current.has(channel)) return;
+
+                const _channel = channel;
+                Echo.private(channel)
+                    .error((error) => { console.log(error); })
+                    .listen('SocketMessage', (e) => {
+                        const message = e.message;
+                        console.debug('[AuthenticatedLayout][dynamic] SocketMessage received', message && message.id ? {id: message.id, sender_id: message.sender_id, receiver_id: message.receiver_id, group_id: message.group_id, channel: _channel} : message);
+                        if (message) emit('message.created', message);
+                        if (message && message.sender_id === user.id) return;
+                        emit('newMessageNotification', { user: message.sender, group_id: message.group_id, message: message.message || (message.attachments ? `Shared ${message.attachments.length} attachments` : '') });
+                    });
+
+                Echo.private(channel)
+                    .listen('SocketMessageDeleted', (e) => {
+                        const deletedMessage = e.deletedMessage || e.deleted_message || null;
+                        const prevMessage = e.prevMessage || e.prev_message || null;
+                        emit('message.deleted', { deletedMessage, prevMessage });
+                    })
+                    .error(() => {});
+
+                Echo.private(`group.deleted.${group.id}`)
+                    .listen('GroupDeleted', (e) => {
+                        emit('group.deleted', { id: e.id, name: e.name });
+                    })
+                    .error(() => {});
+
+                subscribedChannelsRef.current.add(channel);
+                subscribedChannelsRef.current.add(`group.deleted.${group.id}`);
+            } catch (e) {
+                console.error(e);
+            }
+        });
+
+        return () => { try { off && off(); } catch (e) {} };
+    }, [on, emit, user]);
 
 
     useEffect(() => {

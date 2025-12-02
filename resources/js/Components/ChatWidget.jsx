@@ -75,8 +75,50 @@ export default function ChatWidget() {
 
                 const authId = page.props.auth?.user?.id;
                 if (!authId) return;
+
+                // Si es un mensaje de grupo, actualizar/insertar la conversación de grupo en el widget
+                if (message.group_id) {
+                    try {
+                        const gid = message.group_id;
+                        const serverConvs = conversations || [];
+                        const existingServerConv = serverConvs.find((c) => c.is_group && parseInt(c.id) === parseInt(gid));
+                        setLocalConversations((prev) => {
+                            const existingLocal = (prev || []).find((c) => c && c.is_group && parseInt(c.id) === parseInt(gid));
+                            const defaultAvatar = (typeof window !== 'undefined' && window.location ? `${window.location.origin}/images/DefaultPerfil.jpg` : '/images/DefaultPerfil.jpg');
+                            const avatarFromMsg = message.group?.avatar || message.group?.avatar_url || null;
+                            const avatar = existingLocal?.avatar || existingLocal?.avatar_url || avatarFromMsg || existingServerConv?.avatar || existingServerConv?.avatar_url || existingServerConv?.profile_photo_url || defaultAvatar;
+                            const name = (message.group && (message.group.name || message.group.title)) || existingLocal?.name || existingServerConv?.name || `Grupo ${gid}`;
+
+                            const authIdLocal = page.props.auth?.user?.id;
+                            let lastMsgText = message.message || (message.attachments ? `Shared ${message.attachments.length} attachments` : '');
+                            try {
+                                if (authIdLocal && parseInt(message.sender_id) === parseInt(authIdLocal)) {
+                                    if (!lastMsgText.startsWith('Yo:')) lastMsgText = lastMsgText ? `Yo: ${lastMsgText}` : 'Yo';
+                                }
+                            } catch (e) {}
+
+                            const convObj = {
+                                is_group: true,
+                                id: gid,
+                                name,
+                                avatar,
+                                avatar_url: avatar,
+                                last_message: lastMsgText,
+                                last_message_date: message.created_at || null,
+                            };
+
+                            const filtered = (prev || []).filter((c) => { try { return !(c && c.is_group && parseInt(c.id) === parseInt(gid)); } catch (e) { return true; } });
+                            return [convObj, ...filtered];
+                        });
+
+                        // si no tenemos avatar confiable, pedir al servidor que refresque las `conversations`
+                    } catch (e) {}
+
+                    
+                    return;
+                }
+
                 // Solo para mensajes privados dirigidos al usuario autenticado
-                if (message.group_id) return;
                 if (message.receiver_id && parseInt(message.receiver_id) === parseInt(authId)) {
                     const senderId = parseInt(message.sender_id);
                     setHiddenConversations((prev) => {
@@ -637,13 +679,7 @@ export default function ChatWidget() {
                                         if (message) {
                                             emit("message.created", message);
                                         }
-                                        if (message && message.sender_id !== user.id) {
-                                            emit("newMessageNotification", {
-                                                user: message.sender,
-                                                group_id: message.group_id,
-                                                message: message.message || (message.attachments ? `Shared ${message.attachments.length} attachments` : ""),
-                                            });
-                                        }
+                                       
                                     })
                                     .listen("SocketMessageDeleted", (e) => {
                                         const deletedMessage = e.deletedMessage || e.deleted_message || null;

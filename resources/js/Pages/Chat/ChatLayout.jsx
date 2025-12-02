@@ -105,7 +105,19 @@ const ChatLayouts = ({ children }) => {
                 }
 
                 if (message.group_id && u.is_group && u.id == message.group_id) {
-                    u.last_message = message.message;
+                    try {
+                        const authId = page.props.auth?.user?.id;
+                        if (authId && parseInt(message.sender_id) === parseInt(authId)) {
+                            const existing = (u.last_message || '');
+                            if (!existing.startsWith('Yo:')) {
+                                u.last_message = `Yo: ${message.message}`;
+                            }
+                        } else {
+                            u.last_message = message.message;
+                        }
+                    } catch (e) {
+                        u.last_message = message.message;
+                    }
                     u.last_message_date = message.created_at;
                     return u;
                 }
