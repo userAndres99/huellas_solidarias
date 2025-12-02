@@ -99,9 +99,10 @@ const MessageInput = ({ conversation = null, onFocus = null, onBlur = null, isMo
                 if (created) {
                     if (emit) emit('message.created', created);
                     try {
-                       
-                        const rid = receiverId || created?.receiver_id || null;
-                        const gid = groupId || created?.group_id || null;
+                        const rid = created?.receiver_id || (conversation && conversation.is_user ? receiverId : null) || null;
+                        const gid = created?.group_id || (conversation && conversation.is_group ? groupId : null) || null;
+
+                        // Emitir conversation.last_message para una conversación de usuario
                         if (rid) {
                             const receiver = created?.receiver || null;
                             const name = (receiver && (receiver.name || receiver.display_name)) || (conversation && (conversation.name || conversation.title)) || `Usuario ${rid}`;
@@ -117,6 +118,25 @@ const MessageInput = ({ conversation = null, onFocus = null, onBlur = null, isMo
                                 last_message_date: created?.created_at || null,
                                 conversation_id: created?.conversation_id || conversation?.conversation_id || null,
                                 with_user_id: rid,
+                            };
+                            if (emit) emit('conversation.last_message', convObj);
+                        }
+
+                        // Emitir conversation.last_message para una conversación de grupo
+                        if (gid) {
+                            const grp = created?.group || null;
+                            const name = (grp && (grp.name || grp.title)) || (conversation && (conversation.name || conversation.title)) || `Grupo ${gid}`;
+                            const avatar = (grp && (grp.avatar || grp.avatar_url || grp.profile_photo_url)) || (conversation && (conversation.avatar || conversation.profile_photo_url)) || null;
+                            const convObj = {
+                                is_user: false,
+                                is_group: true,
+                                id: gid,
+                                name,
+                                avatar,
+                                avatar_url: avatar || (conversation && (conversation.avatar_url || conversation.profile_photo_url)) || null,
+                                last_message: created?.message || (newMessage || ''),
+                                last_message_date: created?.created_at || null,
+                                conversation_id: created?.conversation_id || conversation?.conversation_id || null,
                             };
                             if (emit) emit('conversation.last_message', convObj);
                         }

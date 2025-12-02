@@ -145,7 +145,7 @@ const ChatLayouts = ({ children }) => {
                         if (existsServer) return;
 
                         setLocalConversations((prev) => {
-                            const existingLocal = (prev || []).find((c) => parseInt(c.id) === parseInt(senderId));
+                            const existingLocal = (prev || []).find((c) => !c.is_group && parseInt(c.id) === parseInt(senderId));
                             if (existingLocal) return prev;
                                 const defaultAvatar = (typeof window !== 'undefined' && window.location ? `${window.location.origin}/images/DefaultPerfil.jpg` : '/images/DefaultPerfil.jpg');
                                 const convObj = {
@@ -164,8 +164,8 @@ const ChatLayouts = ({ children }) => {
                         });
 
                         try {
-                            const createdAvatar = sender.avatar || sender.avatar_url || sender.profile_photo_url || null;
-                            const serverHasAvatar = (page.props.conversations || []).some((c) => parseInt(c.id) === parseInt(senderId) && (c.avatar || c.avatar_url || c.profile_photo_url));
+                                const createdAvatar = sender.avatar || sender.avatar_url || sender.profile_photo_url || null;
+                            const serverHasAvatar = (page.props.conversations || []).some((c) => !c.is_group && parseInt(c.id) === parseInt(senderId) && (c.avatar || c.avatar_url || c.profile_photo_url));
                             if (!createdAvatar && !serverHasAvatar && !pendingConvReloads.current.has(senderId)) {
                                 pendingConvReloads.current.add(senderId);
                                 try { router.reload({ only: ['conversations'] }); } catch (e) {}
@@ -179,10 +179,10 @@ const ChatLayouts = ({ children }) => {
                         if (!receiverId) return;
                         const receiver = message.receiver || {};
                         const createdAvatar = receiver.avatar || receiver.avatar_url || receiver.profile_photo_url || null;
-                        const serverHasAvatar = (page.props.conversations || []).some((c) => parseInt(c.id) === parseInt(receiverId) && (c.avatar || c.avatar_url || c.profile_photo_url));
+                        const serverHasAvatar = (page.props.conversations || []).some((c) => !c.is_group && parseInt(c.id) === parseInt(receiverId) && (c.avatar || c.avatar_url || c.profile_photo_url));
 
                         setLocalConversations((prev) => {
-                            const existingLocal = (prev || []).find((c) => parseInt(c.id) === parseInt(receiverId));
+                            const existingLocal = (prev || []).find((c) => !c.is_group && parseInt(c.id) === parseInt(receiverId));
                             if (existingLocal) return prev;
                             const name = (receiver && (receiver.name || receiver.display_name)) || `Usuario ${receiverId}`;
                             const avatar = createdAvatar || null;
@@ -228,11 +228,19 @@ const ChatLayouts = ({ children }) => {
         if (convPayload) {
             try {
                 setLocalConversations((prev) => {
-                    const filtered = (prev || []).filter((c) => parseInt(c.id) !== parseInt(convPayload.id));
-                    const existingLocal = (prev || []).find((c) => parseInt(c.id) === parseInt(convPayload.id));
+                    const convId = parseInt(convPayload.id);
+                    const convIsGroup = !!convPayload.is_group;
+                    const filtered = (prev || []).filter((c) => {
+                        try {
+                            const cid = parseInt(c.id);
+                            const cisGroup = !!c.is_group;
+                            return !(cid === convId && cisGroup === convIsGroup);
+                        } catch (e) { return true; }
+                    });
+                    const existingLocal = (prev || []).find((c) => { try { return parseInt(c.id) === convId && (!!c.is_group) === convIsGroup; } catch (e) { return false; } });
                     const defaultAvatar = (typeof window !== 'undefined' && window.location ? `${window.location.origin}/images/DefaultPerfil.jpg` : '/images/DefaultPerfil.jpg');
                     const avatar = existingLocal?.avatar || existingLocal?.avatar_url || convPayload.avatar || convPayload.avatar_url || existingLocal?.profile_photo_url || defaultAvatar;
-                    const avatar_url = existingLocal?.avatar_url || existingLocal?.avatar || convPayload.avatar_url || convPayload.avatar || existingLocal?.profile_photo_url || defaultAvatar;
+                    const avatar_url = existingLocal?.avatar_url || existingLocal?.avatar || convPayload?.avatar_url || convPayload?.avatar || existingLocal?.profile_photo_url || defaultAvatar;
                     const merged = { ...convPayload, avatar, avatar_url };
                     return [merged, ...filtered];
                 });
@@ -346,9 +354,23 @@ const ChatLayouts = ({ children }) => {
 
                 setLocalConversations((prev) => {
                     try {
-                        const filtered = (prev || []).filter((c) => parseInt(c.id) !== parseInt(conv.id));
-                        const existingLocal = (prev || []).find((c) => parseInt(c.id) === parseInt(conv.id));
-                        const existingServer = (conversations || []).find((c) => parseInt(c.id) === parseInt(conv.id));
+                        const convId = parseInt(conv.id);
+                        const convIsGroup = !!conv.is_group;
+                        const filtered = (prev || []).filter((c) => {
+                            try {
+                                const cid = parseInt(c.id);
+                                const cisGroup = !!c.is_group;
+                                return !(cid === convId && cisGroup === convIsGroup);
+                            } catch (e) {
+                                return true;
+                            }
+                        });
+                        const existingLocal = (prev || []).find((c) => {
+                            try { return parseInt(c.id) === convId && (!!c.is_group) === convIsGroup; } catch (e) { return false; }
+                        });
+                        const existingServer = (conversations || []).find((c) => {
+                            try { return parseInt(c.id) === convId && (!!c.is_group) === convIsGroup; } catch (e) { return false; }
+                        });
                         const defaultAvatar = (typeof window !== 'undefined' && window.location ? `${window.location.origin}/images/DefaultPerfil.jpg` : '/images/DefaultPerfil.jpg');
 
                         const avatarFromConv = conv.avatar || conv.avatar_url || conv.profile_photo_url || null;
@@ -374,7 +396,7 @@ const ChatLayouts = ({ children }) => {
                 oldConversations.filter((con) => con.id != id)
             );
 
-            emit("toast.show", `El Grupo "${name}" ha sido eliminado`);
+            emit("toast.show", `Group "${name}" was deleted`);
 
             // Usamos el ref para acceder al selectedConversation actualizado
             const selConv = selectedConversationRef.current;
@@ -386,23 +408,6 @@ const ChatLayouts = ({ children }) => {
 
         const offStarChat = on("StartChat.show", () => setShowStartChatModal(true));
 
-
-       const offGroupCreated = on("group.created", (group) => {
-    const normalizedGroup = {
-        ...group,
-        avatar: group.avatar || '/images/default-group.png', // <-- fallback
-        last_message: group.last_message || null,
-        is_group: true,
-    };
-
-    setLocalConversations((prev) => {
-        if(prev.find((c) => c.id === normalizedGroup.id && c.is_group)) return prev;
-        return [...prev, normalizedGroup];
-    });
-
-    emit("toast.show", `Se ha creado un nuevo grupo: ${normalizedGroup.name}`)
-});
-
         return () => {
             offCreated();
             offDeleted();
@@ -410,7 +415,6 @@ const ChatLayouts = ({ children }) => {
             try { offLastMessage(); } catch (e) {}
             offGroupDelete();
             offStarChat();
-            offGroupCreated();
         };
     }, [on, emit]);
 

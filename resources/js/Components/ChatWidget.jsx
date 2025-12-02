@@ -106,8 +106,16 @@ export default function ChatWidget() {
                             with_user_id: sender.id || senderId,
                         };
 
-                        // Upsert: eliminar cualquier entrada previa con mismo id y reinsertar al frente
-                        const filtered = prev.filter((c) => parseInt(c.id) !== parseInt(convObj.id));
+                        // Upsert: eliminar cualquier entrada previa con la misma clave (id + is_group) y reinsertar al frente
+                        const convId = parseInt(convObj.id);
+                        const convIsGroup = !!convObj.is_group;
+                        const filtered = (prev || []).filter((c) => {
+                            try {
+                                const cid = parseInt(c.id);
+                                const cisGroup = !!c.is_group;
+                                return !(cid === convId && cisGroup === convIsGroup);
+                            } catch (e) { return true; }
+                        });
                         return [convObj, ...filtered];
                     });
                     // si no tenemos avatar confiable, pedir al servidor que refresque las `conversations`
@@ -171,7 +179,15 @@ export default function ChatWidget() {
                                 with_user_id: receiverId,
                             };
 
-                            const filtered = prev.filter((c) => parseInt(c.id) !== parseInt(convObjMe.id));
+                            const convIdMe = parseInt(convObjMe.id);
+                            const convIsGroupMe = !!convObjMe.is_group;
+                            const filtered = (prev || []).filter((c) => {
+                                try {
+                                    const cid = parseInt(c.id);
+                                    const cisGroup = !!c.is_group;
+                                    return !(cid === convIdMe && cisGroup === convIsGroupMe);
+                                } catch (e) { return true; }
+                            });
                             const result = [convObjMe, ...filtered];
                             // Si no hay avatar conocido, intentar recargar las `conversations` desde el servidor
                             try {
@@ -201,11 +217,19 @@ export default function ChatWidget() {
                 if (convPayload) {
                     try {
                         setLocalConversations((prev) => {
-                            const filtered = (prev || []).filter((c) => c && parseInt(c.id) !== parseInt(convPayload.id));
-                            const existingLocal = (prev || []).find((c) => c && parseInt(c.id) === parseInt(convPayload.id));
+                            const convId = parseInt(convPayload.id);
+                            const convIsGroup = !!convPayload.is_group;
+                            const filtered = (prev || []).filter((c) => {
+                                try {
+                                    const cid = parseInt(c.id);
+                                    const cisGroup = !!c.is_group;
+                                    return !(cid === convId && cisGroup === convIsGroup);
+                                } catch (e) { return true; }
+                            });
+                            const existingLocal = (prev || []).find((c) => { try { return parseInt(c.id) === convId && (!!c.is_group) === convIsGroup; } catch (e) { return false; } });
                             const defaultAvatar = (typeof window !== 'undefined' && window.location ? `${window.location.origin}/images/DefaultPerfil.jpg` : '/images/DefaultPerfil.jpg');
                             const avatar = existingLocal?.avatar || existingLocal?.avatar_url || convPayload.avatar || convPayload.avatar_url || existingLocal?.profile_photo_url || defaultAvatar;
-                            const avatar_url = existingLocal?.avatar_url || existingLocal?.avatar || convPayload.avatar_url || convPayload.avatar || existingLocal?.profile_photo_url || defaultAvatar;
+                            const avatar_url = existingLocal?.avatar_url || existingLocal?.avatar || convPayload?.avatar_url || convPayload?.avatar || existingLocal?.profile_photo_url || defaultAvatar;
                             const merged = { ...convPayload, avatar, avatar_url };
                             return [merged, ...filtered];
                         });
@@ -317,7 +341,7 @@ export default function ChatWidget() {
                             const shouldPrefixPrev = prevText && authId && parseInt(prevMessage?.sender_id) === parseInt(authId);
                             const displayPrev = shouldPrefixPrev ? (prevText.startsWith('Yo:') ? prevText : `Yo: ${prevText}`) : prevText;
 
-                            const existingLocal = prev.find((c) => c && parseInt(c.id) === parseInt(match.id));
+                            const existingLocal = prev.find((c) => c && (function(){ try { return parseInt(c.id) === parseInt(match.id) && (!!c.is_group) === !!match.is_group; } catch(e){ return false; } })());
 
                             const newConv = {
                                 ...match,
@@ -327,7 +351,15 @@ export default function ChatWidget() {
                                 last_message: prevMessage ? displayPrev : 'Mensaje borrado',
                                 last_message_date: prevMessage ? prevMessage.created_at : deletedMessage.created_at || match.last_message_date,
                             };
-                            const filtered = prev.filter((c) => c && parseInt(c.id) !== parseInt(newConv.id));
+                            const newConvId = parseInt(newConv.id);
+                            const newConvIsGroup = !!newConv.is_group;
+                            const filtered = prev.filter((c) => {
+                                try {
+                                    const cid = parseInt(c.id);
+                                    const cisGroup = !!c.is_group;
+                                    return !(cid === newConvId && cisGroup === newConvIsGroup);
+                                } catch (e) { return true; }
+                            });
                             return [newConv, ...filtered];
                         }
                     } catch (e) {}
@@ -373,7 +405,17 @@ export default function ChatWidget() {
 
                 setLocalConversations((prev) => {
                     try {
-                        const filtered = (prev || []).filter((c) => parseInt(c.id) !== parseInt(conv.id));
+                        const convId = parseInt(conv.id);
+                        const convIsGroup = !!conv.is_group;
+                        const filtered = (prev || []).filter((c) => {
+                            try {
+                                const cid = parseInt(c.id);
+                                const cisGroup = !!c.is_group;
+                                return !(cid === convId && cisGroup === convIsGroup);
+                            } catch (e) {
+                                return true;
+                            }
+                        });
                         return [conv, ...filtered];
                     } catch (e) {
                         return prev;
@@ -495,27 +537,41 @@ export default function ChatWidget() {
                         if (subscribedChannels.current.has(channel)) return;
 
                         try {
-                            Echo.private(channel)
-                                .listen("SocketMessage", (e) => {
-                                    const message = e.message;
-                                    console.debug('[ChatWidget] SocketMessage received', message && message.id ? {id: message.id, sender_id: message.sender_id, receiver_id: message.receiver_id, group_id: message.group_id} : message);
-                                    if (message) {
-                                        emit("message.created", message);
-                                    }
-                                    if (message && message.sender_id !== user.id) {
-                                        emit("newMessageNotification", {
-                                            user: message.sender,
-                                            group_id: message.group_id,
-                                            message: message.message || (message.attachments ? `Shared ${message.attachments.length} attachments` : ""),
-                                        });
-                                    }
-                                })
-                                .listen("SocketMessageDeleted", (e) => {
-                                    const deletedMessage = e.deletedMessage || e.deleted_message || null;
-                                    const prevMessage = e.prevMessage || e.prev_message || null;
-                                    emit('message.deleted', { deletedMessage, prevMessage });
-                                })
-                                .error(() => {});
+                            // capture channel and conversation so we can be defensive
+                            {
+                                const _channel = channel;
+                                const _conversation = conversation;
+                                Echo.private(channel)
+                                    .listen("SocketMessage", (e) => {
+                                        const message = e.message;
+                                        console.debug('[ChatWidget] SocketMessage received', message && message.id ? {id: message.id, sender_id: message.sender_id, receiver_id: message.receiver_id, group_id: message.group_id, channel: _channel} : message);
+
+                                        // Defensive: if we're on a user channel but the payload is a group message, ignore it
+                                        try {
+                                            if (_channel && _channel.startsWith('message.user.') && message && message.group_id) {
+                                                console.debug('[ChatWidget] Ignoring group message on user channel', { channel: _channel, message });
+                                                return;
+                                            }
+                                        } catch (err) {}
+
+                                        if (message) {
+                                            emit("message.created", message);
+                                        }
+                                        if (message && message.sender_id !== user.id) {
+                                            emit("newMessageNotification", {
+                                                user: message.sender,
+                                                group_id: message.group_id,
+                                                message: message.message || (message.attachments ? `Shared ${message.attachments.length} attachments` : ""),
+                                            });
+                                        }
+                                    })
+                                    .listen("SocketMessageDeleted", (e) => {
+                                        const deletedMessage = e.deletedMessage || e.deleted_message || null;
+                                        const prevMessage = e.prevMessage || e.prev_message || null;
+                                        emit('message.deleted', { deletedMessage, prevMessage });
+                                    })
+                                    .error(() => {});
+                            }
 
                             subscribedChannels.current.add(channel);
                         } catch (e) {
@@ -781,8 +837,8 @@ export default function ChatWidget() {
                                                                         .filter((c) => c && !hiddenConversations.includes(c.id));
 
                                             // localConvs tiene prioridad y sobreescribe entradas de pageConvs con el mismo id
-                                            const localIds = new Set(localConvs.map((c) => parseInt(c.id)));
-                                            const filteredPageConvs = pageConvs.filter((c) => !localIds.has(parseInt(c.id)));
+                                            const localKeys = new Set(localConvs.map((c) => `${c.is_group ? 'g' : 'u'}_${parseInt(c.id)}`));
+                                            const filteredPageConvs = pageConvs.filter((c) => !localKeys.has(`${c.is_group ? 'g' : 'u'}_${parseInt(c.id)}`));
 
                                             let combined = [...localConvs, ...filteredPageConvs];
 

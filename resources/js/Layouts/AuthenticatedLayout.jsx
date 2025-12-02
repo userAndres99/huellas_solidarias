@@ -64,14 +64,21 @@ export default function AuthenticatedLayout({ header, children }) {
                     .listen('SocketMessage', (e) => {
                         console.debug('[AuthenticatedLayout] SocketMessage (user channel)', e);
                         const message = e.message;
-                        if (message) emit('message.created', message);
-                        if (message && message.sender_id !== user.id) {
-                            emit('newMessageNotification', {
-                                user: message.sender,
-                                group_id: message.group_id,
-                                message: message.message || (message.attachments ? `Shared ${message.attachments.length} attachments` : ''),
-                            });
-                        }
+                                if (message) {
+                                    // defensivo: si es un mensaje de grupo en un canal de usuario, ignorarlo
+                                    if (message.group_id) {
+                                        console.debug('[AuthenticatedLayout] Ignoring group message on user channel', { userChannel: user.id, message });
+                                    } else {
+                                        emit('message.created', message);
+                                        if (message && message.sender_id !== user.id) {
+                                            emit('newMessageNotification', {
+                                                user: message.sender,
+                                                group_id: message.group_id,
+                                                message: message.message || (message.attachments ? `Shared ${message.attachments.length} attachments` : ''),
+                                            });
+                                        }
+                                    }
+                                }
                     })
                     .listen('SocketMessageDeleted', (e) => {
                         console.debug('[AuthenticatedLayout] SocketMessageDeleted (user channel)', e);
@@ -97,63 +104,62 @@ export default function AuthenticatedLayout({ header, children }) {
                     .join("-")}`;
             }
 
-            Echo.private(channel)
-                .error((error) => {
-                    console.log(error);
-                })
-                    .listen("SocketMessage", (e) => {
-                        console.log("SocketMessage", e);
-                        const message = e.message;
-                        console.debug('[AuthenticatedLayout] SocketMessage received', message && message.id ? {id: message.id, sender_id: message.sender_id, receiver_id: message.receiver_id, group_id: message.group_id} : message);
+                // capturar la cadena del canal para que la devolución de llamada pueda ser defensiva sobre message.group_id
+                {
+                    const _channel = channel;
+                    Echo.private(channel)
+                        .error((error) => {
+                            console.log(error);
+                        })
+                        .listen("SocketMessage", (e) => {
+                            console.log("SocketMessage", e);
+                            const message = e.message;
+                            console.debug('[AuthenticatedLayout] SocketMessage received', message && message.id ? {id: message.id, sender_id: message.sender_id, receiver_id: message.receiver_id, group_id: message.group_id, channel: _channel} : message);
 
-                        if (message) emit("message.created", message);
-                        if (message && message.sender_id === user.id) {
-                            return;
-                        }
-                        emit("newMessageNotification", {
-                            user: message.sender,
-                            group_id: message.group_id,
-                            message:
-                                message.message ||
-                                `Shared ${message.attachments.length === 1
-                                    ? "an attachment"
-                                    : message.attachments.length +
-                                    " attachmnets"
-                                }`,
+                            // defensivo: si es un mensaje de grupo en un canal de usuario, ignorarlo
+                            try {
+                                if (_channel && _channel.startsWith('message.user.') && message && message.group_id) {
+                                    console.debug('[AuthenticatedLayout] Ignoring group message received on message.user channel', { channel: _channel, message });
+                                    return;
+                                }
+                            } catch (e) {}
+
+                            if (message) emit("message.created", message);
+                            if (message && message.sender_id === user.id) {
+                                return;
+                            }
+                            emit("newMessageNotification", {
+                                user: message.sender,
+                                group_id: message.group_id,
+                                message:
+                                    message.message ||
+                                    `Shared ${message.attachments.length === 1
+                                        ? "an attachment"
+                                        : message.attachments.length +
+                                        " attachmnets"
+                                    }`,
+                            });
                         });
+                }
+
+                // Escuchar evento de mensaje borrado 
+                Echo.private(channel)
+                    .listen("SocketMessageDeleted", (e) => {
+                        console.log("SocketMessageDeleted", e);
+                        const deletedMessage = e.deletedMessage || e.deleted_message || null;
+                        const prevMessage = e.prevMessage || e.prev_message || null;
+                        emit('message.deleted', { deletedMessage, prevMessage });
+                    })
+                    .error((err) => {
+                        // no bloquear si el evento no existe
                     });
-
-            // Escuchar evento de mensaje borrado 
-            Echo.private(channel)
-                .listen("SocketMessageDeleted", (e) => {
-                    console.log("SocketMessageDeleted", e);
-                    const deletedMessage = e.deletedMessage || e.deleted_message || null;
-                    const prevMessage = e.prevMessage || e.prev_message || null;
-                    emit('message.deleted', { deletedMessage, prevMessage });
-                })
-                .error((err) => {
-                    // no bloquear si el evento no existe
-                });
-
-
-            // Escuchar evento de mensaje borrado 
-            Echo.private(channel)
-                .listen("SocketMessageDeleted", (e) => {
-                    console.log("SocketMessageDeleted", e);
-                    const deletedMessage = e.deletedMessage || e.deleted_message || null;
-                    const prevMessage = e.prevMessage || e.prev_message || null;
-                    emit('message.deleted', { deletedMessage, prevMessage });
-                })
-                .error((err) => {
-                    // no bloquear si el evento no existe
-                });
 
             if (conversation.is_group) {
                 Echo.private(`group.deleted.${conversation.id}`)
                     .listen("GroupDeleted", (e) => {
-                        emit("group.deleted", { id: e.id, name: e.name });
+                        emit("group.deleted", {id: e.id, name: e.name}) ;
                     })
-                    .error((err) => {
+                     .error((err) => {
                         console.log(err);
                     });
             }
@@ -180,27 +186,6 @@ export default function AuthenticatedLayout({ header, children }) {
             });
         };
     }, [conversations]);
-
-
-    useEffect(() => {
-        if (!user) return;
-
-        // Suscribirse al canal de grupos creados del usuario
-        const channel = `group.created.${user.id}`;
-
-        Echo.private(channel)
-            .listen("GroupCreated", (e) => {
-                console.log("Nuevo grupo creado:", e.group);
-
-                // Emitir un evento interno para actualizar UI
-                emit("group.created", e.group);
-            })
-            .error((err) => console.log(err));
-
-        return () => {
-            Echo.leave(channel);
-        };
-    }, [user]);
 
     return (
         <>
@@ -343,11 +328,11 @@ export default function AuthenticatedLayout({ header, children }) {
                                             <NotificationBell />
                                             <div className="flex relative ms-3">
                                                 {!!user.is_admin && (
-                                                    <PrimaryButton
-                                                        onClick={(ev) =>
+                                                    <PrimaryButton 
+                                                        onClick={(ev) => 
                                                             setShowNewUserModal(true)
-                                                        }
-                                                    >
+                                                            }
+                                                        >
                                                         <UserPlusIcon className='h-5 w-5 mr-2' />
                                                         Añadir Nuevo Usuario
                                                     </PrimaryButton>
@@ -607,8 +592,8 @@ export default function AuthenticatedLayout({ header, children }) {
                 <Footer />
             </div>
 
-            <Toast />
-            <NewMessageNotification />
+            <Toast/>
+            <NewMessageNotification/>
             {user && <ChatWidget />}
             <NewUserModal show={showNewUserModal} onClose={(ev) => setShowNewUserModal(false)} />
 
