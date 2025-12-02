@@ -309,7 +309,7 @@ const ChatLayouts = ({ children }) => {
                     }
                 }
 
-                // Si no hay mensaje previo, mostramos un placeholder indicando eliminación
+                // Si no hay mensaje previo, comportamientos distintos según si fue moderación
                 try {
                     const key = deletedMessage.group_id ? `g_${deletedMessage.group_id}` : `u_${deletedMessage.sender_id}_${deletedMessage.receiver_id}`;
                     const now = Date.now();
@@ -318,12 +318,25 @@ const ChatLayouts = ({ children }) => {
                     console.debug('[ChatLayout] Tombstoned conversation', { key, at: now });
                 } catch (e) {}
 
+                // Mostrar 'Mensaje borrado' solo si fue moderación (o si el backend envió un conversation payload).
+                if (payload?.moderated) {
+                    return {
+                        ...u,
+                        avatar: u.avatar || u.avatar_url || u.profile_photo_url || defaultAvatar,
+                        avatar_url: u.avatar_url || u.avatar || u.profile_photo_url || defaultAvatar,
+                        last_message: 'Mensaje borrado',
+                        last_message_date: deletedMessage.created_at || u.last_message_date,
+                    };
+                }
+
+                // Para borrados manuales (no moderados) preferimos no reemplazar el preview por 'Mensaje borrado'.
+                // En ausencia de un prevMessage dejamos el last_message vacio y limpiamos la fecha.
                 return {
                     ...u,
                     avatar: u.avatar || u.avatar_url || u.profile_photo_url || defaultAvatar,
                     avatar_url: u.avatar_url || u.avatar || u.profile_photo_url || defaultAvatar,
-                    last_message: 'Mensaje borrado',
-                    last_message_date: deletedMessage.created_at || u.last_message_date,
+                    last_message: '',
+                    last_message_date: null,
                 };
             })
         );

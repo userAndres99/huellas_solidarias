@@ -166,6 +166,8 @@ class ModerateMessageJob implements ShouldQueue
                     try { \Log::info('ModerateMessageJob: dispatching SocketMessageDeleted for message_id=' . $deletedMessage['id']); } catch (\Throwable $e) {}
                     $payload = ['deletedMessage' => $deletedMessage, 'prevMessage' => $prev];
                     if ($conversationPayload) $payload['conversation'] = $conversationPayload;
+                    // Indicar que este borrado fue por moderación (para que el frontend lo muestre como "Mensaje borrado")
+                    $payload['moderated'] = true;
                     SocketMessageDeleted::dispatch($payload);
                 }
             }

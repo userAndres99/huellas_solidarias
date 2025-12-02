@@ -537,7 +537,7 @@ export default function ChatWidget() {
                         if (subscribedChannels.current.has(channel)) return;
 
                         try {
-                            // capture channel and conversation so we can be defensive
+                            // capturar las variables 
                             {
                                 const _channel = channel;
                                 const _conversation = conversation;
@@ -546,7 +546,7 @@ export default function ChatWidget() {
                                         const message = e.message;
                                         console.debug('[ChatWidget] SocketMessage received', message && message.id ? {id: message.id, sender_id: message.sender_id, receiver_id: message.receiver_id, group_id: message.group_id, channel: _channel} : message);
 
-                                        // Defensive: if we're on a user channel but the payload is a group message, ignore it
+                                        // Defensivo: si estamos en un canal de usuario pero la carga útil es un mensaje de grupo, ignorarlo
                                         try {
                                             if (_channel && _channel.startsWith('message.user.') && message && message.group_id) {
                                                 console.debug('[ChatWidget] Ignoring group message on user channel', { channel: _channel, message });

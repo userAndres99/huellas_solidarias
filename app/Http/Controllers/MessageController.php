@@ -261,9 +261,11 @@ class MessageController extends Controller
         $prevPayload = $lastMessage ? (new MessageResource($lastMessage))->toArray(request()) : null;
 
         try {
+            // Indicar que este borrado fue realizado manualmente por el usuario (no moderación)
             SocketMessageDeleted::dispatch([
                 'deletedMessage' => $deletedMessagePayload,
                 'prevMessage' => $prevPayload,
+                'moderated' => false,
             ]);
         } catch (\Throwable $e) {
             // No bloquear en caso de error de broadcast
