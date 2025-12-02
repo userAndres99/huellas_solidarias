@@ -386,15 +386,22 @@ const ChatLayouts = ({ children }) => {
 
         const offStarChat = on("StartChat.show", () => setShowStartChatModal(true));
 
-        const offGroupCreated = on("group.created", (group) => {
 
-            setLocalConversations((prev) => {
-                if(prev.find((c) => c.id === group.id && c.is_group)) return prev;
-                return [group, ...prev];
-            });
+       const offGroupCreated = on("group.created", (group) => {
+    const normalizedGroup = {
+        ...group,
+        avatar: group.avatar || '/images/default-group.png', // <-- fallback
+        last_message: group.last_message || null,
+        is_group: true,
+    };
 
-            emit("toast.show", `Se ha creado un nuevo grupo: ${group}`)
-        })
+    setLocalConversations((prev) => {
+        if(prev.find((c) => c.id === normalizedGroup.id && c.is_group)) return prev;
+        return [...prev, normalizedGroup];
+    });
+
+    emit("toast.show", `Se ha creado un nuevo grupo: ${normalizedGroup.name}`)
+});
 
         return () => {
             offCreated();
@@ -403,6 +410,7 @@ const ChatLayouts = ({ children }) => {
             try { offLastMessage(); } catch (e) {}
             offGroupDelete();
             offStarChat();
+            offGroupCreated();
         };
     }, [on, emit]);
 

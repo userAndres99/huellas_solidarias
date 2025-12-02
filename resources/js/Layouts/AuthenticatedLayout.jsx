@@ -135,6 +135,19 @@ export default function AuthenticatedLayout({ header, children }) {
                     // no bloquear si el evento no existe
                 });
 
+
+            // Escuchar evento de mensaje borrado 
+            Echo.private(channel)
+                .listen("SocketMessageDeleted", (e) => {
+                    console.log("SocketMessageDeleted", e);
+                    const deletedMessage = e.deletedMessage || e.deleted_message || null;
+                    const prevMessage = e.prevMessage || e.prev_message || null;
+                    emit('message.deleted', { deletedMessage, prevMessage });
+                })
+                .error((err) => {
+                    // no bloquear si el evento no existe
+                });
+
             if (conversation.is_group) {
                 Echo.private(`group.deleted.${conversation.id}`)
                     .listen("GroupDeleted", (e) => {
