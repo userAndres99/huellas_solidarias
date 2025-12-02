@@ -48,6 +48,14 @@ Broadcast::channel('message.group.{groupId}', function (User $user, int $groupId
         ? $user  // Si pertenece al grupo, se devuelve el usuario autenticado
         : null;  // Si no pertenece, se deniega el acceso
 });
+
+Broadcast::channel('group.created.{userId}', function ($user, $userId) {
+    // Solo el usuario correspondiente puede recibir el evento
+    return (int) $user->id === (int) $userId ? $user : null;
+});
+
+
+
 Broadcast::channel('group.deleted.{groupId}', function (User $user, int $groupId) {
     return $user->groups->contains('id', $groupId);  
 });

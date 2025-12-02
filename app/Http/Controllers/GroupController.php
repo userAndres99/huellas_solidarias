@@ -17,16 +17,20 @@ class GroupController extends Controller
      * Store a newly created resource in storage.
      */
     public function store(StoreGroupRequest $request)
-    {
-        //
-        $data = $request->validated();
-        $user_ids = $data['user_ids'] ?? [];
-        $group = Group::create($data);
-        $group->users()->attach(array_unique([$request->user()->id, ...$user_ids]));
+{
+    $data = $request->validated();
+    $user_ids = $data['user_ids'] ?? [];
+    $group = Group::create($data);
+    $group->users()->attach(array_unique([$request->user()->id, ...$user_ids]));
 
+    // Recargar relación users
+    $group->load('users');
 
-        return redirect()->back();
-    }
+    // Disparar evento
+    \App\Events\GroupCreated::dispatch($group);
+
+    return redirect()->back();
+}
 
     
 

@@ -153,7 +153,7 @@ const ChatLayouts = ({ children }) => {
                 oldConversations.filter((con) => con.id != id)
             );
 
-            emit("toast.show", `Group "${name}" was deleted`);
+            emit("toast.show", `El Grupo "${name}" ha sido eliminado`);
 
             // Usamos el ref para acceder al selectedConversation actualizado
             const selConv = selectedConversationRef.current;
@@ -164,6 +164,16 @@ const ChatLayouts = ({ children }) => {
         });
 
         const offStarChat = on("StartChat.show", () => setShowStartChatModal(true));
+
+        const offGroupCreated = on("group.created", (group) => {
+
+            setLocalConversations((prev) => {
+                if(prev.find((c) => c.id === group.id && c.is_group)) return prev;
+                return [group, ...prev];
+            });
+
+            emit("toast.show", `Se ha creado un nuevo grupo: ${group}`)
+        })
 
         return () => {
             offCreated();
