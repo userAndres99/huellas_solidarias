@@ -56,6 +56,7 @@ const ConversationHeader = ({ selectedConversation }) => {
                     />
                     <GroupUsersPopover
                       users = {selectedConversation.users}
+                      authUser = {authUser}
                     />
                     {selectedConversation.owner_id == authUser.id && (
                       <>
