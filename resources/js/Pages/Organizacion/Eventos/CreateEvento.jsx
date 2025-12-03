@@ -25,6 +25,8 @@ export default function CreateEvento({ event = null }) {
   const [mapCenter, setMapCenter] = useState(event?.lat && event?.lng ? [Number(event.lat), Number(event.lng)] : null);
   const [initialPosition, setInitialPosition] = useState(event?.lat && event?.lng ? [Number(event.lat), Number(event.lng)] : null);
   const [showMarker, setShowMarker] = useState(!!(event?.lat && event?.lng));
+  const [dateWarning, setDateWarning] = useState(null);
+  const [invalidDate, setInvalidDate] = useState(false);
 
   const handleCiudadSelect = (option) => {
     if (!option) return;
@@ -47,6 +49,41 @@ export default function CreateEvento({ event = null }) {
     setInitialPosition([lat, lng]);
     setShowMarker(true);
   };
+
+  // Validar fechas: marcar inválido si ends_at está presente y es <= starts_at.
+  useEffect(() => {
+    try {
+      if (!data.starts_at || !data.ends_at) {
+        setInvalidDate(false);
+        setDateWarning(null);
+        return;
+      }
+
+      const start = new Date(data.starts_at);
+      const end = new Date(data.ends_at);
+      if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+        setInvalidDate(false);
+        setDateWarning(null);
+        return;
+      }
+
+      if (end <= start) {
+        setInvalidDate(true);
+        const minEnd = new Date(start.getTime() + 60 * 1000);
+        try {
+          const human = minEnd.toLocaleString();
+          setDateWarning(`La fecha/hora de fin es anterior o igual al inicio. Debés corregirla manualmente (por ejemplo, >= ${human}).`);
+        } catch (e) {
+          setDateWarning('La fecha/hora de fin es anterior o igual al inicio. Debés corregirla manualmente.');
+        }
+      } else {
+        setInvalidDate(false);
+        if (dateWarning) setDateWarning(null);
+      }
+    } catch (e) {
+      // no-op
+    }
+  }, [data.starts_at, data.ends_at]);
 
   async function submit(e) {
     e.preventDefault();
@@ -261,14 +298,16 @@ export default function CreateEvento({ event = null }) {
                       </div>
 
                       <div className="md:col-span-1">
-                        <label className="block text-sm font-medium text-white mb-1">Tipo de jornada</label>
+                        <label className="block text-sm font-medium text-white mb-1">Tipo de jornada <span className="text-red-300">*</span></label>
                         <input name="tipo" value={data.tipo} onChange={e => setData('tipo', e.target.value)} placeholder="Vacunacion, Castracion" className="w-full rounded-md border border-[#0f3a2f] p-2 focus:outline-none focus:ring-2 focus:ring-blue-200 text-white placeholder-white/80" style={{ backgroundColor: '#15803D' }} />
+                        {errors.tipo && <div className="text-red-600 mt-1">{errors.tipo}</div>}
                       </div>
                     </div>
 
                     <div className="mt-4">
-                      <label className="block text-sm font-medium text-white mb-1">Descripción</label>
+                      <label className="block text-sm font-medium text-white mb-1">Descripción <span className="text-red-300">*</span></label>
                       <textarea name="descripcion" value={data.descripcion} onChange={e => setData('descripcion', e.target.value)} placeholder="Describa el motivo o situación de la publicación" className="w-full rounded-md border border-[#0f3a2f] p-2 min-h-[120px] focus:outline-none focus:ring-2 focus:ring-blue-200 text-white placeholder-white/80" style={{ backgroundColor: '#15803D' }} />
+                      {errors.descripcion && <div className="text-red-600 mt-1">{errors.descripcion}</div>}
                     </div>
                   </div>
                 </div>
@@ -287,7 +326,7 @@ export default function CreateEvento({ event = null }) {
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                             </svg>
                           </div>
-                          <input name="starts_at" id="starts_at" type="datetime-local" value={data.starts_at || ''} onChange={e => setData('starts_at', e.target.value)} className="w-full rounded-md border border-[#0f3a2f] px-3 py-2 text-white" style={{ backgroundColor: '#15803D' }} aria-label="Seleccionar fecha y hora de inicio" />
+                          <input name="starts_at" id="starts_at" type="datetime-local" value={data.starts_at || ''} onChange={e => setData('starts_at', e.target.value)} className="w-full flex-1 min-w-0 rounded-md border border-[#0f3a2f] px-3 py-2 text-white" style={{ backgroundColor: '#15803D' }} aria-label="Seleccionar fecha y hora de inicio" />
                         </label>
                         <div className="mt-2">
                           <span className="text-sm text-white">{data.starts_at ? new Date(data.starts_at).toLocaleString() : 'No seleccionado'}</span>
@@ -303,13 +342,17 @@ export default function CreateEvento({ event = null }) {
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                             </svg>
                           </div>
-                          <input name="ends_at" id="ends_at" type="datetime-local" value={data.ends_at || ''} onChange={e => setData('ends_at', e.target.value)} className="w-full rounded-md border border-[#0f3a2f] px-3 py-2 text-white" style={{ backgroundColor: '#15803D' }} aria-label="Seleccionar fecha y hora de fin" />
+                          <input name="ends_at" id="ends_at" type="datetime-local" value={data.ends_at || ''} onChange={e => setData('ends_at', e.target.value)} min={data.starts_at || ''} className="w-full flex-1 min-w-0 rounded-md border border-[#0f3a2f] px-3 py-2 text-white" style={{ backgroundColor: '#15803D' }} aria-label="Seleccionar fecha y hora de fin" />
                         </label>
                         <div className="mt-2">
                           <span className="text-sm text-white">{data.ends_at ? new Date(data.ends_at).toLocaleString() : 'No seleccionado'}</span>
                         </div>
                       </div>
                     </div>
+                    {/* Aviso global para fechas */}
+                    {dateWarning && (
+                      <div className="mt-3 text-sm text-red-700 bg-red-50 border border-red-100 p-2 rounded">{dateWarning}</div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -318,7 +361,7 @@ export default function CreateEvento({ event = null }) {
               <div className="card-3d-container">
                 <div className="card-3d p-4 bg-transparent">
                   <div className="inner">
-                    <label className="block text-sm font-medium text-white mb-1">Seleccione la ubicación del evento (opcional)</label>
+                              <label className="block text-sm font-medium text-white mb-1">Seleccione la ubicación del evento <span className="text-red-300">*</span></label>
                     <div className="mt-2">
                       <FiltroCiudad onCiudadSelect={handleCiudadSelect} />
                     </div>
@@ -332,6 +375,9 @@ export default function CreateEvento({ event = null }) {
                       <span className="mx-2">|</span>
                       <span className="font-medium">Lng:</span> {data.lng ?? '-'}
                     </div>
+                    { (errors.lat || errors.lng) && (
+                      <div className="mt-2 text-sm text-red-600">{errors.lat ?? errors.lng}</div>
+                    ) }
                   </div>
                 </div>
               </div>
@@ -341,9 +387,9 @@ export default function CreateEvento({ event = null }) {
                   <button type="button" onClick={() => { window.location.href = route('organizacion.eventos.show', event.id); }} className="px-4 py-2 rounded-md border border-gray-300 text-gray-700 bg-white hover:bg-gray-50 transition">Cancelar</button>
                 )}
 
-                <div className="btn-3d-container">
+                    <div className="btn-3d-container">
                   <div className="btn-3d">
-                    <button type="submit" disabled={processing} className="inner-btn">
+                    <button type="submit" disabled={processing || invalidDate} className="inner-btn">
                       {processing ? (event ? 'Guardando...' : 'Publicando...') : (event ? 'Editar evento' : 'Publicar evento')}
                     </button>
                   </div>

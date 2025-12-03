@@ -17,6 +17,7 @@ export default function ChatWidget() {
     const conversations = page.props.conversations || [];
 
     const [open, setOpen] = useState(false);
+    const openRef = useRef(false);
     const [unread, setUnread] = useState(0);
     const [selectedConversation, setSelectedConversation] = useState(null);
     const selectedConversationRef = useRef(null);
@@ -40,9 +41,10 @@ export default function ChatWidget() {
     useEffect(() => {
         if (!on) return;
         const off = on('newMessageNotification', (payload) => {
-            setUnread((u) => u + 1);
             try {
-                
+                if (!openRef.current) setUnread((u) => u + 1);
+            } catch (e) {}
+            try {
                 const key = payload.group_id ? `g_${payload.group_id}` : payload.user?.id;
                 if (!key) return;
                 setUnreadCounts((prev) => ({ ...prev, [key]: (prev[key] || 0) + 1 }));
@@ -705,13 +707,24 @@ export default function ChatWidget() {
     }, [on, selectedConversation]);
 
     useEffect(() => {
-        
+        // mantener ref sincronizada y limpiar badge cuando se abre
+        openRef.current = open;
         if (open) setUnread(0);
     }, [open]);
 
     if (!user) return null;
 
     useEffect(() => setMounted(true), []);
+
+    // Inicializar contadores persistentes desde props (mensajes no leidos calculados en el servidor)
+    useEffect(() => {
+        try {
+            const total = page.props?.auth?.user?.mensajes_no_leidos_total ?? 0;
+            const by = page.props?.auth?.user?.mensajes_no_leidos_por ?? {};
+            if (total && total > 0) setUnread(total);
+            if (by && typeof by === 'object') setUnreadCounts(by);
+        } catch (e) {}
+    }, [page.props?.auth?.user]);
 
     // Mantener un ref con la conversación seleccionada para que los handlers
     // registrados una vez puedan acceder siempre al valor más reciente.
@@ -1106,6 +1119,7 @@ export default function ChatWidget() {
                                                                 setSelectedConversation(conv);
                                                                 try {
                                                                     // limpiar no leídos para esta conversación cuando se abre
+                                                                    // limpiar localmente el contador
                                                                     if (conv.is_group) {
                                                                         setUnreadCounts((prev) => {
                                                                             const copy = { ...prev };
@@ -1119,6 +1133,14 @@ export default function ChatWidget() {
                                                                             return copy;
                                                                         });
                                                                     }
+
+                                                                    // Notificar al servidor que la conversación se leyó
+                                                                    try {
+                                                                        const tipo = conv.is_group ? 'group' : 'user';
+                                                                        const id = conv.id;
+                                                                        // ignorar el resultado
+                                                                        axios.post(route('conversations.marcar_leida', { tipo: tipo, id: id }));
+                                                                    } catch (e) {}
                                                                 } catch (e) {}
                                                             setLoadingMessages(true);
                                                             try {

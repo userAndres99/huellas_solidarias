@@ -59,4 +59,34 @@ class ConversationController extends Controller
             return response()->json(['message' => 'Error al restaurar la conversación.'], 500);
         }
     }
+
+    /**
+     * Marcar una conversación (usuario o grupo) como leída para el usuario autenticado.
+     * Tipo: 'user' o 'group'
+     */
+    public function marcarLeida(Request $request, $tipo, $id)
+    {
+        $user = $request->user();
+        if (! $user) return response()->json(['message' => 'No autorizado'], 401);
+
+        try {
+            $clave = null;
+            if ($tipo === 'user') {
+                $clave = 'u_' . (int)$id;
+            } elseif ($tipo === 'group') {
+                $clave = 'g_' . (int)$id;
+            } else {
+                return response()->json(['message' => 'Tipo inválido'], 400);
+            }
+
+            \Illuminate\Support\Facades\DB::table('actividad_conversaciones')->updateOrInsert(
+                ['usuario_id' => $user->id, 'clave' => $clave],
+                ['ultimo_visto' => now(), 'updated_at' => now(), 'created_at' => now()]
+            );
+
+            return response()->json(['message' => 'Marcado como leído'], 200);
+        } catch (\Throwable $e) {
+            return response()->json(['message' => 'Error marcando leído'], 500);
+        }
+    }
 }

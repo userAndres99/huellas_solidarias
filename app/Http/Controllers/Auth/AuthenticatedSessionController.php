@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Inertia\Response;
+use Illuminate\Support\Facades\DB;
 
 class AuthenticatedSessionController extends Controller
 {
@@ -42,6 +43,19 @@ class AuthenticatedSessionController extends Controller
      */
     public function destroy(Request $request): RedirectResponse
     {
+        // registrar último visto del usuario en actividad_usuarios antes de cerrar sesión
+        try {
+            $user = $request->user();
+            if ($user) {
+                DB::table('actividad_usuarios')->updateOrInsert(
+                    ['usuario_id' => $user->id],
+                    ['ultimo_visto' => now(), 'updated_at' => now(), 'created_at' => now()]
+                );
+            }
+        } catch (\Throwable $e) {
+            // no bloquear logout por errores de registro de actividad
+        }
+
         Auth::guard('web')->logout();
 
         $request->session()->invalidate();

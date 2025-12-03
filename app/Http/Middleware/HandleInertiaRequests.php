@@ -7,7 +7,10 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Middleware;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 use App\Models\Conversation;
+use App\Models\Group;
+use App\Models\Message;
 
 class HandleInertiaRequests extends Middleware
 {
@@ -50,6 +53,69 @@ class HandleInertiaRequests extends Middleware
                         'created_at' => $n->created_at,
                     ];
                 });
+
+            // Calcular contadores persistentes de mensajes no leídos desde actividad_usuarios.ultimo_visto
+            try {
+                // Intentar usar vistas por-conversacion en actividad_conversaciones
+                $globalLastSeen = DB::table('actividad_usuarios')->where('usuario_id', $user->id)->value('ultimo_visto');
+
+                // Mensajes privados: usar (actividad_conversaciones.ultimo_visto, actividad_usuarios.ultimo_visto)
+                $private = DB::table('messages as m')
+                    ->leftJoin('actividad_conversaciones as ac', function ($join) use ($user) {
+                        $join->on('ac.usuario_id', DB::raw($user->id))
+                            ->whereRaw("ac.clave = concat('u_', m.sender_id)");
+                    })
+                    ->leftJoin('actividad_usuarios as au', function ($join) use ($user) {
+                        $join->on('au.usuario_id', DB::raw($user->id));
+                    })
+                    ->select('m.sender_id', DB::raw('count(*) as cnt'))
+                    ->where('m.receiver_id', $user->id)
+                    ->where('m.sender_id', '<>', $user->id)
+                    ->whereRaw("m.created_at > COALESCE(ac.ultimo_visto, au.ultimo_visto, '1970-01-01')")
+                    ->groupBy('m.sender_id')
+                    ->get();
+
+                // Mensajes de grupos donde el usuario es miembro (contar por group_id)
+                $groups = [];
+                try {
+                    $groups = Group::getGroupsForUser($user)->pluck('id')->toArray();
+                } catch (\Throwable $_) { $groups = []; }
+
+                $groupCounts = collect([]);
+                if (!empty($groups)) {
+                    $groupCounts = DB::table('messages as m')
+                        ->leftJoin('actividad_conversaciones as ac', function ($join) use ($user) {
+                            $join->on('ac.usuario_id', DB::raw($user->id))
+                                ->whereRaw("ac.clave = concat('g_', m.group_id)");
+                        })
+                        ->leftJoin('actividad_usuarios as au', function ($join) use ($user) {
+                            $join->on('au.usuario_id', DB::raw($user->id));
+                        })
+                        ->select('m.group_id', DB::raw('count(*) as cnt'))
+                        ->whereIn('m.group_id', $groups)
+                        ->whereRaw("m.created_at > COALESCE(ac.ultimo_visto, au.ultimo_visto, '1970-01-01')")
+                        ->where('m.sender_id', '<>', $user->id)
+                        ->groupBy('m.group_id')
+                        ->get();
+                }
+
+                $unreadBy = [];
+                foreach ($private as $p) {
+                    $k = (string) ($p->sender_id);
+                    $unreadBy[$k] = (int) $p->cnt;
+                }
+                foreach ($groupCounts as $g) {
+                    $k = 'g_' . $g->group_id;
+                    $unreadBy[$k] = (int) $g->cnt;
+                }
+
+                $userData['mensajes_no_leidos_total'] = array_sum($unreadBy);
+                $userData['mensajes_no_leidos_por'] = $unreadBy;
+            } catch (\Throwable $e) {
+                Log::warning('Error calculando mensajes no leidos persistentes: ' . $e->getMessage());
+                $userData['mensajes_no_leidos_total'] = 0;
+                $userData['mensajes_no_leidos_por'] = [];
+            }
         } else {
             $userData = null;
         }

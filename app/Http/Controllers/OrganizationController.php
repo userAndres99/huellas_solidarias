@@ -42,16 +42,20 @@ class OrganizationController extends Controller
 
     public function store(Request $request)
     {
+        $messages = [
+            'starts_at.required' => 'El campo de la fecha es obligatorio.',
+        ];
+
         $request->validate([
             'titulo' => 'required|string|max:255',
-            'descripcion' => 'nullable|string',
-            'tipo' => 'nullable|string|max:100',
+            'descripcion' => 'required|string',
+            'tipo' => 'required|string|max:100',
             'starts_at' => 'required|date',
-            'ends_at' => 'nullable|date|after_or_equal:starts_at',
-            'lat' => 'nullable|numeric',
-            'lng' => 'nullable|numeric',
+            'ends_at' => 'nullable|date|after:starts_at',
+            'lat' => 'required|numeric',
+            'lng' => 'required|numeric',
             'image' => 'nullable|image|max:4096',
-        ]);
+        ], $messages);
 
         $path = null;
         if ($request->hasFile('image')) {
@@ -83,7 +87,8 @@ class OrganizationController extends Controller
             Log::warning('Error enviando notificaciones NewEvento: ' . $e->getMessage());
         }
 
-        return redirect()->route('organizacion.index')->with('success', 'Evento creado con éxito');
+        // Redirigir al panel de organización en la pestaña 'agenda'
+        return redirect()->to(route('organizacion.index') . '?view=agenda')->with('success', 'Evento creado con éxito');
     }
 
     public function create()
@@ -142,17 +147,21 @@ class OrganizationController extends Controller
         $user = $request->user();
         $e = Evento::where('id', $id)->where('organizacion_id', $user->id)->firstOrFail();
 
+        $messages = [
+            'starts_at.required' => 'El campo de la fecha es obligatorio.',
+        ];
+
         $request->validate([
             'titulo' => 'required|string|max:255',
-            'descripcion' => 'nullable|string',
-            'tipo' => 'nullable|string|max:100',
+            'descripcion' => 'required|string',
+            'tipo' => 'required|string|max:100',
             'starts_at' => 'required|date',
-            'ends_at' => 'nullable|date|after_or_equal:starts_at',
-            'lat' => 'nullable|numeric',
-            'lng' => 'nullable|numeric',
+            'ends_at' => 'nullable|date|after:starts_at',
+            'lat' => 'required|numeric',
+            'lng' => 'required|numeric',
             'image' => 'nullable|image|max:4096',
             'remove_image' => 'nullable|boolean',
-        ]);
+        ], $messages);
 
         $path = $e->image_path;
         if ($request->hasFile('image')) {

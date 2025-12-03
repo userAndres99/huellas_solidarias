@@ -6,7 +6,8 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import MensajeFlash from '@/Components/MensajeFlash';
 
 
-export default function Index({ events }) {
+export default function Index(props) {
+  const events = props.events;
   const initialView = (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('view') === 'agenda') ? 'agenda' : 'calendar';
   const [view, setView] = useState(initialView);
   const [clientFlash, setClientFlash] = useState(null);
@@ -47,10 +48,16 @@ export default function Index({ events }) {
                 </div>
 
                 <div className="mt-4">
-                  {/* Flash cuando se redirige después de acciones */}
+                  {/* Flash cuando se redirige después de acciones (server-side) */}
+                  {props?.flash?.success && view === 'agenda' && (
+                    <MensajeFlash tipo="success">{props.flash.success}</MensajeFlash>
+                  )}
+
+                  {/* Flash cuando viene desde sessionStorage (client) */}
                   {clientFlash && view === 'agenda' && (
                     <MensajeFlash tipo={clientFlash.type}>{clientFlash.message}</MensajeFlash>
                   )}
+
                   <OrgContent events={events} viewState={[view, setView]} />
                 </div>
           </div>
