@@ -1,6 +1,7 @@
 import TextInput from "@/Components/TextInput";
 import { router, usePage } from "@inertiajs/react";
 import { useEffect, useState, useRef } from "react";
+import axios from 'axios';
 import { PencilSquareIcon } from "@heroicons/react/24/outline";
 import ConversationItem from "../../Components/App/ConversationItem";
 import { useEventBus } from "@/EvenBus";
@@ -254,6 +255,116 @@ const ChatLayouts = ({ children }) => {
             } catch (e) { }
         }
 
+        // Si no tenemos prevMessage, intentar obtener el último mensaje vía API (fallback para moderación)
+        if (!prevMessage) {
+            try {
+                const authId = page.props.auth?.user?.id;
+                const isGroup = !!deletedMessage.group_id;
+
+                const handleNoPrev = (uList) => {
+                    // marcar tombstone para evitar recibir conversation.last_message que lo revirtiera inmediatamente
+                    try {
+                        const key = deletedMessage.group_id ? `g_${deletedMessage.group_id}` : `u_${deletedMessage.sender_id}_${deletedMessage.receiver_id}`;
+                        const now = Date.now();
+                        tombstonedConversationsRef.current.set(key, now);
+                        setTimeout(() => tombstonedConversationsRef.current.delete(key), 20000);
+                        console.debug('[ChatLayout] Tombstoned conversation', { key, at: now });
+                    } catch (e) {}
+
+                    // Si el borrado fue por moderación, mostrar "Mensaje borrado"
+                    if (payload?.moderated) {
+                        return uList.map((u) => {
+                            const matchUser = (!u.is_group && (u.id == deletedMessage.sender_id || u.id == deletedMessage.receiver_id)) || (u.is_group && deletedMessage.group_id && u.id == deletedMessage.group_id);
+                            if (!matchUser) return u;
+                            const defaultAvatar = (typeof window !== 'undefined' && window.location ? `${window.location.origin}/images/DefaultPerfil.jpg` : '/images/DefaultPerfil.jpg');
+                            return {
+                                ...u,
+                                avatar: u.avatar || u.avatar_url || u.profile_photo_url || defaultAvatar,
+                                avatar_url: u.avatar_url || u.avatar || u.profile_photo_url || defaultAvatar,
+                                last_message: 'Mensaje borrado',
+                                last_message_date: deletedMessage.created_at || u.last_message_date,
+                            };
+                        });
+                    }
+
+                    // Finalmente, si no hay prev y no es moderación, dejar sin texto
+                    return uList.map((u) => {
+                        const matchUser = (!u.is_group && (u.id == deletedMessage.sender_id || u.id == deletedMessage.receiver_id)) || (u.is_group && deletedMessage.group_id && u.id == deletedMessage.group_id);
+                        if (!matchUser) return u;
+                        const defaultAvatar = (typeof window !== 'undefined' && window.location ? `${window.location.origin}/images/DefaultPerfil.jpg` : '/images/DefaultPerfil.jpg');
+                        return {
+                            ...u,
+                            avatar: u.avatar || u.avatar_url || u.profile_photo_url || defaultAvatar,
+                            avatar_url: u.avatar_url || u.avatar || u.profile_photo_url || defaultAvatar,
+                            last_message: '',
+                            last_message_date: null,
+                        };
+                    });
+                };
+
+                // Construir la petición según tipo de conversación
+                if (isGroup) {
+                    axios.get(route('message.group.json', deletedMessage.group_id)).then(({ data }) => {
+                        const msgs = data?.data || data || [];
+                        if (msgs && msgs.length > 0) {
+                            const prev = msgs[0];
+                            const display = prev.message || '';
+                            setLocalConversations((prevList) => prevList.map((u) => {
+                                const matchUser = (u.is_group && deletedMessage.group_id && u.id == deletedMessage.group_id);
+                                if (!matchUser) return u;
+                                const defaultAvatar = (typeof window !== 'undefined' && window.location ? `${window.location.origin}/images/DefaultPerfil.jpg` : '/images/DefaultPerfil.jpg');
+                                return {
+                                    ...u,
+                                    avatar: u.avatar || u.avatar_url || u.profile_photo_url || defaultAvatar,
+                                    avatar_url: u.avatar_url || u.avatar || u.profile_photo_url || defaultAvatar,
+                                    last_message: display,
+                                    last_message_date: prev.created_at || u.last_message_date,
+                                };
+                            }));
+                        } else {
+                            setLocalConversations(handleNoPrev);
+                        }
+                    }).catch(() => setLocalConversations(handleNoPrev));
+                } else {
+                    // conversación entre usuarios: identificar el id del otro participante
+                    const otherId = (parseInt(deletedMessage.sender_id) === parseInt(authId)) ? deletedMessage.receiver_id : deletedMessage.sender_id;
+                    if (!otherId) {
+                        setLocalConversations(handleNoPrev);
+                        return;
+                    }
+                    axios.get(route('message.user.json', otherId)).then(({ data }) => {
+                        const msgs = data?.data || data || [];
+                        if (msgs && msgs.length > 0) {
+                            const prev = msgs[0];
+                            const authIdLocal = page.props.auth?.user?.id;
+                            const shouldPrefix = authIdLocal && parseInt(prev.sender_id) === parseInt(authIdLocal);
+                            const display = shouldPrefix ? (prev.message && prev.message.startsWith('Yo:') ? prev.message : `Yo: ${prev.message}`) : (prev.message || '');
+                            setLocalConversations((prevList) => prevList.map((u) => {
+                                const matchUser = (!u.is_group && (u.id == deletedMessage.sender_id || u.id == deletedMessage.receiver_id));
+                                if (!matchUser) return u;
+                                const defaultAvatar = (typeof window !== 'undefined' && window.location ? `${window.location.origin}/images/DefaultPerfil.jpg` : '/images/DefaultPerfil.jpg');
+                                const avatarFromPrev = prev.sender?.profile_photo_url || prev.sender?.avatar_url || prev.sender?.avatar || null;
+                                return {
+                                    ...u,
+                                    avatar: u.avatar || u.avatar_url || avatarFromPrev || u.profile_photo_url || defaultAvatar,
+                                    avatar_url: u.avatar_url || u.avatar || avatarFromPrev || u.profile_photo_url || defaultAvatar,
+                                    last_message: display,
+                                    last_message_date: prev.created_at || u.last_message_date,
+                                };
+                            }));
+                        } else {
+                            setLocalConversations(handleNoPrev);
+                        }
+                    }).catch(() => setLocalConversations(handleNoPrev));
+                }
+
+                return;
+            } catch (e) {
+                // si falla el fetch, seguir con el comportamiento anterior
+            }
+        }
+
+        // Si tenemos prevMessage, aplicarlo directamente
         setLocalConversations((oldUsers) =>
             oldUsers.map((u) => {
                 const matchUser =
@@ -287,59 +398,29 @@ const ChatLayouts = ({ children }) => {
 
                 const defaultAvatar = (typeof window !== 'undefined' && window.location ? `${window.location.origin}/images/DefaultPerfil.jpg` : '/images/DefaultPerfil.jpg');
 
-                if (prevMessage) {
-                    try {
-                        const authId = page.props.auth?.user?.id;
-                        const text = prevMessage.message || '';
-                        const shouldPrefix = authId && parseInt(prevMessage.sender_id) === parseInt(authId);
-                        const display = shouldPrefix ? (text.startsWith('Yo:') ? text : `Yo: ${text}`) : text;
-                        // intentar preservar avatar 
-                        const avatarFromPrev = prevMessage.sender?.profile_photo_url || prevMessage.sender?.avatar_url || prevMessage.sender?.avatar || null;
-                        return {
-                            ...u,
-                            avatar: u.avatar || u.avatar_url || avatarFromPrev || u.profile_photo_url || defaultAvatar,
-                            avatar_url: u.avatar_url || u.avatar || avatarFromPrev || u.profile_photo_url || defaultAvatar,
-                            last_message: display,
-                            last_message_date: prevMessage.created_at,
-                        };
-                    } catch (e) {
-                        return {
-                            ...u,
-                            avatar: u.avatar || u.avatar_url || u.profile_photo_url || defaultAvatar,
-                            avatar_url: u.avatar_url || u.avatar || u.profile_photo_url || defaultAvatar,
-                            last_message: prevMessage.message,
-                            last_message_date: prevMessage.created_at,
-                        };
-                    }
-                }
-
-                // Si no hay mensaje previo, mostramos un placeholder indicando eliminación
                 try {
-                    const key = deletedMessage.group_id ? `g_${deletedMessage.group_id}` : `u_${deletedMessage.sender_id}_${deletedMessage.receiver_id}`;
-                    const now = Date.now();
-                    tombstonedConversationsRef.current.set(key, now);
-                    setTimeout(() => tombstonedConversationsRef.current.delete(key), 20000);
-                    console.debug('[ChatLayout] Tombstoned conversation', { key, at: now });
-                } catch (e) { }
-
-                // Si el borrado fue por moderación, mostrar "Mensaje borrado"
-                if (payload?.moderated) {
+                    const authId = page.props.auth?.user?.id;
+                    const text = prevMessage.message || '';
+                    const shouldPrefix = authId && parseInt(prevMessage.sender_id) === parseInt(authId);
+                    const display = shouldPrefix ? (text.startsWith('Yo:') ? text : `Yo: ${text}`) : text;
+                    // intentar preservar avatar 
+                    const avatarFromPrev = prevMessage.sender?.profile_photo_url || prevMessage.sender?.avatar_url || prevMessage.sender?.avatar || null;
+                    return {
+                        ...u,
+                        avatar: u.avatar || u.avatar_url || avatarFromPrev || u.profile_photo_url || defaultAvatar,
+                        avatar_url: u.avatar_url || u.avatar || avatarFromPrev || u.profile_photo_url || defaultAvatar,
+                        last_message: display,
+                        last_message_date: prevMessage.created_at,
+                    };
+                } catch (e) {
                     return {
                         ...u,
                         avatar: u.avatar || u.avatar_url || u.profile_photo_url || defaultAvatar,
                         avatar_url: u.avatar_url || u.avatar || u.profile_photo_url || defaultAvatar,
-                        last_message: 'Mensaje borrado',
-                        last_message_date: deletedMessage.created_at || u.last_message_date,
+                        last_message: prevMessage.message,
+                        last_message_date: prevMessage.created_at,
                     };
                 }
-
-                return {
-                    ...u,
-                    avatar: u.avatar || u.avatar_url || u.profile_photo_url || defaultAvatar,
-                    avatar_url: u.avatar_url || u.avatar || u.profile_photo_url || defaultAvatar,
-                    last_message: '',
-                    last_message_date: null,
-                };
             })
         );
     };

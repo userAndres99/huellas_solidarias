@@ -228,9 +228,16 @@ const MessageInput = ({ conversation = null, onFocus = null, onBlur = null, isMo
                         onFocus={onFocus}
                         onBlur={onBlur}
                     />
-                    <button type="button" onClick={onSendClick} disabled={messageSending} className="btn btn-info rounded-l-none px-3 py-2" aria-label="Enviar mensaje">
+                    <button
+                        type="button"
+                        onClick={onSendClick}
+                        disabled={messageSending}
+                        className="btn btn-info rounded-l-none px-3 py-2"
+                        aria-label={messageSending ? "Enviando mensaje" : "Enviar mensaje"}
+                        aria-live="polite"
+                    >
                         <PaperAirplaneIcon className="w-6"/>
-                        <span className="hidden sm:inline">Enviar</span>
+                        <span className="hidden sm:inline">{messageSending ? 'Enviando...' : 'Enviar'}</span>
                     </button>
                 </div>{" "}
                 {!!uploadProgress && (
