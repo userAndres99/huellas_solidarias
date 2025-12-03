@@ -41,6 +41,11 @@ Route::middleware(['auth', 'verified', 'active'])->group(function(){
    Route::get('/usuarios/{user}', [BuscadorUsuariosController::class, 'show'])
        ->name('usuarios.show');
 
+    // Lista de usuarios que sigue un usuario
+    Route::get('/usuarios/{user}/siguiendo', [BuscadorUsuariosController::class, 'siguiendo'])->name('usuarios.siguiendo');
+    // Lista de usuarios que siguen a un usuario
+    Route::get('/usuarios/{user}/seguidores', [BuscadorUsuariosController::class, 'seguidores'])->name('usuarios.seguidores');
+
    // Seguir / dejar de seguir usuarios
    Route::post('/usuarios/{user}/seguir', [\App\Http\Controllers\SeguimientoController::class, 'store'])
        ->name('usuarios.seguir');

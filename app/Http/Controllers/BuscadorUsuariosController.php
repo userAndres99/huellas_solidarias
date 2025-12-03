@@ -88,11 +88,53 @@ class BuscadorUsuariosController extends Controller
         $auth = $request->user();
         $isFollowing = $auth ? $auth->isFollowing($user) : false;
         $followersCount = $user->seguidores()->count();
+        $followingCount = $user->siguiendo()->count();
 
         return Inertia::render('Users/VerPerfil', [
             'usuario' => $user,
             'is_following' => $isFollowing,
             'followers_count' => $followersCount,
+            'following_count' => $followingCount,
+        ]);
+    }
+
+    /**
+     * Mostrar la lista de usuarios a los que sigue el usuario dado.
+     */
+    public function siguiendo(User $user)
+    {
+        $list = $user->siguiendo()->with('organizacion')->get()->map(function ($u) {
+            return [
+                'id' => $u->id,
+                'name' => $u->name,
+                'profile_photo_url' => $u->profile_photo_url,
+                'organizacion' => $u->organizacion ? ['id' => $u->organizacion->id, 'nombre' => $u->organizacion->nombre] : null,
+            ];
+        })->toArray();
+
+        return Inertia::render('Users/Siguiendo', [
+            'usuario' => $user,
+            'siguiendo' => $list,
+        ]);
+    }
+
+    /**
+     * Mostrar la lista de usuarios que siguen al usuario dado.
+     */
+    public function seguidores(User $user)
+    {
+        $list = $user->seguidores()->with('organizacion')->get()->map(function ($u) {
+            return [
+                'id' => $u->id,
+                'name' => $u->name,
+                'profile_photo_url' => $u->profile_photo_url,
+                'organizacion' => $u->organizacion ? ['id' => $u->organizacion->id, 'nombre' => $u->organizacion->nombre] : null,
+            ];
+        })->toArray();
+
+        return Inertia::render('Users/Seguidores', [
+            'usuario' => $user,
+            'seguidores' => $list,
         ]);
     }
 

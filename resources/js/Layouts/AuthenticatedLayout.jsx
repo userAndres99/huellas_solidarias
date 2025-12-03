@@ -442,9 +442,9 @@ export default function AuthenticatedLayout({ header, children }) {
                                                     </Dropdown.Trigger>
 
                                                     <Dropdown.Content>
-                                                        <Dropdown.Link href={route('profile.edit')}>
-                                                            Perfil
-                                                        </Dropdown.Link>
+                                                            <Dropdown.Link href={route('usuarios.show', user.id)}>
+                                                                Perfil
+                                                            </Dropdown.Link>
                                                         <Dropdown.Link
                                                             href={route('logout')}
                                                             method="post"
@@ -632,7 +632,7 @@ export default function AuthenticatedLayout({ header, children }) {
                             <div className="mt-3 space-y-1">
                                 {user ? (
                                     <>
-                                        <ResponsiveNavLink href={route('profile.edit')}>
+                                        <ResponsiveNavLink href={route('usuarios.show', user.id)}>
                                             Perfil
                                         </ResponsiveNavLink>
                                         <ResponsiveNavLink

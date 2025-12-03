@@ -19,6 +19,7 @@ export default function VerPerfil(props){
     const initialFollowing = pageProps.is_following ?? false;
     const [following, setFollowing] = useState(initialFollowing);
     const [followersCount, setFollowersCount] = useState(pageProps.followers_count ?? 0);
+    const [followingCount, setFollowingCount] = useState(pageProps.following_count ?? 0);
     const [donationModalOpen, setDonationModalOpen] = useState(false);
     const [donationTarget, setDonationTarget] = useState(null);
     const { emit } = useEventBus();
@@ -52,11 +53,41 @@ export default function VerPerfil(props){
         <>
             <Head title={`Perfil - ${usuario.name}`} />
             <div className="max-w-4xl mx-auto p-6">
-            <div className="flex items-center gap-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
                 <img src={usuario.profile_photo_url || '/images/DefaultPerfil.jpg'} alt="avatar" className="h-24 w-24 rounded-full object-cover" />
-                <div>
-                    <h1 className="text-2xl font-semibold">{usuario.name}</h1>
-                    <div className="text-sm text-gray-600">{usuario.email}</div>
+                <div className="flex-1">
+                    <div className="flex items-start sm:items-center justify-between">
+                        <h1 className="text-2xl font-semibold">{usuario.name}</h1>
+                    </div>
+
+                    <div className="text-sm text-gray-600 mt-2">{usuario.email}</div>
+
+                    {/* contador de seguidores y seguidos */}
+                    <div className="mt-2 text-sm text-gray-600 flex items-center gap-4">
+                        <div className="text-center">
+                            <Link href={route('usuarios.seguidores', usuario.id)} className="inline-block text-center group p-2 rounded hover:bg-gray-50 transition-colors cursor-pointer" title="Ver seguidores">
+                                <div className="flex items-center justify-center gap-2">
+                                    <div className="font-semibold">{followersCount}</div>
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3 h-3 text-gray-400 group-hover:text-gray-600">
+                                        <path fillRule="evenodd" d="M7.21 4.21a.75.75 0 011.06 0l4.5 4.5a.75.75 0 010 1.06l-4.5 4.5a.75.75 0 11-1.06-1.06L11.44 10 7.21 5.27a.75.75 0 010-1.06z" clipRule="evenodd" />
+                                    </svg>
+                                </div>
+                                <div className="text-xs text-gray-500 group-hover:text-gray-700">Seguidores</div>
+                            </Link>
+                        </div>
+                        <div className="text-center">
+                            <Link href={route('usuarios.siguiendo', usuario.id)} className="inline-block text-center group p-2 rounded hover:bg-gray-50 transition-colors cursor-pointer" title="Ver seguidos">
+                                <div className="flex items-center justify-center gap-2">
+                                    <div className="font-semibold">{followingCount}</div>
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3 h-3 text-gray-400 group-hover:text-gray-600">
+                                        <path fillRule="evenodd" d="M7.21 4.21a.75.75 0 011.06 0l4.5 4.5a.75.75 0 010 1.06l-4.5 4.5a.75.75 0 11-1.06-1.06L11.44 10 7.21 5.27a.75.75 0 010-1.06z" clipRule="evenodd" />
+                                    </svg>
+                                </div>
+                                <div className="text-xs text-gray-500 group-hover:text-gray-700">Seguidos</div>
+                            </Link>
+                        </div>
+                    </div>
+
                     {usuario.organizacion && (
                         <div className="mt-2">
                             <div className="text-sm font-medium">Organización</div>

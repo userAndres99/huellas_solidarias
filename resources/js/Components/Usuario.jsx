@@ -15,7 +15,7 @@ function getInitials(name = '') {
     .toUpperCase();
 }
 
-export default function Usuario({ usuario, caso = null, userPhoto = null, userName = null }) {
+export default function Usuario({ usuario, caso = null, userPhoto = null, userName = null, inline = false }) {
   const page = usePage();
   const authUser = page.props.auth?.user ?? null;
   const [open, setOpen] = useState(false);
@@ -41,6 +41,26 @@ export default function Usuario({ usuario, caso = null, userPhoto = null, userNa
   const hasMp = usuario.organizacion && (usuario.organizacion.mp_user_id || usuario.organizacion.mp_cuenta?.mp_user_id);
 
   if (!authUser) {
+    if (inline) {
+      return (
+        <EnlaceRequiereLogin href={`/usuarios/${usuario.id}`} className="flex items-center gap-3">
+          {photo ? (
+            <LoadingImagenes src={photo} alt={name} wrapperClass="w-10 h-10 rounded-full overflow-hidden" imgClass="w-10 h-10 rounded-full object-cover border" placeholderText={null} avatar={true} />
+          ) : (
+            <div className="w-10 h-10 rounded-full flex items-center justify-center font-semibold text-sm bg-gray-200 border">{getInitials(name)}</div>
+          )}
+          <div className="text-sm">
+            <div className="text-xs text-slate-900 font-medium">
+              {name}
+              {usuario?.organizacion?.nombre ? (
+                <span className="text-xs text-slate-600"> ({usuario.organizacion.nombre})</span>
+              ) : null}
+            </div>
+          </div>
+        </EnlaceRequiereLogin>
+      );
+    }
+
     return (
       <div className="absolute left-3 bottom-3 z-30">
         <EnlaceRequiereLogin href={`/usuarios/${usuario.id}`} className="flex items-center gap-3 bg-white/80 backdrop-blur rounded-full px-2 py-1">
@@ -58,6 +78,26 @@ export default function Usuario({ usuario, caso = null, userPhoto = null, userNa
             </div>
           </div>
         </EnlaceRequiereLogin>
+      </div>
+    );
+  }
+
+  if (inline) {
+    return (
+      <div className="flex items-center gap-3">
+        {photo ? (
+          <LoadingImagenes src={photo} alt={name} wrapperClass="w-10 h-10 rounded-full overflow-hidden" imgClass="w-10 h-10 rounded-full object-cover border" placeholderText={null} avatar={true} />
+        ) : (
+          <div className="w-10 h-10 rounded-full flex items-center justify-center font-semibold text-sm bg-gray-200 border">{getInitials(name)}</div>
+        )}
+        <div className="text-sm">
+          <div className="text-xs text-slate-900 font-medium">
+            <Link href={route('usuarios.show', usuario.id)} className="hover:underline">{name}</Link>
+            {usuario?.organizacion?.nombre ? (
+              <span className="text-xs text-slate-600"> ({usuario.organizacion.nombre})</span>
+            ) : null}
+          </div>
+        </div>
       </div>
     );
   }
