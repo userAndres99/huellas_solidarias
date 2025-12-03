@@ -58,10 +58,14 @@ export default function Index(props) {
       const raw = sessionStorage.getItem('flash_message');
       if (raw) {
         const data = JSON.parse(raw);
-        setClientFlash(data);
-        sessionStorage.removeItem('flash_message');
-        
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        // Ignore flash messages coming from other parts (e.g. notifications)
+        if (!data || data.origin === 'notifications') {
+          sessionStorage.removeItem('flash_message');
+        } else {
+          setClientFlash(data);
+          sessionStorage.removeItem('flash_message');
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
       }
     } catch (e) {
       

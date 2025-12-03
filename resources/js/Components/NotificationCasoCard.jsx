@@ -33,7 +33,9 @@ export default function NotificationCasoCard({ notification, onDelete = null }) 
         };
         setCaso(pub);
       } catch (e) {
-        // ignore
+        // Si la petición falla (p. ej. el caso fue cancelado/eliminado), mostramos un placeholder
+        if (!mounted) return;
+        setCaso({ id: casoId, descripcion: 'Publicación no disponible', fotoAnimal: null, fechaPublicacion: null, tipoAnimal: null, situacion: null, estado: 'cancelado', autor: null });
       }
     }
     fetchCaso();

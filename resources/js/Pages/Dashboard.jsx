@@ -289,7 +289,7 @@ export default function Dashboard({ auth, misPublicaciones }) {
                             const res = await fetch(route('notifications.destroy_all'), { method: 'DELETE', headers: {'X-CSRF-TOKEN': token} });
                             if (res.ok) {
                               setNotificationsState([]);
-                              try { sessionStorage.setItem('flash_message', JSON.stringify({ type: 'success', message: 'Notificaciones vaciadas' })); } catch(e){}
+                              try { sessionStorage.setItem('flash_message', JSON.stringify({ type: 'success', message: 'Notificaciones vaciadas', origin: 'notifications' })); } catch(e){}
                             }
                           } catch (e) {
                             console.error(e);

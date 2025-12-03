@@ -21,6 +21,7 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use App\Http\Controllers\MessageController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\EventController;
 
 Route::middleware(['auth', 'verified', 'active'])->group(function(){
     Route::get('/chat', [ChatController::class, 'chat'])->name('chat');
@@ -144,6 +145,9 @@ Route::get('/ciudades', [CiudadController::class, 'search'])->name('ciudades.sea
 Route::get('/casos/{id}', function ($id) {
     return Inertia::render('Casos/Show', ['initialId' => $id]);
 })->name('casos.show');
+
+// Vista pública de un evento (user-facing)
+Route::get('/eventos/{id}', [EventController::class, 'show'])->name('eventos.show');
 
 // Publicar un caso (solo usuarios autenticados)
 Route::middleware(['auth'])->group(function () {

@@ -10,6 +10,7 @@ export default function Show(props) {
   const id = initialId || window.location.pathname.split('/').pop();
   const [caso, setCaso] = useState(undefined);
   const [loading, setLoading] = useState(true); 
+  const [caseStatus, setCaseStatus] = useState(null); // 'cancelado' | 'finalizado' | null
 
   useEffect(() => {
     const controller = new AbortController();
@@ -21,7 +22,16 @@ export default function Show(props) {
           headers: { Accept: 'application/json' },
           signal,
         });
-        if (!res.ok) throw new Error('Not found');
+        if (!res.ok) {
+          if (res.status === 404) {
+            // caso cancelado o eliminado
+            setCaseStatus('cancelado');
+            setCaso(null);
+            setLoading(false);
+            return;
+          }
+          throw new Error('Not found');
+        }
 
         const data = await res.json();
 
@@ -73,8 +83,18 @@ export default function Show(props) {
 
  if (caso === null){
   return (
-    <div className='flex items-center justify-center h-64 text-red-600'>
-      No se pudo cargar el caso o no existe
+    <div className='flex items-center justify-center h-64'>
+      {caseStatus === 'cancelado' ? (
+        <div className='text-center'>
+          <div className='text-2xl font-semibold text-gray-800 mb-2'>Publicación cancelada o finalizada</div>
+          <div className='text-sm text-gray-600'>El autor eliminó o finalizó esta publicación.</div>
+          <div className='mt-4'>
+            <Link href="/casos" className="text-blue-600">← Volver a Publicaciones</Link>
+          </div>
+        </div>
+      ) : (
+        <div className='text-red-600'>No se pudo cargar el caso o no existe</div>
+      )}
     </div>
   )
  }

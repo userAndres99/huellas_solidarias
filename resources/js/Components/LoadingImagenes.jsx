@@ -5,12 +5,14 @@ import React, { useState, useEffect } from 'react';
  */
 export default function LoadingImagenes({ src, alt = '', imgClass = '', wrapperClass = '', placeholderText = 'Cargando imagen...', onLoad = null, avatar = false, fallback = null, forceLoading = false, overlay = true, ...rest }) {
   const [loaded, setLoaded] = useState(false);
+  const [failed, setFailed] = useState(false);
 
   useEffect(() => {
     setLoaded(false);
+    setFailed(false);
   }, [src]);
 
-  if (!src && !forceLoading) {
+  if ((!src || failed) && !forceLoading) {
     return (
       <div className={`${wrapperClass} bg-[rgba(2,132,199,0.06)] flex items-center justify-center text-slate-500`}>
         Sin imagen
@@ -149,8 +151,7 @@ export default function LoadingImagenes({ src, alt = '', imgClass = '', wrapperC
               
             }
 
-
-
+            setFailed(true);
             setLoaded(true);
             if (typeof onLoad === 'function') onLoad(e);
           }}

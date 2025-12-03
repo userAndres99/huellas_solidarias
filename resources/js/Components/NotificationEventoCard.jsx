@@ -71,9 +71,6 @@ export default function NotificationEventoCard({ notification, onDelete = null }
   }
 
   const image = normalizeImage(imageRaw);
-  const ready = Boolean(image || data.organizacion_name || data.name || data.title);
-
-  if (!ready) return <NotificationSkeleton />;
 
   return (
     <div className="bg-white rounded-lg overflow-hidden shadow-sm p-3 flex items-start gap-3">
@@ -92,7 +89,7 @@ export default function NotificationEventoCard({ notification, onDelete = null }
 
         <div className="mt-3 flex items-center justify-between">
           <div>
-            <a href={data.url} className="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white rounded-md text-sm">Ir al evento</a>
+            <a href={route('eventos.show', data.evento_id || notification.data.evento_id)} className="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white rounded-md text-sm">Ir al evento</a>
           </div>
           <div>
             <button onClick={handleDelete} className="text-xs px-2 py-1 rounded bg-red-50 text-red-700">Eliminar</button>
