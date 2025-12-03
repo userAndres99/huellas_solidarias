@@ -136,23 +136,33 @@ export default function NotificationBell() {
     }
 
     async function markRead(id, url){
+        const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+        let markSucceeded = false;
         try{
-            const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-            await fetch(route('notifications.read', id), { method: 'POST', headers: {'X-CSRF-TOKEN': token} });
-            setItems(prev => prev.map(i => i.id === id ? {...i, read_at: new Date().toISOString()} : i));
-            setUnread(prev => Math.max(0, prev-1));
-            if (url) window.location = url;
-            
-            try {
-                const raw = localStorage.getItem(STORAGE_KEY);
-                if (raw) {
-                    const parsed = JSON.parse(raw) || [];
-                    const updated = parsed.map(i => i.id === id ? {...i, read_at: new Date().toISOString()} : i);
-                    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-                }
-            } catch (e) {}
+            const res = await fetch(route('notifications.read', id), { method: 'POST', headers: {'X-CSRF-TOKEN': token} });
+            if (res && res.ok) {
+                markSucceeded = true;
+                setItems(prev => prev.map(i => i.id === id ? {...i, read_at: new Date().toISOString()} : i));
+                setUnread(prev => Math.max(0, prev-1));
+
+                try {
+                    const raw = localStorage.getItem(STORAGE_KEY);
+                    if (raw) {
+                        const parsed = JSON.parse(raw) || [];
+                        const updated = parsed.map(i => i.id === id ? {...i, read_at: new Date().toISOString()} : i);
+                        localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+                    }
+                } catch (e) {}
+            } else {
+                console.warn('markRead request failed', res && res.status);
+            }
         }catch(e){
             console.error(e);
+        } finally {
+            // navegar a la URL asociada si el marcado fue exitoso y hay URL
+            if (url) {
+                try { window.location = url; } catch (e) { /* ignore */ }
+            }
         }
     }
 

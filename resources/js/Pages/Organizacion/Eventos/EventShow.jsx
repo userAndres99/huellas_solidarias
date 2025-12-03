@@ -1,31 +1,72 @@
-import React from 'react';
+import React, { useState } from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link } from '@inertiajs/react';
+import LoadingImagenes from '@/Components/LoadingImagenes';
+import MapaInteractivo from '@/Components/MapaInteractivo';
 
-export default function EventShow({ event }) {
+export default function EventShow({ event, status = 'active' }) {
+  const image = event?.image_url ?? null;
+  const [mapCenter, setMapCenter] = useState(event?.lat && event?.lng ? [Number(event.lat), Number(event.lng)] : null);
+
   return (
     <>
-      <Head title={event.title || 'Evento'} />
+      <Head title={event?.title || 'Evento'} />
 
       <div className="container mx-auto p-4 max-w-3xl">
         <Link href={route('organizacion.index')} className="text-blue-600 mb-4 inline-block">← Volver</Link>
 
-        <div className="bg-white shadow rounded overflow-hidden">
-          {event.image_url ? (
-            <img src={event.image_url} alt={event.title} className="w-full h-64 object-cover" />
+        <div className="bg-white rounded-lg shadow p-4">
+          <div className="mb-4">
+            <LoadingImagenes src={image} alt={event?.title} wrapperClass="w-full h-64 rounded-md overflow-hidden bg-gray-100" imgClass="w-full h-full object-cover" placeholderText="Cargando imagen del evento..." />
+          </div>
+
+          {status === 'finalizado' ? (
+            <div className="mb-4 p-3 rounded bg-yellow-50 text-yellow-800">Evento finalizado</div>
+          ) : null}
+
+          {event?.lat && event?.lng ? (
+            <div className="mb-4">
+              <div className="flex items-center justify-between mb-2">
+                <div className="text-sm font-semibold">Ubicación del evento</div>
+                <div>
+                  <button
+                    type="button"
+                    onClick={() => setMapCenter([Number(event.lat), Number(event.lng)])}
+                    className="text-sm px-3 py-1 bg-white border rounded shadow-sm hover:bg-gray-50"
+                  >
+                    Centrar
+                  </button>
+                </div>
+              </div>
+
+              <div className="h-64 rounded overflow-hidden border">
+                <MapaInteractivo
+                  readOnly={true}
+                  center={mapCenter}
+                  initialPosition={[Number(event.lat), Number(event.lng)]}
+                  marker={true}
+                  markerType="org"
+                  showMarkers={false}
+                />
+              </div>
+            </div>
           ) : (
-            <div className="w-full h-64 bg-gray-100 flex items-center justify-center text-gray-500">Sin imagen</div>
+            <div className="mb-4 text-sm text-gray-500">Sin ubicación disponible</div>
           )}
 
-          <div className="p-4">
-            <h1 className="text-2xl font-bold mb-2">{event.title}</h1>
-            <p className="text-gray-700 mb-3">{event.description}</p>
+          <h1 className="text-2xl font-bold mb-2">{event?.title}</h1>
 
-            <div className="text-sm text-gray-600 space-y-1">
-              <div><strong>Inicio:</strong> {event.start ? new Date(event.start).toLocaleString() : '-'}</div>
-              <div><strong>Fin:</strong> {event.end ? new Date(event.end).toLocaleString() : '-'}</div>
-              <div><strong>Ubicación:</strong> {event.lat && event.lng ? `${event.lat}, ${event.lng}` : 'No especificada'}</div>
-            </div>
+          {event?.organizacion ? (
+            <div className="text-sm text-gray-600 mb-2">Organizado por: <Link href={`/organizacion/${event.organizacion.id}`} className="text-blue-600">{event.organizacion.name || event.organizacion.nombre}</Link></div>
+          ) : null}
+
+          <div className="text-sm text-gray-500 mb-4">
+            {event?.start ? new Date(event.start).toLocaleString() : ''}
+            {event?.end ? ` — ${new Date(event.end).toLocaleString()}` : ''}
+          </div>
+
+          <div className="prose max-w-none text-gray-700">
+            {event?.description || event?.descripcion || 'Sin descripción.'}
           </div>
         </div>
       </div>

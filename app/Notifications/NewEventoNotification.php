@@ -34,7 +34,8 @@ class NewEventoNotification extends Notification implements ShouldQueue
             'message' => 'Nueva actividad publicada',
             // incluir imagen promocional (si existe) para que el frontend pueda mostrarla
             'image_url' => $this->evento->getImageUrlAttribute(),
-            'url' => route('organizacion.eventos.show', $this->evento->id),
+            // Enviar enlace público al evento para que las notificaciones lleven a la página pública
+            'url' => route('eventos.show', $this->evento->id),
         ];
     }
 

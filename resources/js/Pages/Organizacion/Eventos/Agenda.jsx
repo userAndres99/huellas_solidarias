@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from '@inertiajs/react';
+import confirmToast from '@/Utils/confirmToast';
 
 export default function Agenda({ events = [] }) {
   if (!events.length) {
@@ -32,23 +33,27 @@ export default function Agenda({ events = [] }) {
             <div className="flex items-center gap-3">
               <Link href={route('organizacion.eventos.show', ev.id)} className="text-blue-600 text-sm">Ver</Link>
               <Link href={route('organizacion.eventos.edit', ev.id)} className="text-sm text-gray-600 hover:text-blue-600">Editar</Link>
-              <button type="button" onClick={() => {
-                  if (!confirm('¿Estás seguro que querés eliminar este evento? Esta acción no se puede deshacer.')) return;
+              <button type="button" onClick={async () => {
+                  const confirmed = await confirmToast('¿Estás seguro que querés eliminar este evento? Esta acción no se puede deshacer.', { confirmLabel: 'Eliminar', cancelLabel: 'Cancelar' });
+                  if (!confirmed) return;
                   try {
                     const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-                    fetch(route('organizacion.eventos.destroy', ev.id), {
+                    await fetch(route('organizacion.eventos.destroy', ev.id), {
                       method: 'DELETE',
                       headers: {
                         'X-CSRF-TOKEN': token,
                         'X-Requested-With': 'XMLHttpRequest'
                       },
                       credentials: 'same-origin',
-                    }).finally(() => {
-                      // redireccionar de vuelta al panel de organización
-                      window.location.href = route('organizacion.index');
                     });
-                  } catch (_) {
-                    window.location.href = route('organizacion.index');
+                  } catch (err) {
+                    
+                  } finally {
+                    try {
+                      sessionStorage.setItem('flash_message', JSON.stringify({ type: 'success', message: 'Evento eliminado con éxito' }));
+                    } catch (e) {}
+                    // redireccionar de vuelta al panel de organización en la pestaña 'agenda'
+                    window.location.href = route('organizacion.index') + '?view=agenda';
                   }
                 }} className="text-sm text-red-600 hover:text-red-800">Eliminar</button>
             </div>

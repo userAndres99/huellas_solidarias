@@ -20,7 +20,9 @@ class OrganizationController extends Controller
     {
         // return al frontend los eventos de la organización 
         $user = Auth::user();
-        $events = Evento::where('organizacion_id', $user->id)->get();
+        $events = Evento::where('organizacion_id', $user->id)
+            ->orderBy('created_at', 'desc')
+            ->get();
     return Inertia::render('Organizacion/Eventos/Index', [
             'events' => $events->map(function($e){
                 return [

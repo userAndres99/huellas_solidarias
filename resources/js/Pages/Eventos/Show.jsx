@@ -64,6 +64,7 @@ export default function Show(props) {
                   initialPosition={[Number(event.lat), Number(event.lng)]}
                   marker={true}
                   markerType="org"
+                  showMarkers={false}
                 />
               </div>
             </div>

@@ -25,6 +25,15 @@ function formatDate(dateStr) {
 export default function Dashboard({ auth, misPublicaciones }) {
   const { flash, verificationNotification } = usePage().props;
   const [profileUrl, setProfileUrl] = useState(null);
+  // asegurar orden descendente por fecha (más recientes primero)
+  const sortByDateDesc = (arr) => {
+    if (!Array.isArray(arr)) return [];
+    return [...arr].sort((a, b) => {
+      const da = a?.created_at ? new Date(a.created_at) : new Date(0);
+      const db = b?.created_at ? new Date(b.created_at) : new Date(0);
+      return db - da;
+    });
+  };
   const [scrapedItems, setScrapedItems] = useState([]);
   const [loadingScraped, setLoadingScraped] = useState(true);
   const [currentSiteIndex, setCurrentSiteIndex] = useState(0);
@@ -54,7 +63,7 @@ export default function Dashboard({ auth, misPublicaciones }) {
   const [activeTab, setActiveTab] = useState('consejos');
 
   const [publicacionesActivasState, setPublicacionesActivasState] = useState(() => (misPublicaciones || []).filter(p => p.estado === 'activo'));
-  const [notificationsState, setNotificationsState] = useState(() => (auth?.user?.recent_notifications || []));
+  const [notificationsState, setNotificationsState] = useState(() => sortByDateDesc(auth?.user?.recent_notifications || []));
   const [showImageModal, setShowImageModal] = useState(false);
 
   function handleRemovePublicacion(id) {
@@ -84,7 +93,8 @@ export default function Dashboard({ auth, misPublicaciones }) {
         setNotificationsState(prev => {
           const map = new Map();
           [n, ...prev].forEach(i => map.set(String(i.id), i));
-          return Array.from(map.values()).slice(0, 100);
+          const merged = Array.from(map.values()).slice(0, 100);
+          return sortByDateDesc(merged);
         });
         // refresh desde el servidor después de un rato
         setTimeout(() => {
@@ -108,7 +118,7 @@ export default function Dashboard({ auth, misPublicaciones }) {
       if (!res.ok) throw new Error('Network error');
       const data = await res.json();
       const list = data.data || data;
-      setNotificationsState(list.map(n => ({ id: n.id, data: n.data, read_at: n.read_at, created_at: n.created_at })));
+      setNotificationsState(sortByDateDesc(list.map(n => ({ id: n.id, data: n.data, read_at: n.read_at, created_at: n.created_at }))));
     } catch (e) {
       
     }

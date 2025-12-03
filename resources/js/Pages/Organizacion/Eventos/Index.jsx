@@ -1,12 +1,31 @@
-import React from 'react';
-import { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import CalendarPage from './Calendar';
 import Agenda from './Agenda';
 import { Link, Head } from "@inertiajs/react";
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import MensajeFlash from '@/Components/MensajeFlash';
 
 
 export default function Index({ events }) {
+  const initialView = (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('view') === 'agenda') ? 'agenda' : 'calendar';
+  const [view, setView] = useState(initialView);
+  const [clientFlash, setClientFlash] = useState(null);
+
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem('flash_message');
+      if (raw) {
+        const data = JSON.parse(raw);
+        if (data) {
+          setClientFlash(data);
+        }
+        sessionStorage.removeItem('flash_message');
+        // scroll para ver el flash
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    } catch (e) {}
+  }, []);
+
   return (
     <>
       <Head title="Eventos" />
@@ -28,7 +47,11 @@ export default function Index({ events }) {
                 </div>
 
                 <div className="mt-4">
-                  <OrgContent events={events} />
+                  {/* Flash cuando se redirige después de acciones */}
+                  {clientFlash && view === 'agenda' && (
+                    <MensajeFlash tipo={clientFlash.type}>{clientFlash.message}</MensajeFlash>
+                  )}
+                  <OrgContent events={events} viewState={[view, setView]} />
                 </div>
           </div>
         </div>
@@ -45,8 +68,8 @@ Index.layout = (page) => (
     {page}
   </AuthenticatedLayout>
 );
-function OrgContent({ events }) {
-  const [view, setView] = useState('calendar');
+function OrgContent({ events, viewState }) {
+  const [view, setView] = viewState || useState('calendar');
 
   return (
     <div>
