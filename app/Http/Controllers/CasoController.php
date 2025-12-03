@@ -353,21 +353,27 @@ class CasoController extends Controller
     }
 
     // Devuelve JSON de un solo caso (para detalle para fetch)
-    public function show($id)
-{
-    $caso = Caso::where('id', $id)
-        ->where('estado', 'activo')
-        ->with('comentarios.user', 'comentarios.respuesta')
-        ->first();
+        public function show($id)
+        {
+            // incluir la relación usuario para que el frontend pueda mostrar el nombre del autor
+            $caso = Caso::where('id', $id)
+                ->where('estado', 'activo')
+                ->with('comentarios.user', 'comentarios.respuesta', 'usuario.organizacion.mp_cuenta')
+                ->first();
 
-    if (!$caso) {
-        return response()->json(['message' => 'Caso no encontrado'], 404);
-    }
+            if (!$caso) {
+                return response()->json(['message' => 'Caso no encontrado'], 404);
+            }
 
-    $caso->fotoAnimal = $caso->fotoAnimal ? Storage::url($caso->fotoAnimal) : null;
+            $caso->fotoAnimal = $caso->fotoAnimal ? Storage::url($caso->fotoAnimal) : null;
 
-    return response()->json($caso);
-}
+            // normalizar algunos campos del usuario para facilitar el consumo desde JS
+            if ($caso->usuario) {
+                $caso->usuario->profile_photo_url = $caso->usuario->profile_photo_url ?? ($caso->usuario->profile_photo_path ? Storage::url($caso->usuario->profile_photo_path) : null);
+            }
+
+            return response()->json($caso);
+        }
 
     public function json(Request $request)
     {

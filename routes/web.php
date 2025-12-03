@@ -71,6 +71,8 @@ Route::middleware(['auth', 'verified', 'active'])->group(function(){
         Route::post('/notifications/{id}/read', [\App\Http\Controllers\NotificationController::class, 'markRead'])->name('notifications.read');
         Route::post('/notifications/mark-all-read', [\App\Http\Controllers\NotificationController::class, 'markAllRead'])->name('notifications.mark_all_read');
         Route::delete('/notifications', [\App\Http\Controllers\NotificationController::class, 'destroyAll'])->name('notifications.destroy_all');
+        // Borrar una notificación específica para el usuario autenticado
+        Route::delete('/notifications/{id}', [\App\Http\Controllers\NotificationController::class, 'destroy'])->name('notifications.destroy');
 });
 
 /* -----------------------------------------------------------------

@@ -3,6 +3,9 @@ import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { Head, Link, usePage } from "@inertiajs/react";
 import MensajeFlash from '@/Components/MensajeFlash';
 import TarjetaMisPublicaciones from '@/Components/TarjetaMisPublicaciones';
+import NotificationCasoCard from '@/Components/NotificationCasoCard';
+import NotificationEventoCard from '@/Components/NotificationEventoCard';
+import NotificationDonacionCard from '@/Components/NotificationDonacionCard';
 import LoadingImagenes from '@/Components/LoadingImagenes';
 import ImageSearchModal from '@/Components/ImageSearchModal';
 
@@ -50,6 +53,7 @@ export default function Dashboard({ auth, misPublicaciones }) {
   const [activeTab, setActiveTab] = useState('consejos');
 
   const [publicacionesActivasState, setPublicacionesActivasState] = useState(() => (misPublicaciones || []).filter(p => p.estado === 'activo'));
+  const [notificationsState, setNotificationsState] = useState(() => (auth?.user?.recent_notifications || []));
   const [showImageModal, setShowImageModal] = useState(false);
 
   function handleRemovePublicacion(id) {
@@ -181,7 +185,7 @@ export default function Dashboard({ auth, misPublicaciones }) {
             </div>
 
             <div className="card-surface shadow-lg rounded-2xl p-6">
-              <h3 className="text-lg font-semibold mb-4">Información que podría interesarte</h3>
+              <h3 className="text-lg font-semibold mb-4">{activeTab === 'consejos' ? 'Información que podría interesarte' : 'Mis Notificaciones'}</h3>
               {activeTab === 'consejos' ? (
                 <>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -220,11 +224,69 @@ export default function Dashboard({ auth, misPublicaciones }) {
                   <p className="text-xs text-gray-500 mt-4">Fuente: {SITE_NAMES[SITES[currentSiteIndex] || SITES[0]]}</p>
                 </>
               ) : (
-                
                 <div className="bg-white rounded-lg overflow-hidden shadow-sm p-6">
-                  {/* Sección: Notificaciones */}
-                  <h4 className="font-semibold mb-2">Notificaciones</h4>
-                  <div className="text-sm text-gray-600">Aún no hay notificaciones. Aquí aparecerán avisos y novedades relevantes.</div>
+                  {activeTab === 'notificaciones' && (
+                    <div className="flex items-center justify-end gap-2 mb-4">
+                      <button
+                        onClick={async () => {
+                          try {
+                            if(!confirm('¿Borrar todas las notificaciones? Esta acción no se puede deshacer.')) return;
+                            const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                            const res = await fetch(route('notifications.destroy_all'), { method: 'DELETE', headers: {'X-CSRF-TOKEN': token} });
+                            if (res.ok) {
+                              setNotificationsState([]);
+                              try { sessionStorage.setItem('flash_message', JSON.stringify({ type: 'success', message: 'Notificaciones vaciadas' })); } catch(e){}
+                            }
+                          } catch (e) {
+                            console.error(e);
+                          }
+                        }}
+                        className="text-xs text-red-700 bg-red-50 px-3 py-1 rounded"
+                      >
+                        Vaciar
+                      </button>
+                    </div>
+                  )}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {notificationsState && notificationsState.length > 0 ? (
+                      notificationsState.map((n) => {
+                        const type = n.data?.type || n.type || '';
+                        if (type === 'new_caso') {
+                          return (<div key={n.id}><NotificationCasoCard notification={n} onDelete={(id) => setNotificationsState(prev => prev.filter(x => x.id !== id))} /></div>);
+                        }
+                        if (type === 'new_evento') {
+                          return (<div key={n.id}><NotificationEventoCard notification={n} onDelete={(id) => setNotificationsState(prev => prev.filter(x => x.id !== id))} /></div>);
+                        }
+                        if (type === 'new_donation' || type === 'new_donacion' || type === 'donation') {
+                          return (<div key={n.id}><NotificationDonacionCard notification={n} onDelete={(id) => setNotificationsState(prev => prev.filter(x => x.id !== id))} /></div>);
+                        }
+
+                        // fallback: mostrar mensaje sencillo
+                        return (
+                          <div key={n.id} className="bg-white rounded-lg p-4 shadow-sm">
+                            <div className="flex items-start justify-between">
+                              <div>
+                                <div className="text-sm font-semibold text-slate-800">{n.data?.message ?? 'Notificación'}</div>
+                                <div className="text-xs text-gray-400 mt-2">{new Date(n.created_at).toLocaleString()}</div>
+                                {n.data?.url && <div className="mt-3"><a href={n.data.url} className="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white rounded-md text-sm">Ir</a></div>}
+                              </div>
+                              <div className="ml-4">
+                                <button onClick={async () => {
+                                  try {
+                                    const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                                    const res = await fetch(route('notifications.destroy', n.id), { method: 'DELETE', headers: {'X-CSRF-TOKEN': token} });
+                                    if (res.ok) setNotificationsState(prev => prev.filter(x => x.id !== n.id));
+                                  } catch (e) {}
+                                }} className="text-xs px-2 py-1 rounded bg-red-50 text-red-700">Eliminar</button>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <div className="col-span-3 text-sm text-gray-500">Aún no hay notificaciones. Aquí aparecerán avisos y novedades relevantes.</div>
+                    )}
+                  </div>
                 </div>
               )}
             </div>

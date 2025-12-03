@@ -38,4 +38,22 @@ class NotificationController extends Controller
         $user->notifications()->delete();
         return response()->json(['ok' => true]);
     }
+
+    /**
+     * Borrar una notificación específica del usuario autenticado.
+     */
+    public function destroy(Request $request, $id)
+    {
+        $user = $request->user();
+        $n = $user->notifications()->where('id', $id)->first();
+        if (! $n) {
+            return response()->json(['ok' => false, 'message' => 'Notificación no encontrada'], 404);
+        }
+        try {
+            $n->delete();
+            return response()->json(['ok' => true]);
+        } catch (\Throwable $e) {
+            return response()->json(['ok' => false, 'message' => 'Error al borrar la notificación'], 500);
+        }
+    }
 }
