@@ -306,25 +306,31 @@ export default function SolicitudVerificacionForm() {
               <div className="card-3d p-4 bg-transparent">
                 <div className="inner">
             <form onSubmit={submit} encType="multipart/form-data" className="space-y-4">
-              <div>
-                <InputLabel htmlFor="organization_name" value="Nombre de la organización (opcional)" />
-                <input
-                  id="organization_name"
-                  type="text"
-                  value={data.organization_name}
-                  onChange={(e) => setData('organization_name', e.target.value)}
-                  className="mt-1 block w-full rounded-md border border-[#0f3a2f] p-2 text-white placeholder-white/80 focus:outline-none focus:ring-2 focus:ring-blue-200"
-                  style={{ backgroundColor: '#15803D' }}
-                  placeholder="Nombre de la organización"
-                />
-                <InputError message={errors.organization_name} className="mt-1" />
-              </div>
+                <div>
+                  <InputLabel htmlFor="organization_name" value={"Nombre de la organización *"} />
+                  <input
+                    id="organization_name"
+                    name="organization_name"
+                    type="text"
+                    required
+                    aria-required="true"
+                    value={data.organization_name}
+                    onChange={(e) => setData('organization_name', e.target.value)}
+                    className="mt-1 block w-full rounded-md border border-[#0f3a2f] p-2 text-white placeholder-white/80 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                    style={{ backgroundColor: '#15803D' }}
+                    placeholder="Nombre de la organización"
+                  />
+                  <InputError message={errors.organization_name} className="mt-1" />
+                </div>
 
               <div>
-                <InputLabel htmlFor="organization_phone" value="Teléfono de la organización (opcional)" />
+                <InputLabel htmlFor="organization_phone" value={"Teléfono de la organización *"} />
                 <input
                   id="organization_phone"
+                  name="organization_phone"
                   type="text"
+                  required
+                  aria-required="true"
                   value={data.organization_phone}
                   onChange={(e) => setData('organization_phone', e.target.value)}
                   className="mt-1 block w-full rounded-md border border-[#0f3a2f] p-2 text-white placeholder-white/80 focus:outline-none focus:ring-2 focus:ring-blue-200"
@@ -335,10 +341,13 @@ export default function SolicitudVerificacionForm() {
               </div>
 
               <div>
-                <InputLabel htmlFor="organization_email" value="Correo de la organización (opcional)" />
+                <InputLabel htmlFor="organization_email" value={"Correo de la organización *"} />
                 <input
                   id="organization_email"
+                  name="organization_email"
                   type="email"
+                  required
+                  aria-required="true"
                   value={data.organization_email}
                   onChange={(e) => setData('organization_email', e.target.value)}
                   className="mt-1 block w-full rounded-md border border-[#0f3a2f] p-2 text-white placeholder-white/80 focus:outline-none focus:ring-2 focus:ring-blue-200"
@@ -415,7 +424,7 @@ export default function SolicitudVerificacionForm() {
 
               {/* seleccionar ubicacion */}
               <div>
-                <InputLabel value="Marcar ubicación en el mapa (opcional)" />
+                <InputLabel value={"Marcar ubicación en el mapa *"} />
                 <div className="h-64 w-full rounded-md overflow-hidden border border-gray-200 mt-2">
                   <MapaInteractivo
                     onLocationSelect={handleLocationSelect}
@@ -427,6 +436,7 @@ export default function SolicitudVerificacionForm() {
                     marker={showMarker}
                   />
                 </div>
+                <InputError message={(errors.latitud || errors.longitud) ? (errors.latitud || errors.longitud) : null} className="mt-1" />
               </div>
 
               <div className="text-sm text-gray-600">

@@ -5,6 +5,8 @@ import FiltroCiudad from '@/Components/FiltroCiudad';
 export default function ImageSearchModal({ show, onClose }) {
   const [fileName, setFileName] = useState('');
   const [previewUrl, setPreviewUrl] = useState(null);
+  const [moderationInfo, setModerationInfo] = useState(null);
+  const [moderationPending, setModerationPending] = useState(false);
   const [tipoAnimal, setTipoAnimal] = useState('Perro');
   const [ciudad, setCiudad] = useState('');
   const [ciudadOption, setCiudadOption] = useState(null);
@@ -15,10 +17,86 @@ export default function ImageSearchModal({ show, onClose }) {
     if (!f) {
       setFileName('');
       setPreviewUrl(null);
+      setModerationInfo(null);
+      setModerationPending(false);
       return;
     }
     setFileName(f.name);
     setPreviewUrl(URL.createObjectURL(f));
+
+    // llamar a moderación similar a publicar-caso
+    (async () => {
+      try {
+        setModerationInfo(null);
+        setModerationPending(true);
+        const fd = new FormData();
+        fd.append('image', f);
+        fd.append('models', 'gore,violence,weapon,offensive,nudity');
+
+        const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+        const csrf = csrfMeta ? csrfMeta.getAttribute('content') : null;
+
+        const res = await fetch('/moderate/image', {
+          method: 'POST',
+          body: fd,
+          headers: {
+            Accept: 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+            ...(csrf ? { 'X-CSRF-TOKEN': csrf } : {}),
+          },
+          credentials: 'same-origin',
+        });
+
+        if (!res.ok) {
+          return;
+        }
+
+        const json = await res.json();
+        if (json && json.detections) {
+          const entries = Object.entries(json.detections || {});
+          if (entries.length > 0) {
+            const translate = {
+              gore: 'imagen sangrienta',
+              violence: 'violencia',
+              weapon: 'posible arma',
+              weapon_firearm: 'arma de fuego',
+              offensive: 'contenido ofensivo',
+              nudity: 'posible contenido para adultos',
+            };
+
+            let cats = entries
+              .map(([k, v]) => ({ key: k, score: Number(v), label: translate[k] || k }))
+              .filter(c => !Number.isNaN(c.score) && c.score > 0.001);
+
+            const excludeKeys = ['weapon_firearm'];
+            cats = cats.filter(c => !excludeKeys.includes(c.key));
+
+            const INAPPROPRIATE_THRESHOLD = 0.6;
+            const hasStrong = cats.some(c => c.score >= INAPPROPRIATE_THRESHOLD);
+
+            if (hasStrong) {
+              // eliminar preview y limpiar input
+              try {
+                if (previewUrl && previewUrl.startsWith('blob:')) URL.revokeObjectURL(previewUrl);
+              } catch (e) {}
+              setPreviewUrl(null);
+              setFileName('');
+              setModerationInfo({ blocked: true, message: 'Imagen posiblemente inapropiada', categories: cats.map(c => ({ key: c.key, label: c.label })) });
+            } else if (cats.length > 0) {
+              setModerationInfo({ blocked: false, raw: json.result || null, categories: cats });
+            } else {
+              setModerationInfo(null);
+            }
+          } else {
+            setModerationInfo(null);
+          }
+        }
+      } catch (err) {
+        // ignorar errores de moderación
+      } finally {
+        setModerationPending(false);
+      }
+    })();
   };
 
   //hadle submit para buscar coincidencias por imagen
@@ -26,6 +104,16 @@ export default function ImageSearchModal({ show, onClose }) {
     e.preventDefault();
     const file = fileInputRef.current.files && fileInputRef.current.files[0];
     if (!file) return;
+
+    if (moderationPending) {
+      alert('Esperá a que finalice el análisis de la imagen antes de buscar.');
+      return;
+    }
+
+    if (moderationInfo && moderationInfo.blocked) {
+      alert('No se puede buscar con esta imagen: la imagen fue considerada posiblemente inapropiada.');
+      return;
+    }
 
     const form = document.createElement('form');
     form.method = 'POST';
@@ -101,6 +189,27 @@ export default function ImageSearchModal({ show, onClose }) {
               )}
 
               <div className="inner">
+                {moderationInfo && moderationInfo.categories && moderationInfo.categories.length > 0 && (
+                  <div className="mb-3 p-3 rounded-md bg-yellow-50 border border-yellow-200 text-yellow-700 text-sm">
+                    <strong>Imagen posiblemente inapropiada</strong>
+
+                    {moderationInfo.blocked ? (
+                      <div className="mt-2">
+                        {moderationInfo.categories.map(c => (
+                          <div key={c.key} className="inline-block me-2">{c.label}</div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="mt-1">
+                        {moderationInfo.categories.map(c => (
+                          <span key={c.key} className="inline-block me-2">{c.label.replace('_sus',' (sospecha)')}: {Math.round((c.score || 0) * 100)}%</span>
+                        ))}
+                      </div>
+                    )}
+
+                  </div>
+                )}
+
                 <input
                   id="modalFotoAnimal"
                   ref={fileInputRef}
@@ -171,10 +280,11 @@ export default function ImageSearchModal({ show, onClose }) {
 
             <button
               type="submit"
+              disabled={moderationPending || (moderationInfo && moderationInfo.blocked)}
               className="px-4 py-2 rounded text-white shadow-md active:translate-y-1 active:shadow-sm transition transform inline-flex items-center justify-center relative z-30"
               style={{ background: 'linear-gradient(180deg,#1E3A8A,#1E40AF)', border: '1px solid #2563EB', boxShadow: '0 6px 0 rgba(0,0,0,0.2)', color: '#FFFFFF' }}
             >
-              Buscar
+              {moderationPending ? 'Analizando imagen...' : 'Buscar'}
             </button>
           </div>
         </div>

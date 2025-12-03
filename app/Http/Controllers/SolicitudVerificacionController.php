@@ -47,13 +47,13 @@ class SolicitudVerificacionController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'organization_name' => ['nullable','string','max:255'],
-            'organization_phone' => ['nullable','string','max:50'],
-            'organization_email' => ['nullable','email','max:255'],
+            'organization_name' => ['required','string','max:255'],
+            'organization_phone' => ['required','string','max:50'],
+            'organization_email' => ['required','email','max:255'],
             'message' => ['nullable','string'],
             'documents.*' => ['nullable','file','mimes:pdf,jpg,jpeg,png','max:5120'],
-            'latitud' => ['nullable','numeric','between:-90,90'],
-            'longitud' => ['nullable','numeric','between:-180,180'],
+            'latitud' => ['required','numeric','between:-90,90'],
+            'longitud' => ['required','numeric','between:-180,180'],
         ]);
 
         $user = $request->user();
