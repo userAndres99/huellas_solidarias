@@ -217,7 +217,8 @@ class CasoController extends Controller
                     $localCasoData = null;
                     if ($external && preg_match('/caso_(\d+)/', $external, $m)) {
                         $found = Caso::find((int)$m[1]);
-                        if ($found) {
+                        // solo considerar casos locales que estén activos
+                        if ($found && isset($found->estado) && $found->estado === 'activo') {
                             $localCasoData = [
                                 'id' => $found->id,
                                 'descripcion' => $found->descripcion,
@@ -571,7 +572,8 @@ class CasoController extends Controller
                 $localCasoData = null;
                 if ($external && preg_match('/caso_(\d+)/', $external, $m)) {
                     $found = Caso::find((int)$m[1]);
-                    if ($found) {
+                    // solo considerar casos locales que estén activos
+                    if ($found && isset($found->estado) && $found->estado === 'activo') {
                         $localCasoData = [
                             'id' => $found->id,
                             'descripcion' => $found->descripcion,
