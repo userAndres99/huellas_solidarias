@@ -62,6 +62,59 @@ export default function Dashboard({ auth, misPublicaciones }) {
   }
 
   useEffect(() => {
+    // configurar escucha de notificaciones en tiempo real
+    try {
+      const user = auth?.user;
+      if (!user || !window.Echo) return;
+
+      const channel = Echo.private(`App.Models.User.${user.id}`);
+
+      const handler = (n) => {
+        try {
+          if (!n.created_at) n.created_at = new Date().toISOString();
+          if (!n.data) n.data = n;
+          if (!n.id) {
+            const fallbackId = n.data?.id ?? (window.crypto && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`);
+            n.id = String(fallbackId);
+          }
+        } catch (err) {
+          
+        }
+
+        setNotificationsState(prev => {
+          const map = new Map();
+          [n, ...prev].forEach(i => map.set(String(i.id), i));
+          return Array.from(map.values()).slice(0, 100);
+        });
+        // refresh desde el servidor después de un rato
+        setTimeout(() => {
+          try { refreshNotifications(); } catch (e) { }
+        }, 700);
+      };
+
+      channel.notification(handler);
+
+      return () => {
+        try { Echo.leave(`private-App.Models.User.${user.id}`); } catch (e) {}
+      };
+    } catch (e) {
+      
+    }
+  }, [auth?.user]);
+
+  async function refreshNotifications() {
+    try {
+      const res = await fetch(route('notifications.index') + '?per_page=50', { headers: { Accept: 'application/json' } });
+      if (!res.ok) throw new Error('Network error');
+      const data = await res.json();
+      const list = data.data || data;
+      setNotificationsState(list.map(n => ({ id: n.id, data: n.data, read_at: n.read_at, created_at: n.created_at })));
+    } catch (e) {
+      
+    }
+  }
+
+  useEffect(() => {
     // rotaciona entre sitios y obtiene 3 items randoms
     let mounted = true;
     let idx = 0;

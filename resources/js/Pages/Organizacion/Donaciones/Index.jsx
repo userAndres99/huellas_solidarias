@@ -6,6 +6,17 @@ export default function Index(props) {
   const donaciones = props.donaciones?.data || [];
   const meta = props.donaciones?.meta || { current_page: 1, last_page: 1, per_page: 20, total: 0 };
 
+  function mapEstado(s) {
+    const st = (s || '').toString().toLowerCase();
+    if (!st || st === 'unknown' || st === 'null') return 'Desconocido';
+    if (st === 'approved' || st === 'success') return 'Aprobado';
+    if (st === 'pending') return 'Pendiente';
+    if (st === 'in_process') return 'En proceso';
+    if (st === 'rejected' || st === 'failure') return 'Rechazado';
+    if (st === 'cancelled' || st === 'canceled') return 'Cancelado';
+    return s;
+  }
+
   return (
     <>
       <Head title="Donaciones" />
@@ -40,7 +51,7 @@ export default function Index(props) {
                       <td className="px-3 py-2 align-top">{d.moneda}</td>
                       <td className="px-3 py-2 align-top">{d.monto}</td>
                       <td className="px-3 py-2 align-top">{d.comision_marketplace}</td>
-                      <td className="px-3 py-2 align-top">{d.estado}</td>
+                      <td className="px-3 py-2 align-top">{mapEstado(d.estado)}</td>
                       <td className="px-3 py-2 align-top">{d.created_at}</td>
                     </tr>
                   ))}

@@ -1,5 +1,6 @@
 import React from 'react';
 import LoadingImagenes from '@/Components/LoadingImagenes';
+import NotificationSkeleton from '@/Components/NotificationSkeleton';
 
 function formatDate(dateStr) {
   if (!dateStr) return '';
@@ -19,8 +20,60 @@ export default function NotificationEventoCard({ notification, onDelete = null }
       }
     } catch (e) {}
   }
-  // soportar varios nombres posibles para la imagen en el payload
-  const image = data.image || data.image_url || data.image_path || data.organizacion_image || null;
+  // normalizar la imagen
+  const imageRaw = data.image || data.image_url || data.image_path || data.organizacion_image || null;
+
+  // normalizar imagen según reglas similares a LoadingImagenes
+  function normalizeImage(src) {
+    if (!src) return null;
+    try {
+      let s = String(src).trim();
+      // eliminar cualquier comilla accidental al principio o al final
+      s = s.replace(/^"|"$/g, '').replace(/^'|'$/g, '');
+
+      // si es URL absoluta, devolver tal cual
+      if (/^https?:\/\//i.test(s)) {
+        try {
+          const u = new URL(s);
+          if (u.pathname && u.pathname.startsWith('/storage/')) {
+            const out = u.pathname;
+            console.debug && console.debug('[NotificationEventoCard] normalized remote storage url', s, '->', out);
+            return out;
+          }
+        } catch (e) {
+          
+        }
+        return s;
+      }
+
+      // Si comienza con '//' (relativo al protocolo) probablemente esté malformado para nuestro uso — tratar como nombre de archivo simple
+      if (/^\/\//.test(s)) {
+        s = s.replace(/^\/+/, '');
+      }
+
+      // Ahora, si es una ruta absoluta que comienza con '/', mantenerla
+      if (s.startsWith('/')) return s;
+
+      // rutas de almacenamiento que pueden carecer de barra inicial
+      if (s.startsWith('storage/')) return '/' + s;
+
+      // carpetas de almacenamiento conocidas -> prefijo con /storage/
+      if (s.startsWith('foto_animales/') || s.startsWith('usuarios/foto_animales/') || s.startsWith('uploads/') || s.startsWith('images/') || s.startsWith('historias/') || s.startsWith('historias\\')) return '/storage/' + s;
+
+      // si contiene una barra, tratar como ruta absoluta
+      if (s.indexOf('/') !== -1) return '/' + s;
+
+      // fallback: tratar como nombre de archivo almacenado bajo /storage/
+      return '/storage/' + s;
+    } catch (e) {
+      return src;
+    }
+  }
+
+  const image = normalizeImage(imageRaw);
+  const ready = Boolean(image || data.organizacion_name || data.name || data.title);
+
+  if (!ready) return <NotificationSkeleton />;
 
   return (
     <div className="bg-white rounded-lg overflow-hidden shadow-sm p-3 flex items-start gap-3">
