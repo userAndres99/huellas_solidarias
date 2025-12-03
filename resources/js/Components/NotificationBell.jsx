@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { usePage } from '@inertiajs/react';
+import confirmToast from '@/Utils/confirmToast';
 
 export default function NotificationBell() {
     const page = usePage();
@@ -166,7 +167,7 @@ export default function NotificationBell() {
 
     async function clearAll(){
         try{
-            if(!confirm('¿Borrar todas las notificaciones? Esta acción no se puede deshacer.')) return;
+            if(!(await confirmToast('¿Borrar todas las notificaciones? Esta acción no se puede deshacer.'))) return;
             const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
             const res = await fetch(route('notifications.destroy_all'), { method: 'DELETE', headers: {'X-CSRF-TOKEN': token} });
             if (!res.ok) throw new Error('Network error');

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { Head, Link, usePage } from "@inertiajs/react";
 import MensajeFlash from '@/Components/MensajeFlash';
+import confirmToast from '@/Utils/confirmToast';
 import TarjetaMisPublicaciones from '@/Components/TarjetaMisPublicaciones';
 import NotificationCasoCard from '@/Components/NotificationCasoCard';
 import NotificationEventoCard from '@/Components/NotificationEventoCard';
@@ -230,7 +231,7 @@ export default function Dashboard({ auth, misPublicaciones }) {
                       <button
                         onClick={async () => {
                           try {
-                            if(!confirm('¿Borrar todas las notificaciones? Esta acción no se puede deshacer.')) return;
+                            if(!(await confirmToast('¿Borrar todas las notificaciones? Esta acción no se puede deshacer.'))) return;
                             const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
                             const res = await fetch(route('notifications.destroy_all'), { method: 'DELETE', headers: {'X-CSRF-TOKEN': token} });
                             if (res.ok) {
