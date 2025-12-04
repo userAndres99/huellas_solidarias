@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\GroupUserUpdated;
 use App\Models\Group;
 use App\Http\Requests\StoreGroupRequest;
 use App\Http\Requests\UpdateGroupRequest;
@@ -39,17 +40,29 @@ class GroupController extends Controller
      * Update the specified resource in storage.
      */
     public function update(UpdateGroupRequest $request, Group $group)
-    {
-        //
-        $data = $request->validated();
-        $user_ids = $data['user_ids'] ?? [];
-        $group->update($data);
+{
+    $data = $request->validated();
+    $user_ids = $data['user_ids'] ?? [];
 
-        $group->users() -> detach();
-        $group->users()->attach(array_unique([$request->user()->id, ...$user_ids]));
+    // Obtener IDs de usuarios actuales antes de actualizar
+    $oldUserIds = $group->users->pluck('id')->toArray();
 
-        return redirect()->back();
-    }
+    $group->update($data);
+
+    $group->users()->detach();
+    $group->users()->attach(array_unique([$request->user()->id, ...$user_ids]));
+
+    // Recargar relación users
+    $group->load('users');
+
+    // Obtener IDs de usuarios nuevos
+    $newUserIds = $group->users->pluck('id')->toArray();
+
+    // Disparar evento con usuarios antiguos y nuevos
+    event(new GroupUserUpdated($group, $oldUserIds, $newUserIds));
+
+    return redirect()->back();
+}
 
     /**
      * Remove the specified resource from storage.

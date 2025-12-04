@@ -54,7 +54,11 @@ Broadcast::channel('group.created.{userId}', function ($user, $userId) {
     return (int) $user->id === (int) $userId ? $user : null;
 });
 
-
+Broadcast::channel('group.updated.{groupId}', function ($user, $groupId){
+    return \App\Models\Group::where('id', $groupId)
+        ->whereHas('users', fn($q) => $q->where('users.id', $user->id))
+        ->exists();
+});
 
 Broadcast::channel('group.deleted.{groupId}', function (User $user, int $groupId) {
     return $user->groups->contains('id', $groupId);  
