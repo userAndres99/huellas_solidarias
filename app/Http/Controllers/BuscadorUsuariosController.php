@@ -52,7 +52,8 @@ class BuscadorUsuariosController extends Controller
         $user->load([
             'organizacion.mp_cuenta',
             'casos' => function ($q) {
-                $q->orderBy('fechaPublicacion', 'desc')->limit(12);
+                // mostrar solo casos activos en el perfil público
+                $q->where('estado', 'activo')->orderBy('fechaPublicacion', 'desc')->limit(12);
             },
             'historias' => function ($q) {
                 $q->orderBy('created_at', 'desc')->limit(12);
