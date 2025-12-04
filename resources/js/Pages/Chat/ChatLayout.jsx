@@ -269,7 +269,7 @@ const ChatLayouts = ({ children }) => {
                         tombstonedConversationsRef.current.set(key, now);
                         setTimeout(() => tombstonedConversationsRef.current.delete(key), 20000);
                         console.debug('[ChatLayout] Tombstoned conversation', { key, at: now });
-                    } catch (e) {}
+                    } catch (e) { }
 
                     // Si el borrado fue por moderación, mostrar "Mensaje borrado"
                     if (payload?.moderated) {
@@ -496,19 +496,67 @@ const ChatLayouts = ({ children }) => {
                 const existing = prev.find((c) => c.id === group.id && c.is_group);
                 if (existing) return prev;
 
-                        const newGroup = {
-                            ...group,
-                            is_group: true,
-                            last_message_date: group.last_message_date || group.created_at || new Date().toISOString(),
-                        };
+                const newGroup = {
+                    ...group,
+                    is_group: true,
+                    last_message_date: group.last_message_date || group.created_at || new Date().toISOString(),
+                };
 
-                        // Agregar al inicio del sidebar 
-                        return [newGroup, ...(prev || [])];
+                // Agregar al inicio del sidebar 
+                return [newGroup, ...(prev || [])];
             });
 
             emit("toast.show", `Se ha creado un nuevo grupo: ${group.name}`);
         });
 
+        const offGroupUserUpdated = on('group.updated', ({group, userIds}) => {
+    try {
+        const currentUserId = page.props.auth?.user?.id;
+        const isUserInGroup = userIds && userIds.includes(currentUserId);
+
+        if (!isUserInGroup) {
+            // Usuario eliminado: remover el grupo de la lista local
+            setLocalConversations(prev => prev.filter(c => !(c.is_group && c.id === group.id)));
+            
+            // Si el usuario está actualmente en este grupo, redirigirlo al chat principal
+            const sel = selectedConversationRef.current;
+            if (sel && sel.is_group && sel.id === group.id) {
+                router.visit(route("chat"));
+            }
+            
+            emit('toast.show', `Has sido eliminado del grupo "${group.name}"`);
+        } else {
+            // Usuario aún en el grupo: actualizar el grupo
+            setLocalConversations(prev => {
+                const filtered = prev.filter(c => !(c.is_group && c.id === group.id));
+
+                const defaultAvatar = `${window.location.origin}/images/DefaultPerfil.jpg`;
+                const avatar = group.avatar || group.avatar_url || defaultAvatar;
+
+                const updatedGroup = {
+                    ...group,
+                    is_group: true,
+                    avatar,
+                    avatar_url: avatar,
+                    last_message: group.last_message || '',
+                    last_message_date: group.last_message_date || group.updated_at
+                };
+
+                return [updatedGroup, ...filtered];
+            });
+
+            // Si estoy dentro del grupo actualizado → recargar la conversación seleccionada
+            const sel = selectedConversationRef.current;
+            if (sel && sel.is_group && sel.id === group.id) {
+                router.reload({ only: ['selectedConversation'] });
+            }
+
+            emit('toast.show', `El grupo "${group.name}" fue actualizado`);
+        }
+    } catch (e) {
+        console.error("Error actualizando grupo:", e);
+    }
+});
 
         return () => {
             offCreated();
@@ -518,6 +566,7 @@ const ChatLayouts = ({ children }) => {
             offGroupDelete();
             offStarChat();
             offGroupCreated();
+            offGroupUserUpdated();
         };
     }, [on, emit]);
 

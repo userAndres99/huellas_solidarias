@@ -102,6 +102,12 @@ export default function AuthenticatedLayout({ header, children }) {
                             emit('group.deleted', { id: e.id, name: e.name });
                         } catch (err) {}
                     })
+                    .listen('.group.users.updated', (e) => {
+                         try{
+                            console.debug('[AuthenticatedLayout] GroupUserUpdated (user channel)', e);
+                            emit('group.updated', {group: e.group, userIds: e.userIds });
+                         } catch(err){}
+                    })
                     .error((err) => {
                         // ignore
                     });
@@ -181,6 +187,20 @@ export default function AuthenticatedLayout({ header, children }) {
                         console.log(err);
                     });
                 try { subscribedChannelsRef.current.add(`group.deleted.${conversation.id}`); } catch (e) {}
+
+                Echo.private(`group.updated.${conversation.id}`)
+                    .listen(".group.users.updated", (e) => {
+                        console.log("GroupUserUpdated recibido:", e);
+
+                        emit("group.updated", {
+                            group: e.group, userIds: e.userIds
+                        });
+                    })
+                    .error((err) => console.log(err));
+
+                try{
+                    subscribedChannelsRef.current.add(`group.updated.${conversation.id}`);
+                } catch (e) {}
             }
 
         });
