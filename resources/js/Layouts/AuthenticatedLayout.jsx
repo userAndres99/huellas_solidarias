@@ -76,7 +76,7 @@ export default function AuthenticatedLayout({ header, children }) {
                                             emit('newMessageNotification', {
                                                 user: message.sender,
                                                 group_id: message.group_id,
-                                                message: message.message || (message.attachments ? `Shared ${message.attachments.length} attachments` : ''),
+                                                message: message.message || (message.attachments ? `compartió ${message.attachments.length} archivo adjunto` : ''),
                                             });
                                         }
                                     }
@@ -155,10 +155,10 @@ export default function AuthenticatedLayout({ header, children }) {
                                 group_id: message.group_id,
                                 message:
                                     message.message ||
-                                    `Shared ${message.attachments.length === 1
-                                        ? "an attachment"
+                                    `comapartió ${message.attachments.length === 1
+                                        ? "un archivo adjunto"
                                         : message.attachments.length +
-                                        " attachmnets"
+                                        " archivos adjuntos"
                                     }`,
                             });
                         });
