@@ -72,12 +72,14 @@ export default function MapaInteractivo({
 
   useEffect(() => {
     if (!showMarkers) return;
-    
+
     const params = new URLSearchParams();
     if (filterTipo) params.append('tipo', filterTipo);
     if (filterSituacion) params.append('situacion', filterSituacion);
     if (filterCiudad) params.append('ciudad', filterCiudad);
-    const url = params.toString() ? `/casos/json?${params.toString()}` : '/casos/json';
+    // pedir más resultados para evitar paginación corta en el mapa
+    params.append('per_page', '100');
+    const url = `/casos/json?${params.toString()}`;
 
     fetch(url, { headers: { Accept: 'application/json' } })
       .then(res => {
@@ -89,7 +91,7 @@ export default function MapaInteractivo({
         setMarkers(lista);
       })
       .catch(() => setMarkers([]));
-  }, [showMarkers]);
+  }, [showMarkers, filterTipo, filterSituacion, filterCiudad]);
 
   // dejamos como Default center: Argentina 
   const defaultCoords = [-38.4161, -63.6167];
