@@ -38,47 +38,15 @@ export default function Index(props) {
   const handleTipoChange = async (e) => {
     const val = e.target.value;
     setSelectedTipo(val);
-
-  // Construir URL del endpoint JSON 
-  const base = route('organizacion.estadisticas.data');
-  const params = [];
-  if (val) params.push(`tipo=${encodeURIComponent(val)}`);
-  if (selectedSituacion) params.push(`situacion=${encodeURIComponent(selectedSituacion)}`);
-  const url = params.length ? `${base}?${params.join('&')}` : base;
-
-    try {
-      const res = await fetch(url, { credentials: 'same-origin' });
-      if (!res.ok) throw new Error('Network response was not ok');
-      const json = await res.json();
-      if (json && json.counts) {
-        setCounts(json.counts);
-      }
-    } catch (err) {
-      console.error('Error fetching stats data:', err);
-    }
+    // Usar fetchCounts para asegurar que siempre enviamos ciudad/tipo/situacion juntos
+    fetchCounts(val, selectedSituacion, selectedCiudad);
   };
 
   const handleSituacionChange = async (e) => {
     const val = e.target.value;
     setSelectedSituacion(val);
-
-    // Construir URL con ambos filtros
-    const base = route('organizacion.estadisticas.data');
-    const params = [];
-    if (selectedTipo) params.push(`tipo=${encodeURIComponent(selectedTipo)}`);
-    if (val) params.push(`situacion=${encodeURIComponent(val)}`);
-    const url = params.length ? `${base}?${params.join('&')}` : base;
-
-    try {
-      const res = await fetch(url, { credentials: 'same-origin' });
-      if (!res.ok) throw new Error('Network response was not ok');
-      const json = await res.json();
-      if (json && json.counts) {
-        setCounts(json.counts);
-      }
-    } catch (err) {
-      console.error('Error fetching stats data:', err);
-    }
+    // Usar fetchCounts para asegurar que siempre enviamos ciudad/tipo/situacion juntos
+    fetchCounts(selectedTipo, val, selectedCiudad);
   };
 
   // recibe lat y lon desde el buscador de ciudad
